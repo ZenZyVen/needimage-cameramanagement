@@ -122,21 +122,74 @@ const QRScannerModal = ({ show, onHide, onScanSuccess }) => {
           </div>
 
           <div className="modal-body p-4">
-            {/* Scanned Result Banner */}
+            {/* Scanned Result Card */}
             {scannedItem ? (
-              <div className="alert alert-success border-success-subtle p-3 mb-3">
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <span className="badge bg-success">IDENTIFIED</span>
-                  <span className="fw-bold">{scannedItem.assetTag}</span>
+              <div className="card border border-success-subtle bg-white shadow-sm p-3 mb-3">
+                <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="badge bg-success-subtle text-success border border-success-subtle fw-bold">
+                      <i className="bi bi-check-circle me-1"></i> VERIFIED ASSET
+                    </span>
+                    <span className="badge bg-slate-900 text-white font-monospace">{scannedItem.assetTag}</span>
+                  </div>
+                  <span className={`badge ${
+                    scannedItem.status === 'AVAILABLE' ? 'bg-success' :
+                    scannedItem.status === 'BORROWED' ? 'bg-warning text-dark' :
+                    scannedItem.status === 'UNDER_MAINTENANCE' ? 'bg-info' : 'bg-danger'
+                  }`}>
+                    {scannedItem.status}
+                  </span>
                 </div>
-                <h6 className="fw-bold text-dark mb-1">{scannedItem.name}</h6>
-                <p className="small text-muted mb-2">
-                  Serial: <span className="text-dark fw-medium">{scannedItem.serialNumber}</span> | Status:{' '}
-                  <span className="text-dark fw-semibold">{scannedItem.status}</span>
-                </p>
-                <div className="d-flex gap-2 mt-3 flex-wrap">
+
+                <div className="d-flex align-items-center gap-3 mb-2">
+                  {scannedItem.imageUrl ? (
+                    <img
+                      src={scannedItem.imageUrl}
+                      alt={scannedItem.name}
+                      className="rounded border object-fit-cover flex-shrink-0"
+                      style={{ width: '64px', height: '64px' }}
+                    />
+                  ) : (
+                    <div className="bg-light rounded border d-flex align-items-center justify-content-center text-muted flex-shrink-0" style={{ width: '64px', height: '64px' }}>
+                      <i className="bi bi-camera fs-3"></i>
+                    </div>
+                  )}
+
+                  <div className="flex-grow-1 overflow-hidden">
+                    <h6 className="fw-bold text-dark mb-1 text-truncate">{scannedItem.name}</h6>
+                    <div className="small text-muted">
+                      <span>{scannedItem.brand} {scannedItem.model}</span>
+                      <span className="ms-2 font-monospace">SN: {scannedItem.serialNumber || '—'}</span>
+                    </div>
+                    <div className="d-flex gap-2 align-items-center mt-1 flex-wrap">
+                      <span className="badge bg-light text-secondary border" style={{ fontSize: '0.68rem' }}>
+                        {scannedItem.category?.name || 'General Gear'}
+                      </span>
+                      <span className="badge bg-light text-dark border" style={{ fontSize: '0.68rem' }}>
+                        Condition: {scannedItem.condition || 'GOOD'}
+                      </span>
+                      <span className="badge bg-light text-primary border" style={{ fontSize: '0.68rem' }}>
+                        Stock: {scannedItem.availableQuantity !== undefined ? scannedItem.availableQuantity : 1} / {scannedItem.quantity || 1} units
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Current Active Loan Info if Borrowed */}
+                {scannedItem.borrowItems && scannedItem.borrowItems.length > 0 && (
+                  <div className="p-2 border rounded bg-warning-subtle text-dark small mb-2">
+                    <div className="fw-bold mb-1">
+                      <i className="bi bi-person-badge me-1"></i> Current Borrower: {scannedItem.borrowItems[0].request?.user?.name || 'Production Crew'}
+                    </div>
+                    <div>
+                      Project: {scannedItem.borrowItems[0].request?.project?.title || 'Standalone Shoot'}
+                    </div>
+                  </div>
+                )}
+
+                <div className="d-flex gap-2 mt-2 flex-wrap">
                   <button className="btn btn-sm btn-outline-primary" onClick={handleGoToEquipment}>
-                    <i className="bi bi-info-circle me-1"></i> View Gear Details
+                    <i className="bi bi-info-circle me-1"></i> View Vault Details
                   </button>
                   {scannedItem.status === 'AVAILABLE' && (
                     <button className="btn btn-sm btn-primary" onClick={handleGoToCheckout}>

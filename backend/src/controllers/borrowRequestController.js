@@ -151,6 +151,12 @@ exports.createRequest = async (req, res, next) => {
       });
     }
 
+    const normalizedItems = equipmentIds.map(item => {
+      if (typeof item === 'string') return { equipmentId: item, quantity: 1 };
+      return { equipmentId: item.id || item.equipmentId, quantity: item.quantity || 1 };
+    });
+    const ids = normalizedItems.map(i => i.equipmentId);
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (end < start) {
@@ -162,22 +168,25 @@ exports.createRequest = async (req, res, next) => {
 
     // Verify equipment availability
     const requestedEquipment = await prisma.equipment.findMany({
-      where: { id: { in: equipmentIds } }
+      where: { id: { in: ids } }
     });
 
-    if (requestedEquipment.length !== equipmentIds.length) {
+    if (requestedEquipment.length !== ids.length) {
       return res.status(400).json({
         success: false,
         message: 'One or more selected equipment items do not exist.'
       });
     }
 
-    const unavailable = requestedEquipment.filter(e => e.status !== 'AVAILABLE');
+    const unavailable = requestedEquipment.filter(e => {
+      const avail = e.availableQuantity !== undefined ? e.availableQuantity : (e.status === 'AVAILABLE' ? 1 : 0);
+      return avail <= 0 || e.status === 'UNDER_MAINTENANCE' || e.status === 'DAMAGED' || e.status === 'RETIRED';
+    });
     if (unavailable.length > 0) {
       const names = unavailable.map(e => `${e.assetTag} (${e.name})`).join(', ');
       return res.status(400).json({
         success: false,
-        message: `The following items are currently not available: ${names}`
+        message: `The following items have no available stock: ${names}`
       });
     }
 
@@ -198,7 +207,7 @@ exports.createRequest = async (req, res, next) => {
         status: 'PENDING',
         notes: notes ? notes.trim() : null,
         items: {
-          create: equipmentIds.map(eqId => ({
+          create: ids.map(eqId => ({
             equipmentId: eqId,
             status: 'REQUESTED'
           }))

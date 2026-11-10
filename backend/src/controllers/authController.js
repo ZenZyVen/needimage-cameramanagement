@@ -10,7 +10,7 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide both email and password.'
+        message: 'Email and password are required.'
       });
     }
 
@@ -28,7 +28,7 @@ exports.login = async (req, res, next) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact an administrator.'
+        message: 'This account has been deactivated. Please contact your system administrator.'
       });
     }
 
@@ -62,7 +62,9 @@ exports.login = async (req, res, next) => {
       role: user.role,
       department: user.department,
       phone: user.phone,
-      avatar: user.avatar
+      avatar: user.avatar,
+      profilePhoto: user.profilePhoto || user.avatar,
+      signatureUrl: user.signatureUrl || null
     };
 
     return res.json({
@@ -78,7 +80,7 @@ exports.login = async (req, res, next) => {
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, department, phone } = req.body;
+    const { name, email, password, department, phone, profilePhoto } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -105,7 +107,6 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // If first user in database, promote to ADMIN; otherwise USER
     const userCount = await prisma.user.count();
     const role = userCount === 0 ? 'ADMIN' : 'USER';
 
@@ -119,6 +120,8 @@ exports.register = async (req, res, next) => {
         role,
         department: department ? department.trim() : null,
         phone: phone ? phone.trim() : null,
+        avatar: profilePhoto || null,
+        profilePhoto: profilePhoto || null,
         isActive: true
       }
     });
@@ -149,7 +152,9 @@ exports.register = async (req, res, next) => {
         role: newUser.role,
         department: newUser.department,
         phone: newUser.phone,
-        avatar: newUser.avatar
+        avatar: newUser.avatar,
+        profilePhoto: newUser.profilePhoto,
+        signatureUrl: null
       }
     });
   } catch (error) {
@@ -170,7 +175,7 @@ exports.getMe = async (req, res, next) => {
 
 exports.updateProfile = async (req, res, next) => {
   try {
-    const { name, department, phone, avatar, currentPassword, newPassword } = req.body;
+    const { name, department, phone, avatar, profilePhoto, signatureUrl, currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
     const dataToUpdate = {};
@@ -178,6 +183,11 @@ exports.updateProfile = async (req, res, next) => {
     if (department !== undefined) dataToUpdate.department = department ? department.trim() : null;
     if (phone !== undefined) dataToUpdate.phone = phone ? phone.trim() : null;
     if (avatar !== undefined) dataToUpdate.avatar = avatar;
+    if (profilePhoto !== undefined) {
+      dataToUpdate.profilePhoto = profilePhoto;
+      dataToUpdate.avatar = profilePhoto;
+    }
+    if (signatureUrl !== undefined) dataToUpdate.signatureUrl = signatureUrl;
 
     if (newPassword) {
       if (!currentPassword) {
@@ -214,6 +224,8 @@ exports.updateProfile = async (req, res, next) => {
         department: true,
         phone: true,
         avatar: true,
+        profilePhoto: true,
+        signatureUrl: true,
         isActive: true
       }
     });
@@ -222,6 +234,52 @@ exports.updateProfile = async (req, res, next) => {
       success: true,
       message: 'Profile updated successfully.',
       user: updatedUser
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Upload signature image
+exports.uploadSignature = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+    const signatureUrl = `/uploads/${req.file.filename}`;
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { signatureUrl }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Inspector signature uploaded successfully.',
+      signatureUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Upload avatar / profile photo
+exports.uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+    const profilePhoto = `/uploads/${req.file.filename}`;
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { profilePhoto, avatar: profilePhoto }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Profile photo uploaded successfully.',
+      profilePhoto
     });
   } catch (error) {
     next(error);

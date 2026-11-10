@@ -13,6 +13,8 @@ const users = [
     department: 'Production Operations',
     phone: '+1 555-019-2831',
     avatar: 'Studio Administrator & Vault Authority',
+    profilePhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    signatureUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="70" viewBox="0 0 220 70"><path d="M15,45 Q40,10 70,35 T130,30 Q160,50 195,20" fill="none" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round"/><text x="140" y="60" font-family="cursive" font-size="14" fill="%2364748b">S. Connor</text></svg>',
     isActive: true,
     createdAt: new Date('2026-01-01')
   },
@@ -25,6 +27,8 @@ const users = [
     department: 'Gear Vault & Logistics',
     phone: '+1 555-019-4822',
     avatar: 'Lead Equipment Custodian - Quality Assurance',
+    profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    signatureUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="70" viewBox="0 0 220 70"><path d="M20,50 Q45,15 80,40 T140,25 Q170,45 200,30" fill="none" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round"/><text x="135" y="60" font-family="cursive" font-size="14" fill="%2364748b">M. Vance</text></svg>',
     isActive: true,
     createdAt: new Date('2026-01-02')
   },
@@ -37,6 +41,8 @@ const users = [
     department: 'Cinematography Unit',
     phone: '+1 555-019-7711',
     avatar: 'Director of Photography - Tier 1 Camera Packages',
+    profilePhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    signatureUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="70" viewBox="0 0 220 70"><path d="M25,48 Q60,18 90,42 T155,28 Q180,50 205,25" fill="none" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round"/><text x="145" y="60" font-family="cursive" font-size="14" fill="%2364748b">D. Kim</text></svg>',
     isActive: true,
     createdAt: new Date('2026-01-03')
   },
@@ -49,22 +55,32 @@ const users = [
     department: 'Documentary Division',
     phone: '+1 555-019-9944',
     avatar: 'Documentary Camera Operator - Field Approved',
+    profilePhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    signatureUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="70" viewBox="0 0 220 70"><path d="M20,40 Q50,15 95,45 T150,22 Q175,40 200,20" fill="none" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round"/><text x="135" y="60" font-family="cursive" font-size="14" fill="%2364748b">E. Rostova</text></svg>',
     isActive: true,
     createdAt: new Date('2026-01-04')
   }
 ];
 
+// 17 Complete Media Production Categories
 const categories = [
-  { id: 'cat-1', name: 'Cinema Cameras', description: 'Full-frame and Super35 digital cinema camera bodies', icon: 'bi-camera-reels' },
-  { id: 'cat-2', name: 'Mirrorless Cameras', description: 'Compact hybrid 4K/8K mirrorless cameras', icon: 'bi-camera' },
-  { id: 'cat-3', name: 'Cinema Lenses', description: 'Cine prime sets, anamorphic lenses, and professional cine zooms', icon: 'bi-disc' },
-  { id: 'cat-4', name: 'Studio & Field Lighting', description: 'High-output LED monolights, tube lights, and softboxes', icon: 'bi-lightbulb' },
-  { id: 'cat-5', name: 'Audio & Microphones', description: 'Shotgun mics, wireless lavalier systems, and field recorders', icon: 'bi-mic' },
-  { id: 'cat-6', name: 'Gimbals & Stabilizers', description: '3-axis motorized gimbals and 4-axis integrated stabilization systems', icon: 'bi-joystick' },
-  { id: 'cat-7', name: 'Tripods & Grip', description: 'Carbon fiber fluid head tripods, C-stands, and rigging accessories', icon: 'bi-wrench-adjustable' },
-  { id: 'cat-8', name: 'Monitors & Wireless Video', description: 'High-brightness field monitors and zero-latency wireless video transmitters', icon: 'bi-display' },
-  { id: 'cat-9', name: 'Batteries & Power', description: 'V-Mount/Gold-Mount battery bricks, chargers, and AC power distribution', icon: 'bi-battery-charging' },
-  { id: 'cat-10', name: 'Media & Storage', description: 'CFexpress Type A/B, SDXC V90, and rugged on-set SSDs', icon: 'bi-device-ssd' }
+  { id: 'cat-cameras', name: 'Cameras', description: 'Cinema cameras, mirrorless bodies, and medium format systems', icon: 'bi-camera-reels' },
+  { id: 'cat-lenses', name: 'Lenses', description: 'Cinema prime lenses, anamorphic optics, and cine zooms', icon: 'bi-disc' },
+  { id: 'cat-lighting', name: 'Lighting', description: 'High-output LED monolights, tube lights, and softbox kits', icon: 'bi-lightbulb' },
+  { id: 'cat-audio', name: 'Audio', description: 'Multi-track field recorders, mixers, and audio accessories', icon: 'bi-soundwave' },
+  { id: 'cat-microphones', name: 'Microphones', description: 'Shotgun microphones, wireless lavalier kits, and boundary mics', icon: 'bi-mic' },
+  { id: 'cat-tripods', name: 'Tripods', description: 'Carbon fiber fluid head tripods, heavy-duty pedestals, and hi-hats', icon: 'bi-triangle' },
+  { id: 'cat-gimbals', name: 'Gimbals', description: '3-axis motorized gimbals, steadicams, and vehicle rig mounts', icon: 'bi-joystick' },
+  { id: 'cat-drones', name: 'Drones', description: 'Aerial cinematography drones, FPV rigs, and flight controllers', icon: 'bi-send' },
+  { id: 'cat-monitors', name: 'Monitors', description: 'High-brightness field monitors and wireless director stations', icon: 'bi-display' },
+  { id: 'cat-broadcasting', name: 'Broadcasting', description: 'Broadcast video switchers, SDI converters, and tally systems', icon: 'bi-broadcast' },
+  { id: 'cat-streaming', name: 'Streaming', description: 'Live video encoders, capture cards, and stream controllers', icon: 'bi-camera-video' },
+  { id: 'cat-cables', name: 'Cables', description: '12G-SDI cables, HDMI 2.1, XLR audio cables, and D-Tap power cords', icon: 'bi-diagram-2' },
+  { id: 'cat-batteries', name: 'Batteries', description: 'V-Mount / Gold-Mount battery bricks, chargers, and power banks', icon: 'bi-battery-charging' },
+  { id: 'cat-memory-cards', name: 'Memory Cards', description: 'CFexpress Type A/B, SDXC V90 cards, and high-speed readers', icon: 'bi-sd-card' },
+  { id: 'cat-computers', name: 'Computers', description: 'DIT workstations, on-set editing laptops, and color grading monitors', icon: 'bi-laptop' },
+  { id: 'cat-storage-devices', name: 'Storage Devices', description: 'Rugged NVMe field SSDs, RAID arrays, and archive storage', icon: 'bi-device-ssd' },
+  { id: 'cat-accessories', name: 'Accessories', description: 'Matte boxes, follow focus rigs, camera cages, clamps, and arms', icon: 'bi-gear-wide-connected' }
 ];
 
 const equipment = [
@@ -75,18 +91,19 @@ const equipment = [
     brand: 'Sony',
     model: 'ILME-FX3',
     serialNumber: 'SN-FX3-882194',
-    categoryId: 'cat-1',
+    categoryId: 'cat-cameras',
+    quantity: 4,
+    availableQuantity: 3,
     status: 'AVAILABLE',
     condition: 'EXCELLENT',
     purchaseDate: new Date('2024-03-15'),
     purchasePrice: 3899.00,
     dailyRate: 150.00,
-    location: 'Vault Locker A-01',
     imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Top XLR Audio Handle Unit', '2x Sony NP-FZ100 Batteries', 'Dual Bay Battery Charger', 'HDMI Cable Clamp', 'Body Cap', 'Pelican 1510 Storm Case'],
-    specifications: { sensor: '12.1MP Full-Frame Exmor R CMOS', mount: 'Sony E-Mount' },
-    notes: 'Firmware v5.00 updated. Sensor cleaned Oct 2026.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-001</text></svg>'
+    notes: 'Firmware v5.00 updated. Full-frame 4K/120p sensor.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-2',
@@ -95,18 +112,19 @@ const equipment = [
     brand: 'Sony',
     model: 'ILME-FX6V',
     serialNumber: 'SN-FX6-551029',
-    categoryId: 'cat-1',
+    categoryId: 'cat-cameras',
+    quantity: 2,
+    availableQuantity: 0,
     status: 'BORROWED',
     condition: 'EXCELLENT',
     purchaseDate: new Date('2023-11-20'),
     purchasePrice: 5999.00,
     dailyRate: 250.00,
-    location: 'Vault Locker A-02',
     imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Top Handle with Audio Controls', '3.5" LCD Monitor & Hood', 'Grip Remote Controller', '2x BP-U60 Batteries', 'Heavy-Duty Rolling Hard Case'],
-    specifications: { sensor: '4K Full-Frame 10.2MP CMOS', ndFilter: 'Electronic Variable ND' },
-    notes: 'Assigned to commercial production.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-002</text></svg>'
+    notes: 'Electronic variable ND. Assigned to commercial production.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-002</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-3',
@@ -115,17 +133,19 @@ const equipment = [
     brand: 'Canon',
     model: 'EOS C70',
     serialNumber: 'SN-C70-901844',
-    categoryId: 'cat-1',
+    categoryId: 'cat-cameras',
+    quantity: 3,
+    availableQuantity: 2,
     status: 'AVAILABLE',
     condition: 'GOOD',
     purchaseDate: new Date('2023-08-10'),
     purchasePrice: 5499.00,
     dailyRate: 220.00,
-    location: 'Vault Locker A-03',
     imageUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Handle Unit with Mic Holder', '2x BP-A60 Batteries', 'Single Battery Charger', 'Compact Hard Case'],
-    notes: 'EF-EOS R 0.71x Speedbooster available.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-003</text></svg>'
+    notes: 'Super 35 DGO sensor. EF-EOS R 0.71x adapter available.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-003</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-4',
@@ -134,17 +154,19 @@ const equipment = [
     brand: 'RED Digital Cinema',
     model: 'Komodo 6K',
     serialNumber: 'SN-KOM-109283',
-    categoryId: 'cat-1',
+    categoryId: 'cat-cameras',
+    quantity: 2,
+    availableQuantity: 1,
     status: 'UNDER_MAINTENANCE',
     condition: 'FAIR',
     purchaseDate: new Date('2023-05-18'),
     purchasePrice: 6200.00,
     dailyRate: 280.00,
-    location: 'Repair Bench Shelf 2',
     imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Wing Grip', 'Outrigger Handle', 'Canon RF to EF Adapter with VND', '2x RED CFast 512GB Cards'],
-    notes: 'SDI output loose pin reported. Scheduled for inspection.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-004</text></svg>'
+    notes: 'Global shutter 6K sensor. 1 unit in inspection for SDI port tightening.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CAM-004</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-5',
@@ -153,17 +175,19 @@ const equipment = [
     brand: 'Sony',
     model: 'SEL2470GM2',
     serialNumber: 'SN-LNS-772910',
-    categoryId: 'cat-3',
+    categoryId: 'cat-lenses',
+    quantity: 5,
+    availableQuantity: 4,
     status: 'AVAILABLE',
     condition: 'EXCELLENT',
     purchaseDate: new Date('2024-01-20'),
     purchasePrice: 2298.00,
     dailyRate: 65.00,
-    location: 'Lens Cabinet B-01',
     imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Front Lens Cap 82mm', 'Rear E-Mount Cap', 'Lens Hood ALC-SH168', 'Padded Lens Pouch'],
-    notes: 'Pristine condition. Nano AR Coating II.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">LNS-001</text></svg>'
+    notes: 'Pristine condition. Front 82mm thread, Nano AR Coating II.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">LNS-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-6',
@@ -172,55 +196,313 @@ const equipment = [
     brand: 'Aputure',
     model: 'LS 600d Pro',
     serialNumber: 'SN-LGT-339102',
-    categoryId: 'cat-4',
+    categoryId: 'cat-lighting',
+    quantity: 4,
+    availableQuantity: 2,
     status: 'BORROWED',
     condition: 'GOOD',
     purchaseDate: new Date('2023-09-05'),
     purchasePrice: 1890.00,
     dailyRate: 110.00,
-    location: 'Lighting Bay C-01',
     imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-    accessories: ['Control Box with V-Mount Plates', 'Hyper Reflector', 'Weatherproof Head Cable', 'Heavy-Duty Rolling Case'],
-    notes: 'Weather resistant IP54 rated.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">LGT-001</text></svg>'
+    notes: 'Weather-resistant IP54 rating. Hyper reflector and control box.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">LGT-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
     id: 'eq-7',
     assetTag: 'AUD-001',
+    name: 'Sound Devices MixPre-6 II 32-Bit Float Field Recorder',
+    brand: 'Sound Devices',
+    model: 'MixPre-6 II',
+    serialNumber: 'SN-AUD-883192',
+    categoryId: 'cat-audio',
+    quantity: 3,
+    availableQuantity: 3,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2024-02-12'),
+    purchasePrice: 1150.00,
+    dailyRate: 60.00,
+    imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
+    notes: '32-bit float recording with ultra-low noise Kashmir preamps.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">AUD-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-8',
+    assetTag: 'MIC-001',
     name: 'Sennheiser MKH 416 Shotgun Microphone',
     brand: 'Sennheiser',
     model: 'MKH 416-P48U3',
-    serialNumber: 'SN-AUD-119280',
-    categoryId: 'cat-5',
+    serialNumber: 'SN-MIC-119280',
+    categoryId: 'cat-microphones',
+    quantity: 4,
+    availableQuantity: 3,
     status: 'AVAILABLE',
     condition: 'EXCELLENT',
     purchaseDate: new Date('2023-04-10'),
     purchasePrice: 999.00,
     dailyRate: 45.00,
-    location: 'Audio Locker D-01',
     imageUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600&auto=format&fit=crop&q=80',
-    accessories: ['MZW 415 Windscreen', 'MZQ 100 Mic Clamp', 'Rycote Softie Windshield', 'XLR Cable 25ft', 'Travel Tube'],
-    notes: 'Standard film dialogue shotgun mic.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">AUD-001</text></svg>'
+    notes: 'Standard film dialogue interference tube shotgun mic with phantom power.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">MIC-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   },
   {
-    id: 'eq-8',
+    id: 'eq-9',
+    assetTag: 'TRP-001',
+    name: 'Sachtler Flowtech 75 MS Carbon Fiber Tripod',
+    brand: 'Sachtler',
+    model: 'Flowtech 75 w/ FSB 6',
+    serialNumber: 'SN-TRP-440219',
+    categoryId: 'cat-tripods',
+    quantity: 4,
+    availableQuantity: 3,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-06-14'),
+    purchasePrice: 2450.00,
+    dailyRate: 75.00,
+    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
+    notes: 'Quick-release brakes with carbon fiber legs and fluid drag head.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">TRP-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-10',
     assetTag: 'GMB-001',
     name: 'DJI RS 3 Pro Gimbal Stabilizer Combo',
     brand: 'DJI',
     model: 'RS 3 Pro Combo',
     serialNumber: 'SN-GMB-993812',
-    categoryId: 'cat-6',
+    categoryId: 'cat-gimbals',
+    quantity: 3,
+    availableQuantity: 2,
     status: 'AVAILABLE',
     condition: 'GOOD',
     purchaseDate: new Date('2023-07-22'),
     purchasePrice: 1099.00,
     dailyRate: 70.00,
-    location: 'Grip Bay E-01',
     imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
-    accessories: ['BG30 Battery Grip', 'Briefcase Handle', 'Focus Motor (2022)', 'Ronin RavenEye', 'Carrying Case'],
-    notes: 'Calibrated for FX3.',
-    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">GMB-001</text></svg>'
+    notes: 'Extended carbon fiber axis arms. Payload up to 4.5kg.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">GMB-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-11',
+    assetTag: 'DRN-001',
+    name: 'DJI Inspire 3 Full-Frame 8K Cinema Drone',
+    brand: 'DJI',
+    model: 'Inspire 3',
+    serialNumber: 'SN-DRN-773109',
+    categoryId: 'cat-drones',
+    quantity: 1,
+    availableQuantity: 1,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2024-04-10'),
+    purchasePrice: 16499.00,
+    dailyRate: 850.00,
+    imageUrl: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop&q=80',
+    notes: '8K/75fps Apple ProRes RAW aerial package with dual remote controllers.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">DRN-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-12',
+    assetTag: 'MON-001',
+    name: 'SmallHD Cine 7 Touchscreen Field Monitor',
+    brand: 'SmallHD',
+    model: 'Cine 7 Daylight',
+    serialNumber: 'SN-MON-552091',
+    categoryId: 'cat-monitors',
+    quantity: 4,
+    availableQuantity: 3,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-10-05'),
+    purchasePrice: 1799.00,
+    dailyRate: 90.00,
+    imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80',
+    notes: '1800 nits daylight-viewable 7-inch display with 3D LUT support and camera control.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">MON-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-13',
+    assetTag: 'BRD-001',
+    name: 'Blackmagic ATEM Television Studio HD8',
+    brand: 'Blackmagic Design',
+    model: 'ATEM TV Studio HD8',
+    serialNumber: 'SN-BRD-330198',
+    categoryId: 'cat-broadcasting',
+    quantity: 2,
+    availableQuantity: 2,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-12-01'),
+    purchasePrice: 2995.00,
+    dailyRate: 140.00,
+    imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&auto=format&fit=crop&q=80',
+    notes: '8-input 3G-SDI live production switcher with built-in hardware control surface.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">BRD-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-14',
+    assetTag: 'STR-001',
+    name: 'Blackmagic Web Presenter 4K Streaming Engine',
+    brand: 'Blackmagic Design',
+    model: 'Web Presenter 4K',
+    serialNumber: 'SN-STR-129038',
+    categoryId: 'cat-streaming',
+    quantity: 3,
+    availableQuantity: 3,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2024-01-10'),
+    purchasePrice: 695.00,
+    dailyRate: 40.00,
+    imageUrl: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&auto=format&fit=crop&q=80',
+    notes: 'Ultra HD hardware streaming engine for YouTube, Facebook Live, and Twitter.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">STR-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-15',
+    assetTag: 'CBL-001',
+    name: 'Canare 12G-SDI BNC Cable Master Kit (50ft)',
+    brand: 'Canare',
+    model: '12G-BNC-50',
+    serialNumber: 'SN-CBL-660192',
+    categoryId: 'cat-cables',
+    quantity: 20,
+    availableQuantity: 18,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-05-10'),
+    purchasePrice: 95.00,
+    dailyRate: 10.00,
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    notes: '4K/8K 12G high-frequency SDI coaxial cable with gold-plated connectors.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CBL-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-16',
+    assetTag: 'BAT-001',
+    name: 'Anton Bauer Titon 150 V-Mount Battery Pack',
+    brand: 'Anton Bauer',
+    model: 'Titon 150 V-Mount',
+    serialNumber: 'SN-BAT-901842',
+    categoryId: 'cat-batteries',
+    quantity: 12,
+    availableQuantity: 10,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-08-15'),
+    purchasePrice: 425.00,
+    dailyRate: 25.00,
+    imageUrl: 'https://images.unsplash.com/photo-1619725002198-6a689b72f41d?w=600&auto=format&fit=crop&q=80',
+    notes: '144Wh lithium-ion flight-safe battery with LCD fuel gauge and D-Tap output.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">BAT-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-17',
+    assetTag: 'MEM-001',
+    name: 'Sony TOUGH 160GB CFexpress Type A Memory Card',
+    brand: 'Sony',
+    model: 'CEA-G160T',
+    serialNumber: 'SN-MEM-449102',
+    categoryId: 'cat-memory-cards',
+    quantity: 10,
+    availableQuantity: 8,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2024-01-15'),
+    purchasePrice: 398.00,
+    dailyRate: 25.00,
+    imageUrl: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&auto=format&fit=crop&q=80',
+    notes: 'Up to 800MB/s read, 700MB/s write. Rugged resin-molded TOUGH build.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">MEM-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-18',
+    assetTag: 'CMP-001',
+    name: 'Apple MacBook Pro 16" M3 Max On-Set DIT Station',
+    brand: 'Apple',
+    model: 'MBP 16 M3 Max',
+    serialNumber: 'SN-CMP-881902',
+    categoryId: 'cat-computers',
+    quantity: 2,
+    availableQuantity: 2,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2024-02-01'),
+    purchasePrice: 3999.00,
+    dailyRate: 180.00,
+    imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop&q=80',
+    notes: '64GB RAM, 2TB SSD, DaVinci Resolve Studio & Silverstack Lab installed.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">CMP-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-19',
+    assetTag: 'STR-002',
+    name: 'SanDisk Professional 4TB PRO-BLADE Transport NVMe SSD',
+    brand: 'SanDisk Professional',
+    model: 'PRO-BLADE 4TB',
+    serialNumber: 'SN-STR-991023',
+    categoryId: 'cat-storage-devices',
+    quantity: 8,
+    availableQuantity: 7,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-11-10'),
+    purchasePrice: 549.00,
+    dailyRate: 35.00,
+    imageUrl: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=600&auto=format&fit=crop&q=80',
+    notes: 'Ultra-fast 2000MB/s USB-C Gen 2x2 modular SSD mag for high-res dailies offload.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">STR-002</text></svg>',
+    isDeleted: false,
+    deletedAt: null
+  },
+  {
+    id: 'eq-20',
+    assetTag: 'ACC-001',
+    name: 'Tilta Mirage Carbon Fiber Matte Box System',
+    brand: 'Tilta',
+    model: 'Mirage Matte Box MB-T16',
+    serialNumber: 'SN-ACC-771920',
+    categoryId: 'cat-accessories',
+    quantity: 5,
+    availableQuantity: 4,
+    status: 'AVAILABLE',
+    condition: 'EXCELLENT',
+    purchaseDate: new Date('2023-07-15'),
+    purchasePrice: 369.00,
+    dailyRate: 20.00,
+    imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
+    notes: 'Ultra-lightweight 95mm clamp-on matte box with 4x5.65 filter tray and top flag.',
+    qrCode: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23fff"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="%230f172a">ACC-001</text></svg>',
+    isDeleted: false,
+    deletedAt: null
   }
 ];
 
@@ -300,12 +582,13 @@ const borrowRequests = [
     projectId: 'prj-3',
     startDate: new Date('2026-10-15'),
     endDate: new Date('2026-10-22'),
-    actualReturnDate: new Date('2026-10-22T16:00:00Z'),
-    purpose: 'Vogue Fashion Week Runway Multi-Cam Coverage',
+    purpose: 'Runway multi-camera broadcast capture',
+    destination: 'Grand Palais Hall B',
     status: 'RETURNED',
     approvedById: 'user-admin-1',
     approvedAt: new Date('2026-10-14T09:00:00Z'),
-    notes: 'Returned in full and inspected by Marcus Vance.'
+    actualReturnDate: new Date('2026-10-22T17:00:00Z'),
+    notes: 'Returned in pristine condition.'
   }
 ];
 
@@ -313,9 +596,8 @@ const borrowRequestItems = [
   { id: 'item-1', requestId: 'req-1', equipmentId: 'eq-2', status: 'CHECKED_OUT' },
   { id: 'item-2', requestId: 'req-1', equipmentId: 'eq-6', status: 'CHECKED_OUT' },
   { id: 'item-3', requestId: 'req-2', equipmentId: 'eq-1', status: 'REQUESTED' },
-  { id: 'item-4', requestId: 'req-2', equipmentId: 'eq-5', status: 'REQUESTED' },
-  { id: 'item-5', requestId: 'req-2', equipmentId: 'eq-7', status: 'REQUESTED' },
-  { id: 'item-6', requestId: 'req-3', equipmentId: 'eq-8', status: 'RETURNED', returnedCondition: 'GOOD', notes: 'Returned cleaned' }
+  { id: 'item-4', requestId: 'req-3', equipmentId: 'eq-1', status: 'RETURNED' },
+  { id: 'item-5', requestId: 'req-3', equipmentId: 'eq-5', status: 'RETURNED' }
 ];
 
 const checkInOuts = [
@@ -326,11 +608,11 @@ const checkInOuts = [
     type: 'CHECK_OUT',
     handledById: 'user-stock-1',
     borrowerName: 'David Kim',
+    borrowerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="25" font-family="cursive">D. Kim</text></svg>',
+    staffSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="25" font-family="cursive">M. Vance</text></svg>',
     conditionAtAction: 'EXCELLENT',
-    accessoriesChecked: ['Top Handle', 'LCD Monitor', 'Grip Remote', '2x Batteries', 'Hard Case'],
-    damageReported: false,
-    actionDate: new Date('2026-11-08T09:00:00Z'),
-    notes: 'All 5 accessories verified.'
+    actionDate: new Date('2026-11-08T09:15:00Z'),
+    notes: 'Inspected sensor and verified battery capacity at 100%.'
   },
   {
     id: 'chk-2',
@@ -339,23 +621,23 @@ const checkInOuts = [
     type: 'CHECK_OUT',
     handledById: 'user-stock-1',
     borrowerName: 'David Kim',
+    borrowerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="25" font-family="cursive">D. Kim</text></svg>',
+    staffSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="25" font-family="cursive">M. Vance</text></svg>',
     conditionAtAction: 'GOOD',
-    accessoriesChecked: ['Control Box', 'Hyper Reflector', 'Head Cable', 'Rolling Case'],
-    damageReported: false,
-    actionDate: new Date('2026-11-08T09:05:00Z'),
-    notes: 'Reflector verified in rolling case.'
+    actionDate: new Date('2026-11-08T09:20:00Z'),
+    notes: 'Tested ballast and Bowens mount locking latch.'
   },
   {
     id: 'chk-3',
     requestId: 'req-3',
-    equipmentId: 'eq-8',
+    equipmentId: 'eq-1',
     type: 'CHECK_IN',
-    handledById: 'user-stock-1',
+    handledById: 'user-admin-1',
     borrowerName: 'David Kim',
-    conditionAtAction: 'GOOD',
-    damageReported: false,
-    actionDate: new Date('2026-10-22T16:00:00Z'),
-    notes: 'Full kit returned with briefcase handle.'
+    staffSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="25" font-family="cursive">S. Connor</text></svg>',
+    conditionAtAction: 'EXCELLENT',
+    actionDate: new Date('2026-10-22T17:00:00Z'),
+    notes: 'Check-in completed. Sensor clean, firmware intact.'
   }
 ];
 
@@ -365,15 +647,17 @@ const maintenances = [
     ticketNumber: 'MNT-2026-001',
     equipmentId: 'eq-4',
     reportedById: 'user-stock-1',
-    issueTitle: 'Loose 12G-SDI Output BNC Port',
-    description: 'Camera video output intermittently flickers when BNC cable is moved. Requires BNC connector re-soldering or board replacement.',
-    severity: 'HIGH',
-    status: 'SENT_TO_VENDOR',
-    vendor: 'RED Authorized Service Center - Burbank',
-    cost: 450.00,
+    issueTitle: 'SDI Port 1 Loose Connection Inspection',
+    description: 'During checkout QC, 12G-SDI video feed experienced intermittent drop when cable was flexed. Port BNC barrel needs retention ring tightening.',
+    severity: 'MEDIUM',
+    status: 'IN_REPAIR',
+    damageCategory: 'Cable / Port / SDI',
+    damageImageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
+    technician: 'Marcus Vance (Vault Internal Tech)',
+    vendor: 'RED Digital Cinema Certified Service',
+    cost: 175.00,
     scheduledDate: new Date('2026-11-12'),
-    notes: 'Sent via insured courier tracking #RED9920184.',
-    createdAt: new Date('2026-11-06')
+    createdAt: new Date('2026-11-06T10:00:00Z')
   }
 ];
 
@@ -381,32 +665,22 @@ const notifications = [
   {
     id: 'notif-1',
     userId: 'user-admin-1',
-    title: 'New Borrow Request Submitted',
-    message: 'Elena Rostova submitted Request #REQ-2026-002 for project "Echoes of the High Arctic".',
+    title: 'New Equipment Requisition',
+    message: 'David Kim submitted requisition REQ-2026-001 for Horizon Commercial.',
     type: 'INFO',
     isRead: false,
     link: '/requests',
-    createdAt: new Date('2026-11-09T10:00:00Z')
+    createdAt: new Date('2026-11-07T12:00:00Z')
   },
   {
     id: 'notif-2',
     userId: 'user-stock-1',
-    title: 'Scheduled Return Alert',
-    message: 'Request #REQ-2026-001 (Sony FX6, Aputure 600d) is scheduled for return on Nov 15.',
+    title: 'Scheduled Maintenance Due',
+    message: 'RED Komodo 6K (CAM-004) scheduled for bench diagnostic.',
     type: 'WARNING',
     isRead: false,
-    link: '/checkin-out',
-    createdAt: new Date('2026-11-09T08:00:00Z')
-  },
-  {
-    id: 'notif-3',
-    userId: 'user-normal-1',
-    title: 'Request Approved & Checked Out',
-    message: 'Your Request #REQ-2026-001 has been checked out by Marcus Vance.',
-    type: 'SUCCESS',
-    isRead: true,
-    link: '/requests',
-    createdAt: new Date('2026-11-08T09:10:00Z')
+    link: '/maintenance',
+    createdAt: new Date('2026-11-08T08:00:00Z')
   }
 ];
 
@@ -414,26 +688,108 @@ const auditLogs = [
   {
     id: 'audit-1',
     userId: 'user-admin-1',
-    action: 'EQUIPMENT_REGISTER',
-    entity: 'Equipment',
-    entityId: 'eq-1',
-    details: { assetTag: 'CAM-001', name: 'Sony FX3 Full-Frame Cinema Camera' },
-    ipAddress: '192.168.1.100',
+    action: 'INITIALIZE_SYSTEM',
+    entity: 'System',
+    entityId: 'vault-01',
+    details: { message: 'Stock and Vault Management System initialized.' },
+    ipAddress: '127.0.0.1',
     createdAt: new Date('2026-11-01')
   }
 ];
 
-// Helper to filter items by criteria
+// Track all stock movements (In, Out, Damage, Adjustment, Restore)
+const stockMovements = [
+  {
+    id: 'mov-1',
+    equipmentId: 'eq-1',
+    assetTag: 'CAM-001',
+    equipmentName: 'Sony FX3 Full-Frame Cinema Camera',
+    type: 'INITIAL_STOCK',
+    quantityChanged: 4,
+    previousAvailable: 0,
+    newAvailable: 4,
+    previousTotal: 0,
+    newTotal: 4,
+    reference: 'PO-2026-01',
+    notes: 'Initial vault catalog inventory intake.',
+    performedBy: 'Sarah Connor',
+    createdAt: new Date('2026-10-01')
+  },
+  {
+    id: 'mov-2',
+    equipmentId: 'eq-2',
+    assetTag: 'CAM-002',
+    equipmentName: 'Sony FX6 Full-Frame Cinema Camera',
+    type: 'CHECK_OUT',
+    quantityChanged: -2,
+    previousAvailable: 2,
+    newAvailable: 0,
+    previousTotal: 2,
+    newTotal: 2,
+    reference: 'REQ-2026-001',
+    notes: 'Checked out to David Kim for Horizon Commercial shoot.',
+    performedBy: 'Marcus Vance',
+    createdAt: new Date('2026-11-08T09:15:00Z')
+  },
+  {
+    id: 'mov-3',
+    equipmentId: 'eq-4',
+    assetTag: 'CAM-004',
+    equipmentName: 'RED Komodo 6K Cinema Camera',
+    type: 'MAINTENANCE',
+    quantityChanged: -1,
+    previousAvailable: 2,
+    newAvailable: 1,
+    previousTotal: 2,
+    newTotal: 2,
+    reference: 'MNT-2026-001',
+    notes: 'Unit quarantined for SDI port tightening.',
+    performedBy: 'Marcus Vance',
+    createdAt: new Date('2026-11-06T10:00:00Z')
+  }
+];
+
+// Centralized System Settings (Company Branding, Rules, Colors)
+let systemSettings = {
+  companyName: 'CineVault Media Production Studios',
+  companyTagline: 'Professional Camera Equipment & Stock Vault',
+  logoUrl: '/logo.svg',
+  address: 'Studio Lot 4B, 742 Sunset Boulevard, Media Arts District, CA 90028',
+  phone: '+1 (555) 019-2831',
+  email: 'operations@cinevault-studios.com',
+  website: 'www.cinevault-studios.com',
+  brandColor: '#0f172a',
+  accentColor: '#2563eb',
+  currency: 'USD',
+  maxLoanDurationDays: 14,
+  requireApproval: true,
+  autoOverdueCheck: true,
+  allowMultipleItemsPerRequest: true,
+  lowStockThreshold: 2,
+  autoOutOfStockStatus: true,
+  enableStockMovementLogging: true,
+  defaultInspectorTitle: 'Lead Vault Inspector',
+  requireInspectionSignature: true,
+  autoCreateTicketOnDamagedCheckin: true,
+  notifyOnBorrowRequest: true,
+  notifyOnOverdue: true,
+  notifyOnLowStock: true
+};
+
+// Filtering helper
 function filterCollection(collection, where = {}) {
+  if (!where || Object.keys(where).length === 0) return [...collection];
+
   return collection.filter(item => {
     for (const [key, val] of Object.entries(where)) {
       if (val === undefined) continue;
+
       if (key === 'OR' && Array.isArray(val)) {
-        const orMatch = val.some(condition => {
-          return Object.entries(condition).every(([k, v]) => {
+        const orMatches = val.some(subCondition => {
+          return Object.entries(subCondition).every(([k, v]) => {
             if (v && v.contains) {
-              const fieldVal = String(item[k] || '').toLowerCase();
-              return fieldVal.includes(String(v.contains).toLowerCase());
+              const strVal = String(item[k] || '').toLowerCase();
+              return strVal.includes(String(v.contains).toLowerCase());
             }
             if (v && v.equals) {
               return String(item[k] || '').toLowerCase() === String(v.equals).toLowerCase();
@@ -441,8 +797,11 @@ function filterCollection(collection, where = {}) {
             return item[k] === v;
           });
         });
-        if (!orMatch) return false;
-      } else if (val && typeof val === 'object' && val.in) {
+        if (!orMatches) return false;
+      } else if (key === 'isDeleted') {
+        // Explicit soft-delete filter
+        if (Boolean(item.isDeleted) !== Boolean(val)) return false;
+      } else if (val && typeof val === 'object' && val.in && Array.isArray(val.in)) {
         if (!val.in.includes(item[key])) return false;
       } else if (val && typeof val === 'object' && val.lt) {
         if (new Date(item[key]) >= new Date(val.lt)) return false;
@@ -489,7 +848,7 @@ const mockStore = {
       if (include?._count) {
         list = list.map(c => ({
           ...c,
-          _count: { equipment: equipment.filter(e => e.categoryId === c.id).length }
+          _count: { equipment: equipment.filter(e => e.categoryId === c.id && !e.isDeleted).length }
         }));
       }
       return list;
@@ -511,8 +870,13 @@ const mockStore = {
   },
 
   equipment: {
-    findMany: async ({ where, take = 100, skip = 0, include } = {}) => {
-      let list = filterCollection(equipment, where);
+    findMany: async ({ where = {}, take = 100, skip = 0, include } = {}) => {
+      // Default: exclude soft-deleted unless where.isDeleted explicitly requested
+      const effectiveWhere = { ...where };
+      if (effectiveWhere.isDeleted === undefined) {
+        effectiveWhere.isDeleted = false;
+      }
+      let list = filterCollection(equipment, effectiveWhere);
       list = list.slice(skip, skip + take);
       return list.map(eq => ({
         ...eq,
@@ -545,8 +909,12 @@ const mockStore = {
         }))
       };
     },
-    findFirst: async ({ where }) => {
-      const matches = filterCollection(equipment, where);
+    findFirst: async ({ where = {} }) => {
+      const effectiveWhere = { ...where };
+      if (effectiveWhere.isDeleted === undefined) {
+        effectiveWhere.isDeleted = false;
+      }
+      const matches = filterCollection(equipment, effectiveWhere);
       if (!matches[0]) return null;
       const eq = matches[0];
       return {
@@ -558,23 +926,90 @@ const mockStore = {
         }))
       };
     },
-    count: async ({ where } = {}) => filterCollection(equipment, where).length,
+    count: async ({ where = {} } = {}) => {
+      const effectiveWhere = { ...where };
+      if (effectiveWhere.isDeleted === undefined) {
+        effectiveWhere.isDeleted = false;
+      }
+      return filterCollection(equipment, effectiveWhere).length;
+    },
     create: async ({ data }) => {
-      const newEq = { id: `eq-${Date.now()}`, createdAt: new Date(), ...data };
+      const qty = parseInt(data.quantity || 1, 10);
+      const avail = data.availableQuantity !== undefined ? parseInt(data.availableQuantity, 10) : qty;
+      const newEq = {
+        id: `eq-${Date.now()}`,
+        quantity: qty,
+        availableQuantity: avail,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        ...data
+      };
       equipment.push(newEq);
+
+      // Log stock movement
+      stockMovements.unshift({
+        id: `mov-${Date.now()}`,
+        equipmentId: newEq.id,
+        assetTag: newEq.assetTag,
+        equipmentName: newEq.name,
+        type: 'INITIAL_STOCK',
+        quantityChanged: qty,
+        previousAvailable: 0,
+        newAvailable: avail,
+        previousTotal: 0,
+        newTotal: qty,
+        reference: 'INITIAL_INTAKE',
+        notes: `Registered with ${qty} total unit(s).`,
+        performedBy: 'System Admin',
+        createdAt: new Date()
+      });
+
       return { ...newEq, category: categories.find(c => c.id === newEq.categoryId) };
     },
     update: async ({ where, data }) => {
       const idx = equipment.findIndex(e => e.id === where.id);
       if (idx !== -1) {
-        equipment[idx] = { ...equipment[idx], ...data, updatedAt: new Date() };
-        return { ...equipment[idx], category: categories.find(c => c.id === equipment[idx].categoryId) };
+        const prev = equipment[idx];
+        const updated = { ...prev, ...data, updatedAt: new Date() };
+
+        // Auto-status adjustment based on stock
+        if (updated.availableQuantity <= 0 && updated.status === 'AVAILABLE') {
+          updated.status = updated.quantity > 0 ? 'BORROWED' : 'OUT_OF_STOCK';
+        } else if (updated.availableQuantity > 0 && (updated.status === 'BORROWED' || updated.status === 'OUT_OF_STOCK')) {
+          updated.status = 'AVAILABLE';
+        }
+
+        equipment[idx] = updated;
+        return { ...updated, category: categories.find(c => c.id === updated.categoryId) };
       }
       return null;
     },
     delete: async ({ where }) => {
       const idx = equipment.findIndex(e => e.id === where.id);
-      if (idx !== -1) equipment.splice(idx, 1);
+      if (idx !== -1) {
+        // Soft delete
+        equipment[idx].isDeleted = true;
+        equipment[idx].deletedAt = new Date();
+        equipment[idx].status = 'RETIRED';
+
+        stockMovements.unshift({
+          id: `mov-${Date.now()}`,
+          equipmentId: equipment[idx].id,
+          assetTag: equipment[idx].assetTag,
+          equipmentName: equipment[idx].name,
+          type: 'ARCHIVE',
+          quantityChanged: -equipment[idx].availableQuantity,
+          previousAvailable: equipment[idx].availableQuantity,
+          newAvailable: 0,
+          previousTotal: equipment[idx].quantity,
+          newTotal: 0,
+          reference: 'SOFT_DELETE',
+          notes: 'Equipment archived / soft-deleted by administrator.',
+          performedBy: 'Administrator',
+          createdAt: new Date()
+        });
+      }
       return { success: true };
     }
   },
@@ -639,7 +1074,8 @@ const mockStore = {
         })),
         checkInsOuts: checkInOuts.filter(c => c.requestId === r.id).map(c => ({
           ...c,
-          handledBy: users.find(u => u.id === c.handledById)
+          handledBy: users.find(u => u.id === c.handledById),
+          equipment: equipment.find(e => e.id === c.equipmentId)
         }))
       }));
     },
@@ -814,6 +1250,53 @@ const mockStore = {
       return log;
     }
   },
+
+  stockMovement: {
+    findMany: async ({ where, take = 50, skip = 0 } = {}) => {
+      let list = filterCollection(stockMovements, where);
+      return list.slice(skip, skip + take);
+    },
+    count: async ({ where } = {}) => filterCollection(stockMovements, where).length,
+    create: async ({ data }) => {
+      const mov = { id: `mov-${Date.now()}`, createdAt: new Date(), ...data };
+      stockMovements.unshift(mov);
+      return mov;
+    }
+  },
+
+  systemSetting: {
+    findUnique: async () => ({ id: 'default', key: 'global', value: systemSettings }),
+    findFirst: async () => ({ id: 'default', key: 'global', value: systemSettings }),
+    upsert: async ({ create, update }) => {
+      systemSettings = { ...systemSettings, ...(update?.value || create?.value || {}) };
+      return { id: 'default', key: 'global', value: systemSettings };
+    },
+    update: async ({ data }) => {
+      systemSettings = { ...systemSettings, ...(data?.value || {}) };
+      return { id: 'default', key: 'global', value: systemSettings };
+    }
+  },
+
+  getSystemSettings: () => ({ ...systemSettings }),
+  updateSystemSettings: (newSettings) => {
+    systemSettings = { ...systemSettings, ...newSettings };
+    return { ...systemSettings };
+  },
+
+  getBackup: () => ({
+    timestamp: new Date().toISOString(),
+    systemSettings,
+    users: users.map(u => ({ ...u, password: '[REDACTED]' })),
+    categories,
+    equipment,
+    projects,
+    borrowRequests,
+    borrowRequestItems,
+    checkInOuts,
+    maintenances,
+    stockMovements,
+    auditLogs
+  }),
 
   $transaction: async (fn) => {
     return fn(mockStore);

@@ -1,9 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, isAdmin, isStockController } = useAuth();
+  const { settings } = useSettings();
 
   return (
     <aside
@@ -16,13 +18,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Brand Header */}
       <div className="sidebar-header">
         <img
-          src="/logo.svg"
-          alt="CineVault"
-          style={{ width: '36px', height: '36px' }}
+          src={settings.logoUrl || '/logo.svg'}
+          alt={settings.companyName || 'CineVault'}
+          style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+          onError={(e) => { e.target.src = '/logo.svg'; }}
         />
-        <div>
-          <h1 className="sidebar-brand-name">CineVault</h1>
-          <p className="sidebar-brand-sub">Inventory & Vault System</p>
+        <div style={{ overflow: 'hidden' }}>
+          <h1 className="sidebar-brand-name text-truncate" title={settings.companyName || 'CineVault'}>
+            {settings.companyName ? settings.companyName.split(' ')[0] : 'CineVault'}
+          </h1>
+          <p className="sidebar-brand-sub text-truncate">Stock & Vault System</p>
         </div>
       </div>
 
@@ -40,14 +45,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         </NavLink>
 
         {/* Core Inventory Section */}
-        <div className="nav-section-title">Vault & Inventory</div>
+        <div className="nav-section-title">Stock & Inventory</div>
         <NavLink
           to="/equipment"
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
           <i className="bi bi-box-seam-fill"></i>
-          <span>Inventory & Vault</span>
+          <span>Stock & Vault</span>
         </NavLink>
 
         <NavLink
@@ -124,6 +129,15 @@ const Sidebar = ({ isOpen, onClose }) => {
               <i className="bi bi-people-fill"></i>
               <span>User & Role Access</span>
             </NavLink>
+
+            <NavLink
+              to="/settings"
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <i className="bi bi-gear-fill"></i>
+              <span>System Settings</span>
+            </NavLink>
           </>
         )}
       </div>
@@ -141,7 +155,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </span>
           </div>
           <span className="badge bg-slate-800 text-slate-300" style={{ fontSize: '0.65rem' }}>
-            v1.2.0
+            v2.0.0
           </span>
         </div>
       </div>

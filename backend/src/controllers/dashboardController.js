@@ -3,40 +3,63 @@ const { prisma } = require('../config/db');
 exports.getDashboardStats = async (req, res, next) => {
   try {
     const user = req.user;
+    const { timeframe = 'monthly' } = req.query; // daily, weekly, monthly, yearly, all
     const now = new Date();
 
-    // 1. Overall Equipment Counts
-    const [
-      totalEquipment,
-      availableCount,
-      borrowedCount,
-      maintenanceCount,
-      damagedCount,
-      retiredCount
-    ] = await Promise.all([
-      prisma.equipment.count(),
-      prisma.equipment.count({ where: { status: 'AVAILABLE' } }),
-      prisma.equipment.count({ where: { status: 'BORROWED' } }),
-      prisma.equipment.count({ where: { status: 'UNDER_MAINTENANCE' } }),
-      prisma.equipment.count({ where: { status: 'DAMAGED' } }),
-      prisma.equipment.count({ where: { status: 'RETIRED' } })
-    ]);
+    let startDate = new Date(0);
+    if (timeframe === 'daily') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (timeframe === 'weekly') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === 'monthly') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === 'yearly') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
 
-    // Inventory Valuation
+    // 1. Equipment Inventory & Stock Totals
     const equipmentList = await prisma.equipment.findMany({
-      select: { purchasePrice: true }
+      where: { isDeleted: false },
+      include: { category: true }
     });
-    const totalValuation = equipmentList.reduce((sum, item) => sum + (item.purchasePrice || 0), 0);
+
+    const totalEquipment = equipmentList.length;
+    let totalStockUnits = 0;
+    let availableUnits = 0;
+    let borrowedUnits = 0;
+    let damagedUnits = 0;
+    let maintenanceUnits = 0;
+    let outOfStockCount = 0;
+    let totalValuation = 0;
+
+    equipmentList.forEach(eq => {
+      const qty = eq.quantity || 1;
+      const avail = eq.availableQuantity !== undefined ? eq.availableQuantity : (eq.status === 'AVAILABLE' ? qty : 0);
+      totalStockUnits += qty;
+      availableUnits += avail;
+      totalValuation += (eq.purchasePrice || 0) * qty;
+
+      if (avail === 0) outOfStockCount++;
+
+      if (eq.status === 'BORROWED' || eq.status === 'IN_USE') {
+        borrowedUnits += Math.max(1, qty - avail);
+      } else if (eq.status === 'DAMAGED') {
+        damagedUnits += Math.max(1, qty - avail);
+      } else if (eq.status === 'UNDER_MAINTENANCE') {
+        maintenanceUnits += Math.max(1, qty - avail);
+      }
+    });
 
     // 2. Requests Stats
+    const requestDateFilter = timeframe !== 'all' ? { createdAt: { gte: startDate } } : {};
     const [
       pendingRequestsCount,
       approvedRequestsCount,
       checkedOutRequestsCount,
       overdueRequestsCount
     ] = await Promise.all([
-      prisma.borrowRequest.count({ where: { status: 'PENDING' } }),
-      prisma.borrowRequest.count({ where: { status: 'APPROVED' } }),
+      prisma.borrowRequest.count({ where: { status: 'PENDING', ...requestDateFilter } }),
+      prisma.borrowRequest.count({ where: { status: 'APPROVED', ...requestDateFilter } }),
       prisma.borrowRequest.count({ where: { status: 'CHECKED_OUT' } }),
       prisma.borrowRequest.count({
         where: {
@@ -47,21 +70,21 @@ exports.getDashboardStats = async (req, res, next) => {
     ]);
 
     // 3. Equipment By Category (for Chart)
-    const categoriesWithCount = await prisma.category.findMany({
-      include: {
-        _count: { select: { equipment: true } }
-      }
+    const categoryCounts = {};
+    equipmentList.forEach(eq => {
+      const catName = eq.category?.name || 'General';
+      categoryCounts[catName] = (categoryCounts[catName] || 0) + (eq.quantity || 1);
     });
 
     const categoryChartData = {
-      labels: categoriesWithCount.map(c => c.name),
-      counts: categoriesWithCount.map(c => c._count.equipment)
+      labels: Object.keys(categoryCounts),
+      counts: Object.values(categoryCounts)
     };
 
-    // 4. Equipment Status Breakdown (for Pie/Doughnut Chart)
+    // 4. Stock Status Breakdown (for Pie/Doughnut Chart)
     const statusChartData = {
-      labels: ['Available', 'Borrowed', 'Under Maintenance', 'Damaged', 'Retired'],
-      data: [availableCount, borrowedCount, maintenanceCount, damagedCount, retiredCount]
+      labels: ['Available', 'Borrowed / In Use', 'Under Maintenance', 'Damaged', 'Out of Stock'],
+      data: [availableUnits, borrowedUnits, maintenanceUnits, damagedUnits, outOfStockCount]
     };
 
     // 5. User Specific Stats
@@ -104,6 +127,7 @@ exports.getDashboardStats = async (req, res, next) => {
 
     // 6. Recent Requests
     const recentRequests = await prisma.borrowRequest.findMany({
+      where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
       take: 6,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -113,8 +137,9 @@ exports.getDashboardStats = async (req, res, next) => {
       }
     });
 
-    // 7. Recent CheckInOuts
+    // 7. Recent CheckInOuts & Activities
     const recentActivity = await prisma.checkInOut.findMany({
+      where: timeframe !== 'all' ? { actionDate: { gte: startDate } } : {},
       take: 6,
       orderBy: { actionDate: 'desc' },
       include: {
@@ -123,7 +148,17 @@ exports.getDashboardStats = async (req, res, next) => {
       }
     });
 
-    // 8. Overdue List
+    // 8. Recent Stock Movements
+    let recentStockMovements = [];
+    if (prisma.stockMovement?.findMany) {
+      recentStockMovements = await prisma.stockMovement.findMany({
+        where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
+        take: 6,
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    // 9. Overdue List
     const overdueLoans = await prisma.borrowRequest.findMany({
       where: {
         status: 'CHECKED_OUT',
@@ -138,11 +173,15 @@ exports.getDashboardStats = async (req, res, next) => {
 
     return res.json({
       success: true,
+      timeframe,
       stats: {
         totalEquipment,
-        availableCount,
-        borrowedCount,
-        maintenanceCount,
+        totalStockUnits,
+        availableCount: availableUnits,
+        borrowedCount: borrowedUnits,
+        maintenanceCount: maintenanceUnits,
+        damagedCount: damagedUnits,
+        outOfStockCount,
         totalValuation,
         pendingRequestsCount,
         approvedRequestsCount,
@@ -155,6 +194,7 @@ exports.getDashboardStats = async (req, res, next) => {
       },
       recentRequests,
       recentActivity,
+      recentStockMovements,
       overdueLoans,
       userStats
     });

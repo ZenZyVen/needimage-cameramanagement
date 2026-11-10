@@ -2,18 +2,24 @@ const { prisma } = require('../config/db');
 const { generateQRCode } = require('../utils/qrGenerator');
 const { logAudit } = require('../utils/auditLogger');
 
-// 1. Get all equipment with filters, search, and pagination
+// 1. Get all equipment with filters, search, soft-delete filter, and pagination
 exports.getAllEquipment = async (req, res, next) => {
   try {
-    const { categoryId, status, condition, search, page = 1, limit = 50 } = req.query;
+    const { categoryId, status, condition, search, page = 1, limit = 50, showDeleted = false } = req.query;
 
     const where = {};
+
+    if (showDeleted === 'true' || showDeleted === true || status === 'RETIRED' || status === 'DELETED') {
+      where.isDeleted = true;
+    } else {
+      where.isDeleted = false;
+    }
 
     if (categoryId && categoryId !== 'ALL') {
       where.categoryId = categoryId;
     }
 
-    if (status && status !== 'ALL') {
+    if (status && status !== 'ALL' && status !== 'DELETED') {
       where.status = status;
     }
 
@@ -28,8 +34,7 @@ exports.getAllEquipment = async (req, res, next) => {
         { assetTag: { contains: q, mode: 'insensitive' } },
         { serialNumber: { contains: q, mode: 'insensitive' } },
         { brand: { contains: q, mode: 'insensitive' } },
-        { model: { contains: q, mode: 'insensitive' } },
-        { location: { contains: q, mode: 'insensitive' } }
+        { model: { contains: q, mode: 'insensitive' } }
       ];
     }
 
@@ -89,7 +94,7 @@ exports.getEquipmentById = async (req, res, next) => {
       include: {
         category: true,
         borrowItems: {
-          take: 5,
+          take: 10,
           orderBy: { request: { createdAt: 'desc' } },
           include: {
             request: {
@@ -101,14 +106,14 @@ exports.getEquipmentById = async (req, res, next) => {
           }
         },
         checkInsOuts: {
-          take: 5,
+          take: 10,
           orderBy: { actionDate: 'desc' },
           include: {
             handledBy: { select: { id: true, name: true } }
           }
         },
         maintenances: {
-          take: 5,
+          take: 10,
           orderBy: { createdAt: 'desc' },
           include: {
             reportedBy: { select: { id: true, name: true } }
@@ -133,7 +138,7 @@ exports.getEquipmentById = async (req, res, next) => {
   }
 };
 
-// 3. Lookup equipment by QR code, assetTag, or serialNumber (Fast Barcode/QR Lookup)
+// 3. Lookup equipment by QR code, assetTag, or serialNumber (Fast Barcode/QR Scanner)
 exports.lookupEquipment = async (req, res, next) => {
   try {
     const { code } = req.params;
@@ -142,13 +147,13 @@ exports.lookupEquipment = async (req, res, next) => {
     }
 
     let parsedTag = code.trim();
-    // In case the QR code holds a JSON payload string
+    // In case QR code contains JSON payload
     try {
       const parsed = JSON.parse(code);
       if (parsed.assetTag) parsedTag = parsed.assetTag;
       else if (parsed.serial) parsedTag = parsed.serial;
     } catch (e) {
-      // not json, proceed with plain string
+      // plain text string
     }
 
     const equipment = await prisma.equipment.findFirst({
@@ -192,7 +197,7 @@ exports.lookupEquipment = async (req, res, next) => {
   }
 };
 
-// 4. Create new equipment item
+// 4. Create new equipment item (Simplified form with Stock Management)
 exports.createEquipment = async (req, res, next) => {
   try {
     const {
@@ -202,15 +207,14 @@ exports.createEquipment = async (req, res, next) => {
       model,
       serialNumber,
       categoryId,
+      quantity = 1,
+      availableQuantity,
       status,
       condition,
       purchaseDate,
       purchasePrice,
       dailyRate,
-      location,
       imageUrl,
-      accessories,
-      specifications,
       notes
     } = req.body;
 
@@ -221,18 +225,21 @@ exports.createEquipment = async (req, res, next) => {
       });
     }
 
+    const cleanTag = assetTag.trim().toUpperCase();
+    const cleanSerial = serialNumber.trim();
+
     // Check unique constraints
     const existing = await prisma.equipment.findFirst({
       where: {
         OR: [
-          { assetTag: assetTag.trim().toUpperCase() },
-          { serialNumber: serialNumber.trim() }
+          { assetTag: cleanTag },
+          { serialNumber: cleanSerial }
         ]
       }
     });
 
     if (existing) {
-      const matchField = existing.assetTag.toUpperCase() === assetTag.trim().toUpperCase() ? 'Asset Tag' : 'Serial Number';
+      const matchField = existing.assetTag.toUpperCase() === cleanTag ? 'Asset Tag' : 'Serial Number';
       return res.status(409).json({
         success: false,
         message: `Equipment with this ${matchField} already exists.`
@@ -240,8 +247,6 @@ exports.createEquipment = async (req, res, next) => {
     }
 
     // Generate QR Code
-    const cleanTag = assetTag.trim().toUpperCase();
-    const cleanSerial = serialNumber.trim();
     const qrPayload = {
       assetTag: cleanTag,
       name: name.trim(),
@@ -251,17 +256,11 @@ exports.createEquipment = async (req, res, next) => {
     };
     const qrCode = await generateQRCode(qrPayload);
 
-    // Normalize accessories array
-    let parsedAccessories = [];
-    if (Array.isArray(accessories)) {
-      parsedAccessories = accessories;
-    } else if (typeof accessories === 'string') {
-      try {
-        parsedAccessories = JSON.parse(accessories);
-      } catch (e) {
-        parsedAccessories = accessories.split(',').map(s => s.trim()).filter(Boolean);
-      }
-    }
+    const parsedQty = Math.max(1, parseInt(quantity, 10) || 1);
+    const parsedAvail = availableQuantity !== undefined ? Math.max(0, parseInt(availableQuantity, 10)) : parsedQty;
+
+    let initialStatus = status || 'AVAILABLE';
+    if (parsedAvail === 0) initialStatus = 'OUT_OF_STOCK';
 
     const newEquipment = await prisma.equipment.create({
       data: {
@@ -271,17 +270,17 @@ exports.createEquipment = async (req, res, next) => {
         model: model ? model.trim() : '',
         serialNumber: cleanSerial,
         categoryId,
-        status: status || 'AVAILABLE',
+        quantity: parsedQty,
+        availableQuantity: parsedAvail,
+        status: initialStatus,
         condition: condition || 'EXCELLENT',
         purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
         purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
         dailyRate: dailyRate ? parseFloat(dailyRate) : null,
-        location: location ? location.trim() : null,
         imageUrl: imageUrl || null,
-        accessories: parsedAccessories,
-        specifications: specifications || null,
         notes: notes ? notes.trim() : null,
-        qrCode
+        qrCode,
+        isDeleted: false
       },
       include: {
         category: true
@@ -293,13 +292,13 @@ exports.createEquipment = async (req, res, next) => {
       action: 'CREATE_EQUIPMENT',
       entity: 'Equipment',
       entityId: newEquipment.id,
-      details: { assetTag: newEquipment.assetTag, name: newEquipment.name },
+      details: { assetTag: newEquipment.assetTag, name: newEquipment.name, quantity: parsedQty },
       req
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Equipment created successfully.',
+      message: 'Equipment registered successfully.',
       data: newEquipment
     });
   } catch (error) {
@@ -318,15 +317,14 @@ exports.updateEquipment = async (req, res, next) => {
       model,
       serialNumber,
       categoryId,
+      quantity,
+      availableQuantity,
       status,
       condition,
       purchaseDate,
       purchasePrice,
       dailyRate,
-      location,
       imageUrl,
-      accessories,
-      specifications,
       notes
     } = req.body;
 
@@ -335,42 +333,24 @@ exports.updateEquipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Equipment not found.' });
     }
 
+    const updatedTag = assetTag ? assetTag.trim().toUpperCase() : existing.assetTag;
+    const updatedSerial = serialNumber ? serialNumber.trim() : existing.serialNumber;
+    const updatedName = name ? name.trim() : existing.name;
+
     // Check unique conflicts if tag or serial changed
-    if (assetTag && assetTag.trim().toUpperCase() !== existing.assetTag) {
-      const tagExists = await prisma.equipment.findUnique({
-        where: { assetTag: assetTag.trim().toUpperCase() }
-      });
-      if (tagExists) {
+    if (updatedTag !== existing.assetTag) {
+      const tagExists = await prisma.equipment.findUnique({ where: { assetTag: updatedTag } });
+      if (tagExists && tagExists.id !== id) {
         return res.status(409).json({ success: false, message: 'Asset Tag is already assigned to another item.' });
       }
     }
 
-    if (serialNumber && serialNumber.trim() !== existing.serialNumber) {
-      const serialExists = await prisma.equipment.findUnique({
-        where: { serialNumber: serialNumber.trim() }
-      });
-      if (serialExists) {
+    if (updatedSerial !== existing.serialNumber) {
+      const serialExists = await prisma.equipment.findUnique({ where: { serialNumber: updatedSerial } });
+      if (serialExists && serialExists.id !== id) {
         return res.status(409).json({ success: false, message: 'Serial Number is already assigned to another item.' });
       }
     }
-
-    // Normalize accessories
-    let parsedAccessories = existing.accessories;
-    if (accessories !== undefined) {
-      if (Array.isArray(accessories)) {
-        parsedAccessories = accessories;
-      } else if (typeof accessories === 'string') {
-        try {
-          parsedAccessories = JSON.parse(accessories);
-        } catch (e) {
-          parsedAccessories = accessories.split(',').map(s => s.trim()).filter(Boolean);
-        }
-      }
-    }
-
-    const updatedTag = assetTag ? assetTag.trim().toUpperCase() : existing.assetTag;
-    const updatedSerial = serialNumber ? serialNumber.trim() : existing.serialNumber;
-    const updatedName = name ? name.trim() : existing.name;
 
     // Regenerate QR code if tag, serial, or name changed
     let qrCode = existing.qrCode;
@@ -384,6 +364,17 @@ exports.updateEquipment = async (req, res, next) => {
       });
     }
 
+    const newQty = quantity !== undefined ? Math.max(0, parseInt(quantity, 10)) : existing.quantity;
+    let newAvail = availableQuantity !== undefined ? Math.max(0, parseInt(availableQuantity, 10)) : existing.availableQuantity;
+    if (newAvail > newQty) newAvail = newQty;
+
+    let targetStatus = status || existing.status;
+    if (newAvail === 0 && targetStatus === 'AVAILABLE') {
+      targetStatus = newQty > 0 ? 'BORROWED' : 'OUT_OF_STOCK';
+    } else if (newAvail > 0 && targetStatus === 'OUT_OF_STOCK') {
+      targetStatus = 'AVAILABLE';
+    }
+
     const updated = await prisma.equipment.update({
       where: { id },
       data: {
@@ -393,15 +384,14 @@ exports.updateEquipment = async (req, res, next) => {
         model: model !== undefined ? model.trim() : undefined,
         serialNumber: updatedSerial,
         categoryId: categoryId || undefined,
-        status: status || undefined,
+        quantity: newQty,
+        availableQuantity: newAvail,
+        status: targetStatus,
         condition: condition || undefined,
         purchaseDate: purchaseDate !== undefined ? (purchaseDate ? new Date(purchaseDate) : null) : undefined,
         purchasePrice: purchasePrice !== undefined ? (purchasePrice ? parseFloat(purchasePrice) : null) : undefined,
         dailyRate: dailyRate !== undefined ? (dailyRate ? parseFloat(dailyRate) : null) : undefined,
-        location: location !== undefined ? location.trim() : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
-        accessories: parsedAccessories,
-        specifications: specifications !== undefined ? specifications : undefined,
         notes: notes !== undefined ? notes.trim() : undefined,
         qrCode
       },
@@ -429,10 +419,11 @@ exports.updateEquipment = async (req, res, next) => {
   }
 };
 
-// 6. Delete equipment item (Admin only)
+// 6. Delete equipment item (Soft-delete to archive with permanent option)
 exports.deleteEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { permanent = false } = req.query;
 
     const equipment = await prisma.equipment.findUnique({
       where: { id },
@@ -447,34 +438,257 @@ exports.deleteEquipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Equipment not found.' });
     }
 
-    if (equipment.borrowItems.length > 0) {
+    if (equipment.borrowItems && equipment.borrowItems.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Cannot delete equipment that is currently checked out on a loan.'
       });
     }
 
-    await prisma.equipment.delete({ where: { id } });
+    if (permanent === 'true' || permanent === true) {
+      await prisma.equipment.delete({ where: { id } });
+    } else {
+      await prisma.equipment.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          status: 'RETIRED'
+        }
+      });
+    }
 
     await logAudit({
       userId: req.user.id,
       action: 'DELETE_EQUIPMENT',
       entity: 'Equipment',
       entityId: id,
-      details: { assetTag: equipment.assetTag, name: equipment.name },
+      details: { assetTag: equipment.assetTag, name: equipment.name, permanent },
       req
     });
 
     return res.json({
       success: true,
-      message: `Equipment ${equipment.assetTag} deleted successfully.`
+      message: `Equipment ${equipment.assetTag} ${permanent ? 'permanently removed' : 'moved to archive'}.`
     });
   } catch (error) {
     next(error);
   }
 };
 
-// 7. Get all categories
+// 7. Restore equipment from archive
+exports.restoreEquipment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    if (!equipment) {
+      return res.status(404).json({ success: false, message: 'Equipment item not found.' });
+    }
+
+    const avail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity;
+    const targetStatus = avail > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK';
+
+    const restored = await prisma.equipment.update({
+      where: { id },
+      data: {
+        isDeleted: false,
+        deletedAt: null,
+        status: targetStatus
+      },
+      include: { category: true }
+    });
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'RESTORE_EQUIPMENT',
+      entity: 'Equipment',
+      entityId: id,
+      details: { assetTag: restored.assetTag, name: restored.name },
+      req
+    });
+
+    return res.json({
+      success: true,
+      message: `Equipment ${restored.assetTag} successfully restored to active stock.`,
+      data: restored
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8. Adjust stock quantity
+exports.adjustStock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { adjustment, reason, notes } = req.body;
+    const delta = parseInt(adjustment, 10);
+    if (isNaN(delta) || delta === 0) {
+      return res.status(400).json({ success: false, message: 'Valid non-zero adjustment amount required.' });
+    }
+
+    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    if (!equipment) {
+      return res.status(404).json({ success: false, message: 'Equipment item not found.' });
+    }
+
+    const currentQty = equipment.quantity || 1;
+    const currentAvail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : currentQty;
+    const newQty = Math.max(0, currentQty + delta);
+    const newAvail = Math.max(0, currentAvail + delta);
+
+    let newStatus = equipment.status;
+    if (newAvail <= 0 && newStatus === 'AVAILABLE') {
+      newStatus = newQty > 0 ? 'BORROWED' : 'OUT_OF_STOCK';
+    } else if (newAvail > 0 && ['OUT_OF_STOCK', 'BORROWED'].includes(newStatus)) {
+      newStatus = 'AVAILABLE';
+    }
+
+    const updated = await prisma.equipment.update({
+      where: { id },
+      data: {
+        quantity: newQty,
+        availableQuantity: newAvail,
+        status: newStatus
+      },
+      include: { category: true }
+    });
+
+    if (prisma.stockMovement?.create) {
+      await prisma.stockMovement.create({
+        data: {
+          equipmentId: id,
+          assetTag: equipment.assetTag,
+          equipmentName: equipment.name,
+          type: delta > 0 ? 'STOCK_IN' : 'ADJUSTMENT',
+          quantityChanged: delta,
+          previousAvailable: currentAvail,
+          newAvailable: newAvail,
+          previousTotal: currentQty,
+          newTotal: newQty,
+          reference: reason || 'MANUAL_ADJUSTMENT',
+          notes: notes ? notes.trim() : null,
+          performedBy: req.user?.name || 'Staff'
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Stock for ${equipment.assetTag} updated: ${newAvail} available of ${newQty} total.`,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 9. Stock Dashboard with interactive time filtering (Daily, Weekly, Monthly, Yearly, All)
+exports.getStockDashboard = async (req, res, next) => {
+  try {
+    const { timeframe = 'monthly' } = req.query;
+    const now = new Date();
+    let startDate = new Date(0);
+
+    if (timeframe === 'daily') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (timeframe === 'weekly') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === 'monthly') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === 'yearly') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    const allEquipment = await prisma.equipment.findMany({
+      where: { isDeleted: false },
+      include: { category: true }
+    });
+
+    let totalStock = 0;
+    let availableStock = 0;
+    let borrowedStock = 0;
+    let damagedStock = 0;
+    let maintenanceStock = 0;
+    let outOfStockCount = 0;
+    let totalValuation = 0;
+    const lowStockAlerts = [];
+
+    allEquipment.forEach(eq => {
+      const qty = eq.quantity || 1;
+      const avail = eq.availableQuantity !== undefined ? eq.availableQuantity : (eq.status === 'AVAILABLE' ? qty : 0);
+      totalStock += qty;
+      availableStock += avail;
+      totalValuation += (eq.purchasePrice || 0) * qty;
+
+      if (avail === 0) outOfStockCount++;
+
+      if (eq.status === 'BORROWED' || eq.status === 'IN_USE') {
+        borrowedStock += Math.max(1, qty - avail);
+      } else if (eq.status === 'DAMAGED') {
+        damagedStock += Math.max(1, qty - avail);
+      } else if (eq.status === 'UNDER_MAINTENANCE') {
+        maintenanceStock += Math.max(1, qty - avail);
+      }
+
+      if (avail <= 2) {
+        lowStockAlerts.push({
+          id: eq.id,
+          assetTag: eq.assetTag,
+          name: eq.name,
+          category: eq.category?.name || 'General',
+          quantity: qty,
+          availableQuantity: avail,
+          status: eq.status,
+          imageUrl: eq.imageUrl
+        });
+      }
+    });
+
+    let movements = [];
+    if (prisma.stockMovement?.findMany) {
+      movements = await prisma.stockMovement.findMany({
+        where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
+        take: 30
+      });
+    }
+
+    // Category stock distribution
+    const categoryMap = {};
+    allEquipment.forEach(eq => {
+      const catName = eq.category?.name || 'General';
+      if (!categoryMap[catName]) {
+        categoryMap[catName] = { name: catName, totalStock: 0, availableStock: 0, count: 0 };
+      }
+      categoryMap[catName].totalStock += (eq.quantity || 1);
+      categoryMap[catName].availableStock += (eq.availableQuantity !== undefined ? eq.availableQuantity : 1);
+      categoryMap[catName].count += 1;
+    });
+
+    return res.json({
+      success: true,
+      timeframe,
+      summary: {
+        totalEquipmentCount: allEquipment.length,
+        totalStockUnits: totalStock,
+        availableStockUnits: availableStock,
+        borrowedStockUnits: borrowedStock,
+        damagedStockUnits: damagedStock,
+        maintenanceStockUnits: maintenanceStock,
+        outOfStockUnits: outOfStockCount,
+        totalValuation,
+        lowStockCount: lowStockAlerts.length
+      },
+      lowStockAlerts,
+      categoryBreakdown: Object.values(categoryMap),
+      recentMovements: movements
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 10. Get all categories
 exports.getCategories = async (req, res, next) => {
   try {
     const categories = await prisma.category.findMany({
@@ -495,7 +709,7 @@ exports.getCategories = async (req, res, next) => {
   }
 };
 
-// 8. Create category (Admin/Stock)
+// 11. Create category
 exports.createCategory = async (req, res, next) => {
   try {
     const { name, description, icon } = req.body;
@@ -529,7 +743,7 @@ exports.createCategory = async (req, res, next) => {
   }
 };
 
-// 8b. Delete category (Admin / Stock Controller)
+// 12. Delete category
 exports.deleteCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -542,13 +756,13 @@ exports.deleteCategory = async (req, res, next) => {
     }
 
     const count = await prisma.equipment.count({
-      where: { categoryId: id }
+      where: { categoryId: id, isDeleted: false }
     });
 
     if (count > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete category "${existing.name}". It contains ${count} equipment item(s). Reassign them first.`
+        message: `Cannot delete category "${existing.name}". It contains ${count} active equipment item(s). Reassign them first.`
       });
     }
 
@@ -565,7 +779,7 @@ exports.deleteCategory = async (req, res, next) => {
   }
 };
 
-// 9. Upload equipment image
+// 13. Upload equipment image
 exports.uploadImage = async (req, res, next) => {
   try {
     if (!req.file) {

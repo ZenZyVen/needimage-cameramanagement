@@ -3,20 +3,33 @@ const { prisma } = require('../config/db');
 // 1. Full Inventory Report
 exports.getInventoryReport = async (req, res, next) => {
   try {
-    const { categoryId, status } = req.query;
-    const where = {};
+    const { categoryId, status, condition } = req.query;
+    const where = { isDeleted: false };
     if (categoryId && categoryId !== 'ALL') where.categoryId = categoryId;
     if (status && status !== 'ALL') where.status = status;
+    if (condition && condition !== 'ALL') where.condition = condition;
 
     const equipment = await prisma.equipment.findMany({
       where,
       orderBy: [{ categoryId: 'asc' }, { assetTag: 'asc' }],
       include: {
-        category: { select: { id: true, name: true } }
+        category: { select: { id: true, name: true, icon: true } }
       }
     });
 
-    const totalValuation = equipment.reduce((sum, item) => sum + (item.purchasePrice || 0), 0);
+    const totalItems = equipment.length;
+    let totalStockUnits = 0;
+    let totalAvailableUnits = 0;
+    let totalValuation = 0;
+
+    equipment.forEach(item => {
+      const qty = item.quantity || 1;
+      const avail = item.availableQuantity !== undefined ? item.availableQuantity : (item.status === 'AVAILABLE' ? qty : 0);
+      totalStockUnits += qty;
+      totalAvailableUnits += avail;
+      totalValuation += (item.purchasePrice || 0) * qty;
+    });
+
     const statusCounts = equipment.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
@@ -25,7 +38,9 @@ exports.getInventoryReport = async (req, res, next) => {
     return res.json({
       success: true,
       summary: {
-        totalItems: equipment.length,
+        totalItems,
+        totalStockUnits,
+        totalAvailableUnits,
         totalValuation,
         statusCounts
       },

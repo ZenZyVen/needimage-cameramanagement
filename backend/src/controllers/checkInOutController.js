@@ -68,11 +68,37 @@ exports.checkoutItems = async (req, res, next) => {
         });
         checkOutRecords.push(record);
 
-        // Update Equipment status to BORROWED
+        // Update Equipment status & available quantity
+        const prevAvail = eq.availableQuantity !== undefined ? eq.availableQuantity : 1;
+        const newAvail = Math.max(0, prevAvail - 1);
+        const newStatus = newAvail === 0 ? 'BORROWED' : 'AVAILABLE';
+
         await tx.equipment.update({
           where: { id: eqId },
-          data: { status: 'BORROWED' }
+          data: {
+            availableQuantity: newAvail,
+            status: newStatus
+          }
         });
+
+        if (tx.stockMovement?.create) {
+          await tx.stockMovement.create({
+            data: {
+              equipmentId: eqId,
+              assetTag: eq.assetTag,
+              equipmentName: eq.name,
+              type: 'CHECK_OUT',
+              quantityChanged: -1,
+              previousAvailable: prevAvail,
+              newAvailable: newAvail,
+              previousTotal: eq.quantity || 1,
+              newTotal: eq.quantity || 1,
+              reference: request ? request.requestNumber : 'DIRECT_CHECKOUT',
+              notes: `Checked out to ${finalBorrower}.`,
+              performedBy: req.user.name
+            }
+          });
+        }
 
         // Update BorrowRequestItem if in request
         if (requestId) {
@@ -216,14 +242,43 @@ exports.checkinItems = async (req, res, next) => {
         });
         returnRecords.push(record);
 
-        // Update Equipment status
+        // Update Equipment status & available stock quantity
+        const prevAvail = eq.availableQuantity !== undefined ? eq.availableQuantity : 0;
+        const totalQty = eq.quantity || 1;
+        let newAvail = prevAvail;
+
+        if (!damageReported && condition !== 'DAMAGED' && condition !== 'POOR') {
+          newAvail = Math.min(totalQty, prevAvail + 1);
+        }
+
         await tx.equipment.update({
           where: { id: equipmentId },
           data: {
+            availableQuantity: newAvail,
             status: newStatus,
             condition: newCondition
           }
         });
+
+        if (tx.stockMovement?.create) {
+          const isDamaged = damageReported || condition === 'DAMAGED';
+          await tx.stockMovement.create({
+            data: {
+              equipmentId,
+              assetTag: eq.assetTag,
+              equipmentName: eq.name,
+              type: isDamaged ? 'DAMAGE_REPORT' : 'CHECK_IN',
+              quantityChanged: isDamaged ? 0 : 1,
+              previousAvailable: prevAvail,
+              newAvailable: newAvail,
+              previousTotal: totalQty,
+              newTotal: totalQty,
+              reference: request ? request.requestNumber : 'RETURN',
+              notes: `Returned by ${finalBorrower}. Condition: ${newCondition}.`,
+              performedBy: req.user.name
+            }
+          });
+        }
 
         // Update BorrowRequestItem
         if (requestId) {

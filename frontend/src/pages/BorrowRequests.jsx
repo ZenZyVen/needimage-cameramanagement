@@ -7,8 +7,11 @@ import {
   rejectRequest,
   cancelRequest
 } from '../services/requestService';
+import { checkoutItems, checkinItems } from '../services/checkInOutService';
 import RequestFormModal from '../components/requests/RequestFormModal';
 import RequestReviewModal from '../components/requests/RequestReviewModal';
+import CheckoutModal from '../components/checkinout/CheckoutModal';
+import CheckinModal from '../components/checkinout/CheckinModal';
 import HandoverPrintDocument from '../components/print/HandoverPrintDocument';
 import ReturnPrintDocument from '../components/print/ReturnPrintDocument';
 import StatusBadge from '../components/common/StatusBadge';
@@ -26,6 +29,12 @@ const BorrowRequests = () => {
   const [reviewRequest, setReviewRequest] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
+  // CheckInOut Modals
+  const [checkoutRequest, setCheckoutRequest] = useState(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkinRequest, setCheckinRequest] = useState(null);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
+
   // Print Documents
   const [printHandoverReq, setPrintHandoverReq] = useState(null);
   const [printReturnReq, setPrintReturnReq] = useState(null);
@@ -40,12 +49,20 @@ const BorrowRequests = () => {
     try {
       setLoading(true);
       const params = {
-        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        status: (statusFilter !== 'ALL' && statusFilter !== 'OVERDUE') ? statusFilter : undefined,
         search: searchTerm.trim() || undefined
       };
       const res = await getRequests(params);
       if (res.data?.success) {
-        setRequests(res.data.data || []);
+        let list = res.data.data || [];
+        if (statusFilter === 'OVERDUE') {
+          const now = new Date();
+          list = list.filter(r => 
+            ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(r.status) && 
+            new Date(r.endDate) < now
+          );
+        }
+        setRequests(list);
       }
     } catch (err) {
       setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error loading requests.' });
@@ -72,6 +89,18 @@ const BorrowRequests = () => {
     loadRequests();
   };
 
+  const handleCheckoutSubmit = async (payload) => {
+    await checkoutItems(payload);
+    setAlertMsg({ type: 'success', text: 'Equipment checked out successfully! Available stock has been updated.' });
+    loadRequests();
+  };
+
+  const handleCheckinSubmit = async (payload) => {
+    await checkinItems(payload);
+    setAlertMsg({ type: 'success', text: 'Equipment returned & inspected. Stock quantities and conditions have been updated.' });
+    loadRequests();
+  };
+
   const handleCancel = async (id) => {
     if (window.confirm('Are you sure you want to cancel this pending request?')) {
       try {
@@ -84,6 +113,10 @@ const BorrowRequests = () => {
     }
   };
 
+  const isOverdue = (req) => {
+    return ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(req.status) && new Date(req.endDate) < new Date();
+  };
+
   return (
     <div>
       {/* Header */}
@@ -92,14 +125,14 @@ const BorrowRequests = () => {
           <h4 className="fw-bold text-dark mb-1">Equipment Borrowing Requests</h4>
           <p className="text-muted small mb-0">
             {isStaff
-              ? 'Review, approve, and track camera & lighting equipment requisitions.'
+              ? 'Review, approve, handover, inspect, and track camera & lighting equipment requisitions.'
               : 'Submit equipment requests for upcoming production shoots.'}
           </p>
         </div>
 
         <button
           type="button"
-          className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+          className="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm"
           onClick={() => setShowCreateModal(true)}
         >
           <i className="bi bi-calendar2-plus"></i>
@@ -108,7 +141,7 @@ const BorrowRequests = () => {
       </div>
 
       {alertMsg.text && (
-        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-3`} role="alert">
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-3 shadow-sm`} role="alert">
           {alertMsg.text}
           <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
         </div>
@@ -120,13 +153,13 @@ const BorrowRequests = () => {
           <div className="row g-2 align-items-center">
             <div className="col-md-7">
               <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
+                <span className="input-group-text bg-white border-end-0">
+                  <i className="bi bi-search text-muted"></i>
                 </span>
                 <input
                   type="text"
-                  className="form-control"
-                  placeholder="Search by request #, borrower name, purpose, or location..."
+                  className="form-control border-start-0 ps-0"
+                  placeholder="Search by request #, borrower name, purpose, or project..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -149,10 +182,10 @@ const BorrowRequests = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="ALL">All Request Statuses</option>
-                <option value="PENDING">Pending Review (Awaiting Staff)</option>
-                <option value="APPROVED">Approved (Ready for Pickup)</option>
-                <option value="CHECKED_OUT">Checked Out (Active Loan)</option>
-                <option value="PARTIALLY_RETURNED">Partially Returned</option>
+                <option value="PENDING">Pending Review (Awaiting Approval)</option>
+                <option value="APPROVED">Approved (Ready for Handover)</option>
+                <option value="CHECKED_OUT">Borrowed / In Use (Active Loan)</option>
+                <option value="OVERDUE">Overdue Returns</option>
                 <option value="RETURNED">Returned & Inspected</option>
                 <option value="REJECTED">Rejected</option>
                 <option value="CANCELLED">Cancelled</option>
@@ -169,14 +202,14 @@ const BorrowRequests = () => {
           <p className="text-muted small mt-2">Loading requests...</p>
         </div>
       ) : requests.length === 0 ? (
-        <div className="card text-center py-5">
+        <div className="card text-center py-5 border-0 shadow-sm">
           <div className="card-body">
             <i className="bi bi-calendar-x fs-1 text-muted d-block mb-2"></i>
             <h6 className="fw-bold text-dark">No requests found</h6>
             <p className="text-muted small mb-3">
               {isUser
                 ? 'You have not submitted any equipment requests yet.'
-                : 'No equipment requests match the current status filter.'}
+                : 'No equipment requests match the current filters.'}
             </p>
             <button
               type="button"
@@ -188,9 +221,9 @@ const BorrowRequests = () => {
           </div>
         </div>
       ) : (
-        <div className="card">
+        <div className="card border-0 shadow-sm">
           <div className="table-responsive">
-            <table className="table table-custom">
+            <table className="table table-custom align-middle mb-0">
               <thead>
                 <tr>
                   <th>Request #</th>
@@ -203,114 +236,171 @@ const BorrowRequests = () => {
                 </tr>
               </thead>
               <tbody>
-                {requests.map(req => (
-                  <tr key={req.id}>
-                    <td>
-                      <span className="fw-bold text-dark">{req.requestNumber}</span>
-                      <div className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                        {formatDate(req.createdAt)}
-                      </div>
-                    </td>
-
-                    {isStaff && (
+                {requests.map(req => {
+                  const overdue = isOverdue(req);
+                  return (
+                    <tr key={req.id} className={overdue ? 'bg-danger-subtle' : ''}>
                       <td>
-                        <div className="fw-semibold text-dark">{req.user?.name}</div>
-                        <div className="small text-muted">{req.user?.department || 'Production'}</div>
-                      </td>
-                    )}
-
-                    <td>
-                      <div className="fw-semibold text-dark text-truncate" style={{ maxWidth: '170px' }}>
-                        {req.project?.title || 'Standalone Shoot'}
-                      </div>
-                      <div className="small text-muted text-truncate" style={{ maxWidth: '170px' }}>
-                        {req.purpose}
-                      </div>
-                    </td>
-
-                    <td className="small text-nowrap">
-                      <div><i className="bi bi-calendar-event me-1 text-primary"></i>{formatDate(req.startDate)}</div>
-                      <div className="text-muted"><i className="bi bi-calendar-check me-1 text-danger"></i>{formatDate(req.endDate)}</div>
-                    </td>
-
-                    <td>
-                      <div className="d-flex flex-wrap gap-1" style={{ maxWidth: '280px' }}>
-                        {req.items?.map(item => (
-                          <span
-                            key={item.id}
-                            className="accessory-badge"
-                            title={item.equipment?.name}
-                          >
-                            {item.equipment?.assetTag}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-
-                    <td>
-                      <StatusBadge status={req.status} />
-                      {req.rejectionReason && (
-                        <div className="small text-danger mt-1 text-truncate" style={{ maxWidth: '150px' }} title={req.rejectionReason}>
-                          Reason: {req.rejectionReason}
+                        <span className="fw-bold text-dark">{req.requestNumber}</span>
+                        <div className="text-muted small" style={{ fontSize: '0.72rem' }}>
+                          {formatDate(req.createdAt)}
                         </div>
+                      </td>
+
+                      {isStaff && (
+                        <td>
+                          <div className="fw-semibold text-dark">{req.user?.name}</div>
+                          <div className="small text-muted">{req.user?.department || 'Production'}</div>
+                        </td>
                       )}
-                    </td>
 
-                    <td className="text-end">
-                      <div className="btn-group btn-group-sm">
-                        {/* Staff Review Button for PENDING requests */}
-                        {isStaff && req.status === 'PENDING' && (
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => {
-                              setReviewRequest(req);
-                              setShowReviewModal(true);
-                            }}
-                          >
-                            <i className="bi bi-clipboard-check me-1"></i> Review
-                          </button>
-                        )}
+                      <td>
+                        <div className="fw-semibold text-dark text-truncate" style={{ maxWidth: '170px' }}>
+                          {req.project?.title || 'Standalone Shoot'}
+                        </div>
+                        <div className="small text-muted text-truncate" style={{ maxWidth: '170px' }}>
+                          {req.purpose}
+                        </div>
+                      </td>
 
-                        {/* Handover Print Button */}
-                        {['APPROVED', 'CHECKED_OUT', 'PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
-                          <button
-                            type="button"
-                            className="btn btn-light border"
-                            title="Print Handover Form"
-                            onClick={() => setPrintHandoverReq(req)}
-                          >
-                            <i className="bi bi-file-earmark-text text-primary"></i>
-                          </button>
-                        )}
+                      <td className="small text-nowrap">
+                        <div><i className="bi bi-calendar-event me-1 text-primary"></i>{formatDate(req.startDate)}</div>
+                        <div className={overdue ? 'text-danger fw-bold' : 'text-muted'}>
+                          <i className="bi bi-calendar-check me-1"></i>{formatDate(req.endDate)}
+                          {overdue && <span className="ms-1 badge bg-danger text-white">Overdue</span>}
+                        </div>
+                      </td>
 
-                        {/* Return Print Button */}
-                        {['PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
-                          <button
-                            type="button"
-                            className="btn btn-light border"
-                            title="Print Return Voucher"
-                            onClick={() => setPrintReturnReq(req)}
-                          >
-                            <i className="bi bi-receipt text-success"></i>
-                          </button>
-                        )}
+                      <td>
+                        <div className="d-flex flex-column gap-1" style={{ maxWidth: '300px' }}>
+                          {req.items?.map(item => (
+                            <div key={item.id} className="d-flex align-items-center gap-2 p-1 border rounded bg-white">
+                              {item.equipment?.imageUrl ? (
+                                <img
+                                  src={item.equipment.imageUrl}
+                                  alt={item.equipment.name}
+                                  className="rounded object-fit-cover flex-shrink-0"
+                                  style={{ width: '28px', height: '28px' }}
+                                />
+                              ) : (
+                                <div className="bg-light rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>
+                                  <i className="bi bi-camera"></i>
+                                </div>
+                              )}
+                              <div className="text-truncate flex-grow-1" style={{ fontSize: '0.75rem' }}>
+                                <span className="fw-bold text-dark me-1">{item.equipment?.assetTag}</span>
+                                <span className="text-muted">{item.equipment?.name}</span>
+                              </div>
+                              <span className="badge bg-light text-dark border px-1" style={{ fontSize: '0.68rem' }}>
+                                ×{item.quantity || 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
 
-                        {/* User Cancel Button if Pending */}
-                        {req.status === 'PENDING' && (req.userId === user?.id || isStaff) && (
-                          <button
-                            type="button"
-                            className="btn btn-light border text-danger"
-                            title="Cancel Request"
-                            onClick={() => handleCancel(req.id)}
-                          >
-                            <i className="bi bi-x-circle"></i>
-                          </button>
+                      <td>
+                        {overdue ? (
+                          <span className="badge bg-danger text-white px-2 py-1 fw-semibold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', borderRadius: '14px' }}>
+                            <span className="status-dot" style={{ backgroundColor: '#ffffff' }}></span>
+                            Overdue
+                          </span>
+                        ) : (
+                          <StatusBadge status={req.status} />
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        {req.rejectionReason && (
+                          <div className="small text-danger mt-1 text-truncate" style={{ maxWidth: '150px' }} title={req.rejectionReason}>
+                            Reason: {req.rejectionReason}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="text-end">
+                        <div className="btn-group btn-group-sm">
+                          {/* Staff Review Button for PENDING requests */}
+                          {isStaff && req.status === 'PENDING' && (
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => {
+                                setReviewRequest(req);
+                                setShowReviewModal(true);
+                              }}
+                            >
+                              <i className="bi bi-clipboard-check me-1"></i> Review
+                            </button>
+                          )}
+
+                          {/* Staff Handover / Checkout Button for APPROVED requests */}
+                          {isStaff && req.status === 'APPROVED' && (
+                            <button
+                              type="button"
+                              className="btn btn-warning text-dark fw-semibold"
+                              title="Checkout / Handover Gear"
+                              onClick={() => {
+                                setCheckoutRequest(req);
+                                setShowCheckoutModal(true);
+                              }}
+                            >
+                              <i className="bi bi-box-arrow-up-right me-1"></i> Handover
+                            </button>
+                          )}
+
+                          {/* Staff Return & Inspection Button for CHECKED_OUT / PARTIALLY_RETURNED */}
+                          {isStaff && ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(req.status) && (
+                            <button
+                              type="button"
+                              className="btn btn-success text-white fw-semibold"
+                              title="Check In / Confirm Return Condition"
+                              onClick={() => {
+                                setCheckinRequest(req);
+                                setShowCheckinModal(true);
+                              }}
+                            >
+                              <i className="bi bi-box-arrow-in-left me-1"></i> Return & Inspect
+                            </button>
+                          )}
+
+                          {/* Handover Print Button */}
+                          {['APPROVED', 'CHECKED_OUT', 'PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
+                            <button
+                              type="button"
+                              className="btn btn-light border"
+                              title="Print Handover Form"
+                              onClick={() => setPrintHandoverReq(req)}
+                            >
+                              <i className="bi bi-file-earmark-text text-primary"></i>
+                            </button>
+                          )}
+
+                          {/* Return Print Button */}
+                          {['PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
+                            <button
+                              type="button"
+                              className="btn btn-light border"
+                              title="Print Return Voucher"
+                              onClick={() => setPrintReturnReq(req)}
+                            >
+                              <i className="bi bi-receipt text-success"></i>
+                            </button>
+                          )}
+
+                          {/* User Cancel Button if Pending */}
+                          {req.status === 'PENDING' && (req.userId === user?.id || isStaff) && (
+                            <button
+                              type="button"
+                              className="btn btn-light border text-danger"
+                              title="Cancel Request"
+                              onClick={() => handleCancel(req.id)}
+                            >
+                              <i className="bi bi-x-circle"></i>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -331,6 +421,28 @@ const BorrowRequests = () => {
         request={reviewRequest}
         onApprove={handleApprove}
         onReject={handleReject}
+      />
+
+      {/* Staff Handover / Checkout Modal */}
+      <CheckoutModal
+        show={showCheckoutModal}
+        onHide={() => {
+          setShowCheckoutModal(false);
+          setCheckoutRequest(null);
+        }}
+        request={checkoutRequest}
+        onSubmit={handleCheckoutSubmit}
+      />
+
+      {/* Staff Check-In / Return Condition Inspection Modal */}
+      <CheckinModal
+        show={showCheckinModal}
+        onHide={() => {
+          setShowCheckinModal(false);
+          setCheckinRequest(null);
+        }}
+        request={checkinRequest}
+        onSubmit={handleCheckinSubmit}
       />
 
       {/* Modal for Handover Print Document */}

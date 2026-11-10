@@ -29,6 +29,8 @@ exports.getAllUsers = async (req, res, next) => {
         department: true,
         phone: true,
         avatar: true,
+        profilePhoto: true,
+        signatureUrl: true,
         isActive: true,
         createdAt: true,
         _count: {
@@ -98,6 +100,8 @@ exports.createUser = async (req, res, next) => {
         department: true,
         phone: true,
         avatar: true,
+        profilePhoto: true,
+        signatureUrl: true,
         isActive: true,
         createdAt: true
       }
@@ -164,6 +168,8 @@ exports.updateUser = async (req, res, next) => {
         department: true,
         phone: true,
         avatar: true,
+        profilePhoto: true,
+        signatureUrl: true,
         isActive: true,
         updatedAt: true
       }

@@ -1,9 +1,22 @@
 import React from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { triggerPrint, exportPDF } from '../../utils/printHelper';
+import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
 
 const InventoryReportPrintDocument = ({ inventoryData, summary }) => {
+  const { settings } = useSettings();
+  const { user } = useAuth();
   const docId = 'inventory-audit-report';
+
+  const totalAssets = inventoryData?.length || 0;
+  const totalStockUnits = summary?.totalStockUnits || inventoryData?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+  const totalAvailUnits = summary?.totalAvailableUnits || inventoryData?.reduce((sum, item) => sum + (item.availableQuantity !== undefined ? item.availableQuantity : 1), 0) || 0;
+  const totalValuation = summary?.totalValuation || inventoryData?.reduce((sum, item) => sum + (item.purchasePrice || 0) * (item.quantity || 1), 0) || 0;
+
+  const inspectorName = user?.name || 'Authorized Vault Inspector';
+  const inspectorRole = user?.roleNote || user?.role || settings?.defaultInspectorTitle || 'Stock Controller';
+  const inspectorSignature = user?.signatureUrl;
 
   return (
     <div>
@@ -21,106 +34,167 @@ const InventoryReportPrintDocument = ({ inventoryData, summary }) => {
           className="btn btn-sm btn-primary"
           onClick={triggerPrint}
         >
-          <i className="bi bi-printer me-1"></i> Print Audit Report
+          <i className="bi bi-printer me-1"></i> Print Official Audit
         </button>
       </div>
 
-      <div className="printable-document" id={docId}>
-        {/* Header */}
-        <div className="document-header">
-          <div>
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <img src="/logo.svg" alt="Logo" style={{ width: '28px', height: '28px' }} />
-              <span className="fw-bold fs-5 text-dark">CINEVAULT STUDIOS</span>
+      <div className="printable-document p-4 bg-white" id={docId} style={{ minHeight: '1120px', position: 'relative' }}>
+        {/* Header with Dynamic Company Branding */}
+        <div className="document-header pb-3 mb-3 border-bottom d-flex justify-content-between align-items-center">
+          <div className="d-flex align-items-center gap-3">
+            <img
+              src={settings?.logoUrl || '/logo.svg'}
+              alt={settings?.companyName || 'CineVault'}
+              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+            />
+            <div>
+              <div className="fw-bold fs-5 text-dark text-uppercase" style={{ letterSpacing: '0.04em' }}>
+                {settings?.companyName || 'CineVault Media Production Studios'}
+              </div>
+              <p className="small text-muted mb-0">{settings?.companyTagline || 'Professional Camera Equipment & Stock Vault'}</p>
+              <p className="small text-muted mb-0" style={{ fontSize: '0.72rem' }}>
+                {settings?.address || 'Studio Lot 4B, Media Arts District'} • {settings?.email || 'vault@cinevault.com'} • {settings?.phone || '+1 555-019-2831'}
+              </p>
             </div>
-            <p className="small text-muted mb-0">Operations & Asset Management Department</p>
-            <p className="small text-muted mb-0">Official Equipment Inventory Audit & Valuation Report</p>
           </div>
           <div className="text-end">
-            <h2 className="document-title mb-1">INVENTORY AUDIT</h2>
-            <div className="small text-muted">Generated: {formatDate(new Date())}</div>
+            <h2 className="document-title mb-1 fw-bold text-dark" style={{ letterSpacing: '0.05em' }}>INVENTORY AUDIT</h2>
+            <div className="badge bg-slate-900 text-white px-2 py-1" style={{ fontSize: '0.75rem' }}>OFFICIAL RECORD</div>
+            <div className="small text-muted mt-1" style={{ fontSize: '0.75rem' }}>Audit Date: {formatDate(new Date())}</div>
           </div>
         </div>
 
         {/* Executive Summary Cards */}
-        <div className="row g-3 mb-4">
-          <div className="col-3">
+        <div className="row g-2 mb-4">
+          <div className="col">
             <div className="p-2 border rounded text-center bg-light">
-              <div className="text-muted small">Total Assets</div>
-              <div className="fs-5 fw-bold text-dark">{summary?.totalItems || inventoryData?.length || 0}</div>
+              <div className="text-muted small" style={{ fontSize: '0.7rem' }}>Total Asset Models</div>
+              <div className="fs-5 fw-bold text-dark">{totalAssets}</div>
             </div>
           </div>
-          <div className="col-3">
+          <div className="col">
             <div className="p-2 border rounded text-center bg-light">
-              <div className="text-muted small">Total Valuation</div>
-              <div className="fs-5 fw-bold text-dark">{formatCurrency(summary?.totalValuation || 0)}</div>
+              <div className="text-muted small" style={{ fontSize: '0.7rem' }}>Total Stock Units</div>
+              <div className="fs-5 fw-bold text-primary">{totalStockUnits}</div>
             </div>
           </div>
-          <div className="col-3">
+          <div className="col">
             <div className="p-2 border rounded text-center bg-light">
-              <div className="text-muted small">Available in Vault</div>
-              <div className="fs-5 fw-bold text-success">{summary?.statusCounts?.AVAILABLE || 0}</div>
+              <div className="text-muted small" style={{ fontSize: '0.7rem' }}>Available in Vault</div>
+              <div className="fs-5 fw-bold text-success">{totalAvailUnits}</div>
             </div>
           </div>
-          <div className="col-3">
+          <div className="col">
             <div className="p-2 border rounded text-center bg-light">
-              <div className="text-muted small">Active on Loan</div>
-              <div className="fs-5 fw-bold text-warning">{summary?.statusCounts?.BORROWED || 0}</div>
+              <div className="text-muted small" style={{ fontSize: '0.7rem' }}>On Loan / In Use</div>
+              <div className="fs-5 fw-bold text-warning">{totalStockUnits - totalAvailUnits}</div>
+            </div>
+          </div>
+          <div className="col">
+            <div className="p-2 border rounded text-center bg-light">
+              <div className="text-muted small" style={{ fontSize: '0.7rem' }}>Total Stock Valuation</div>
+              <div className="fs-5 fw-bold text-dark">{formatCurrency(totalValuation)}</div>
             </div>
           </div>
         </div>
 
-        {/* Inventory Table */}
-        <table className="table table-bordered mb-4" style={{ fontSize: '9pt' }}>
+        {/* Inventory Audit Table */}
+        <table className="table table-bordered mb-4" style={{ fontSize: '8.5pt' }}>
           <thead className="table-light">
             <tr>
-              <th style={{ width: '35px' }}>#</th>
+              <th style={{ width: '30px' }} className="text-center">#</th>
+              <th style={{ width: '45px' }} className="text-center">Photo</th>
               <th style={{ width: '85px' }}>Asset Tag</th>
-              <th>Item Name & Model</th>
+              <th>Equipment Name & Model</th>
               <th>Category</th>
-              <th>Serial Number</th>
-              <th>Location</th>
-              <th style={{ width: '85px' }}>Status</th>
-              <th className="text-end" style={{ width: '90px' }}>Value</th>
+              <th style={{ width: '90px' }}>Serial Number</th>
+              <th className="text-center" style={{ width: '60px' }}>Stock</th>
+              <th className="text-center" style={{ width: '60px' }}>Condition</th>
+              <th style={{ width: '80px' }}>Status</th>
+              <th className="text-end" style={{ width: '85px' }}>Est. Value</th>
             </tr>
           </thead>
           <tbody>
             {inventoryData?.map((item, idx) => (
               <tr key={item.id}>
-                <td>{idx + 1}</td>
-                <td className="fw-bold">{item.assetTag}</td>
-                <td>
-                  <strong>{item.name}</strong>
-                  <div className="text-muted small">{item.brand} {item.model}</div>
+                <td className="text-center text-muted">{idx + 1}</td>
+                <td className="text-center p-1">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      style={{ width: '30px', height: '30px', objectFit: 'cover', borderRadius: '3px' }}
+                    />
+                  ) : (
+                    <div style={{ width: '30px', height: '30px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#94a3b8' }}>
+                      <i className="bi bi-camera"></i>
+                    </div>
+                  )}
                 </td>
-                <td>{item.category?.name || '—'}</td>
-                <td className="text-nowrap">{item.serialNumber}</td>
-                <td>{item.location || 'Vault'}</td>
+                <td className="fw-bold text-dark font-monospace">{item.assetTag}</td>
                 <td>
-                  <span className="badge bg-light text-dark border">
+                  <strong className="text-dark">{item.name}</strong>
+                  <div className="text-muted" style={{ fontSize: '7.5pt' }}>{item.brand} {item.model}</div>
+                </td>
+                <td>{item.category?.name || 'General'}</td>
+                <td className="font-monospace" style={{ fontSize: '7.5pt' }}>{item.serialNumber || '—'}</td>
+                <td className="text-center font-monospace">
+                  <span className="fw-bold">{item.availableQuantity !== undefined ? item.availableQuantity : 1}</span>
+                  <span className="text-muted"> / {item.quantity || 1}</span>
+                </td>
+                <td className="text-center">
+                  <span className="badge bg-light text-dark border px-1" style={{ fontSize: '7pt' }}>
+                    {item.condition || 'GOOD'}
+                  </span>
+                </td>
+                <td>
+                  <span className="badge bg-light text-dark border px-1" style={{ fontSize: '7pt' }}>
                     {item.status}
                   </span>
                 </td>
-                <td className="text-end fw-semibold">
-                  {formatCurrency(item.purchasePrice)}
+                <td className="text-end font-monospace fw-semibold">
+                  {formatCurrency((item.purchasePrice || 0) * (item.quantity || 1))}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Sign-off */}
-        <div className="signature-block">
-          <div className="flex-fill">
-            <div className="signature-line">
-              <div className="small text-muted">Stock Controller / Audit Lead</div>
+        {/* Audit Sign-off Block */}
+        <div className="signature-block mt-4 pt-3 border-top d-flex justify-content-between align-items-end">
+          <div className="flex-fill pe-4">
+            <div className="small text-muted mb-1">
+              <strong>Audit Verification:</strong> The stock controller and vault inspector certify that the equipment items listed above have been physically inspected, counted, and recorded in compliance with studio equipment management policies.
+            </div>
+            <div className="small text-muted font-monospace" style={{ fontSize: '7pt' }}>
+              Document ID: AUD-{new Date().getFullYear()}-{Math.floor(1000 + Math.random() * 9000)} • Generated via CineVault System
             </div>
           </div>
-          <div className="flex-fill">
-            <div className="signature-line">
-              <div className="small text-muted">Operations Director / Admin Approval</div>
+
+          <div style={{ minWidth: '220px' }}>
+            <div className="border-bottom pb-1 text-center" style={{ minHeight: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+              {inspectorSignature ? (
+                <img
+                  src={inspectorSignature}
+                  alt="Inspector Signature"
+                  style={{ maxHeight: '48px', maxWidth: '160px', objectFit: 'contain' }}
+                />
+              ) : (
+                <span className="fst-italic text-muted small">[Digitally Verified Signature]</span>
+              )}
+            </div>
+            <div className="text-center mt-1">
+              <strong className="text-dark d-block small">{inspectorName}</strong>
+              <span className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{inspectorRole}</span>
+              <span className="text-muted d-block" style={{ fontSize: '0.7rem' }}>Date: {formatDate(new Date())}</span>
             </div>
           </div>
+        </div>
+
+        {/* Page Footer */}
+        <div className="d-flex justify-content-between align-items-center mt-4 pt-2 border-top text-muted" style={{ fontSize: '7.5pt' }}>
+          <span>{settings?.companyName || 'CineVault Media Production Studios'} • Official Inventory Audit</span>
+          <span>Confidential & Proprietary • Page 1 of 1</span>
         </div>
       </div>
     </div>

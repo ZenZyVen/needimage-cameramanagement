@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
+
+const DEFAULT_AVATARS = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80'
+];
 
 const Register = () => {
   const { register } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -11,14 +20,27 @@ const Register = () => {
     email: '',
     password: '',
     department: 'Cinematography',
-    phone: ''
+    phone: '',
+    profilePhoto: DEFAULT_AVATARS[0]
   });
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCustomPhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setFormData(prev => ({ ...prev, profilePhoto: ev.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -50,12 +72,18 @@ const Register = () => {
       className="d-flex align-items-center justify-content-center min-vh-100 p-3"
       style={{ backgroundColor: '#0f172a' }}
     >
-      <div className="card shadow-lg border-0" style={{ maxWidth: '480px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
+      <div className="card shadow-lg border-0" style={{ maxWidth: '500px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
         <div className="card-body p-4 p-sm-5">
           <div className="text-center mb-4">
-            <img src="/logo.svg" alt="CineVault" style={{ width: '48px', height: '48px' }} className="mb-2" />
+            <img
+              src={settings.logoUrl || '/logo.svg'}
+              alt={settings.companyName || 'CineVault'}
+              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+              className="mb-2"
+              onError={(e) => { e.target.src = '/logo.svg'; }}
+            />
             <h4 className="fw-bold text-dark mb-1">Create CineVault Account</h4>
-            <p className="text-muted small">Register for equipment loans and production access</p>
+            <p className="text-muted small">Register for equipment loans and production vault access</p>
           </div>
 
           {errorMsg && (
@@ -66,10 +94,47 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit}>
+            {/* Profile Photo Selection */}
+            <div className="text-center mb-3">
+              <div className="position-relative d-inline-block">
+                <img
+                  src={formData.profilePhoto}
+                  alt="Avatar"
+                  className="rounded-circle border shadow-sm mb-2"
+                  style={{ width: '64px', height: '64px', objectFit: 'cover' }}
+                />
+                <label
+                  className="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-1 cursor-pointer shadow"
+                  style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Upload custom photo"
+                >
+                  <i className="bi bi-camera-fill" style={{ fontSize: '0.65rem' }}></i>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="d-none"
+                    onChange={handleCustomPhoto}
+                  />
+                </label>
+              </div>
+              <div className="d-flex justify-content-center gap-2">
+                {DEFAULT_AVATARS.map((av, idx) => (
+                  <img
+                    key={idx}
+                    src={av}
+                    alt={`Avatar ${idx + 1}`}
+                    className={`rounded-circle cursor-pointer border ${formData.profilePhoto === av ? 'border-primary border-2 shadow-sm' : ''}`}
+                    style={{ width: '28px', height: '28px', objectFit: 'cover' }}
+                    onClick={() => setFormData(prev => ({ ...prev, profilePhoto: av }))}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="mb-3">
-              <label className="form-label">Full Name <span className="required-star">*</span></label>
+              <label className="form-label small fw-semibold text-secondary">Full Name <span className="required-star">*</span></label>
               <div className="input-group">
-                <span className="input-group-text"><i className="bi bi-person"></i></span>
+                <span className="input-group-text bg-white"><i className="bi bi-person text-muted"></i></span>
                 <input
                   type="text"
                   className="form-control"
@@ -83,9 +148,9 @@ const Register = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Work Email Address <span className="required-star">*</span></label>
+              <label className="form-label small fw-semibold text-secondary">Work Email Address <span className="required-star">*</span></label>
               <div className="input-group">
-                <span className="input-group-text"><i className="bi bi-envelope"></i></span>
+                <span className="input-group-text bg-white"><i className="bi bi-envelope text-muted"></i></span>
                 <input
                   type="email"
                   className="form-control"
@@ -100,7 +165,7 @@ const Register = () => {
 
             <div className="row g-3 mb-3">
               <div className="col-6">
-                <label className="form-label">Department</label>
+                <label className="form-label small fw-semibold text-secondary">Department</label>
                 <select
                   className="form-select"
                   name="department"
@@ -113,10 +178,11 @@ const Register = () => {
                   <option value="Sound & Audio">Sound & Audio</option>
                   <option value="Production Unit">Production Unit</option>
                   <option value="Documentary">Documentary</option>
+                  <option value="DIT & Media">DIT & Media</option>
                 </select>
               </div>
               <div className="col-6">
-                <label className="form-label">Phone Number</label>
+                <label className="form-label small fw-semibold text-secondary">Phone Number</label>
                 <input
                   type="text"
                   className="form-control"
@@ -129,9 +195,9 @@ const Register = () => {
             </div>
 
             <div className="mb-4">
-              <label className="form-label">Password (min 6 characters) <span className="required-star">*</span></label>
+              <label className="form-label small fw-semibold text-secondary">Password (min 6 characters) <span className="required-star">*</span></label>
               <div className="input-group">
-                <span className="input-group-text"><i className="bi bi-lock"></i></span>
+                <span className="input-group-text bg-white"><i className="bi bi-lock text-muted"></i></span>
                 <input
                   type="password"
                   className="form-control"

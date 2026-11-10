@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import NotificationDropdown from './NotificationDropdown';
 import QRScannerModal from './QRScannerModal';
 
 const Navbar = ({ onToggleSidebar }) => {
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
+  const { settings } = useSettings();
   const [showScanner, setShowScanner] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -26,6 +28,8 @@ const Navbar = ({ onToggleSidebar }) => {
         return <span className="badge bg-primary" style={{ fontSize: '0.65rem' }}>CREW / USER</span>;
     }
   };
+
+  const userPhoto = user?.profilePhoto || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
 
   return (
     <>
@@ -51,6 +55,12 @@ const Navbar = ({ onToggleSidebar }) => {
             <i className="bi bi-qr-code-scan text-primary"></i>
             <span className="d-none d-md-inline small fw-medium">Quick Barcode & QR Scan</span>
           </button>
+
+          {/* Company branding in center/header */}
+          <span className="d-none d-xl-inline text-muted small border-start ps-3">
+            <i className="bi bi-shield-check text-success me-1"></i>
+            {settings.companyName || 'CineVault Media Production Studios'}
+          </span>
         </div>
 
         {/* Right Nav Utilities */}
@@ -67,9 +77,9 @@ const Navbar = ({ onToggleSidebar }) => {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
             >
               <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                src={userPhoto}
                 alt={user?.name || 'User'}
-                className="rounded-circle"
+                className="rounded-circle border"
                 style={{ width: '28px', height: '28px', objectFit: 'cover' }}
               />
               <div className="text-start d-none d-sm-block">
@@ -84,7 +94,7 @@ const Navbar = ({ onToggleSidebar }) => {
             {userMenuOpen && (
               <div
                 className="card position-absolute end-0 mt-2 shadow-lg py-1"
-                style={{ width: '220px', zIndex: 1060, border: '1px solid #e2e8f0', borderRadius: '10px' }}
+                style={{ width: '240px', zIndex: 1060, border: '1px solid #e2e8f0', borderRadius: '10px' }}
                 onMouseLeave={() => setUserMenuOpen(false)}
               >
                 <div className="px-3 py-2 border-bottom">
@@ -99,8 +109,19 @@ const Navbar = ({ onToggleSidebar }) => {
                   className="dropdown-item px-3 py-2 small d-flex align-items-center gap-2 text-secondary"
                   onClick={() => setUserMenuOpen(false)}
                 >
-                  <i className="bi bi-person"></i> My Profile & Settings
+                  <i className="bi bi-person"></i> My Profile & Signature
                 </Link>
+
+                {isAdmin && (
+                  <Link
+                    to="/settings"
+                    className="dropdown-item px-3 py-2 small d-flex align-items-center gap-2 text-secondary"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <i className="bi bi-gear"></i> System Settings
+                  </Link>
+                )}
+
                 <div className="dropdown-divider my-1"></div>
                 <button
                   type="button"

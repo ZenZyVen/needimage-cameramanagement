@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInventoryReport, getLoansReport, getMaintenanceReport, getCrewWorkReport } from '../services/reportService';
+import { getCategories } from '../services/equipmentService';
 import InventoryReportPrintDocument from '../components/print/InventoryReportPrintDocument';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
@@ -11,34 +12,63 @@ const Reports = () => {
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [maintenanceSummary, setMaintenanceSummary] = useState(null);
   const [crewWorkData, setCrewWorkData] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    getCategories()
+      .then(res => {
+        if (res.data?.data) setCategories(res.data.data);
+      })
+      .catch(err => console.warn('Could not load categories:', err));
+  }, []);
+
+  useEffect(() => {
     loadReport();
-  }, [activeReport]);
+  }, [activeReport, categoryFilter, statusFilter, startDate, endDate]);
 
   const loadReport = async () => {
     try {
       setLoading(true);
       if (activeReport === 'inventory') {
-        const res = await getInventoryReport();
+        const params = {
+          categoryId: categoryFilter !== 'ALL' ? categoryFilter : undefined,
+          status: statusFilter !== 'ALL' ? statusFilter : undefined
+        };
+        const res = await getInventoryReport(params);
         if (res.data?.success) {
           setInventoryData(res.data.data || []);
           setInventorySummary(res.data.summary || {});
         }
       } else if (activeReport === 'loans') {
-        const res = await getLoansReport();
+        const params = {
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
+        };
+        const res = await getLoansReport(params);
         if (res.data?.success) {
           setLoansData(res.data.data || []);
         }
       } else if (activeReport === 'maintenance') {
         const res = await getMaintenanceReport();
         if (res.data?.success) {
-          setMaintenanceData(res.data.data || []);
+          let list = res.data.data || [];
+          if (statusFilter !== 'ALL') {
+            list = list.filter(t => t.status === statusFilter);
+          }
+          setMaintenanceData(list);
           setMaintenanceSummary(res.data.summary || {});
         }
       } else if (activeReport === 'crew-work') {
-        const res = await getCrewWorkReport();
+        const params = {
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
+        };
+        const res = await getCrewWorkReport(params);
         if (res.data?.success) {
           setCrewWorkData(res.data);
         }
@@ -48,6 +78,13 @@ const Reports = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetFilters = () => {
+    setCategoryFilter('ALL');
+    setStatusFilter('ALL');
+    setStartDate('');
+    setEndDate('');
   };
 
   return (
@@ -107,6 +144,119 @@ const Reports = () => {
               </button>
             </li>
           </ul>
+        </div>
+      </div>
+
+      {/* Interactive Report Filters Toolbar (no-print) */}
+      <div className="card mb-4 border-0 shadow-sm no-print">
+        <div className="card-body p-3">
+          <div className="row g-2 align-items-center">
+            {activeReport === 'inventory' && (
+              <>
+                <div className="col-md-5">
+                  <label className="form-label small text-muted mb-1">Equipment Category</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                  >
+                    <option value="ALL">All Categories ({categories.length})</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-5">
+                  <label className="form-label small text-muted mb-1">Stock Status</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="ALL">All Stock Statuses</option>
+                    <option value="AVAILABLE">Available (In Vault)</option>
+                    <option value="BORROWED">Borrowed (On Shoot)</option>
+                    <option value="IN_USE">In Use</option>
+                    <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="OUT_OF_STOCK">Out of Stock</option>
+                  </select>
+                </div>
+                <div className="col-md-2 text-end pt-3">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary w-100"
+                    onClick={resetFilters}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1"></i> Reset
+                  </button>
+                </div>
+              </>
+            )}
+
+            {(activeReport === 'loans' || activeReport === 'crew-work') && (
+              <>
+                <div className="col-md-5">
+                  <label className="form-label small text-muted mb-1">From Date</label>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-5">
+                  <label className="form-label small text-muted mb-1">To Date</label>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-2 text-end pt-3">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary w-100"
+                    onClick={resetFilters}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1"></i> Reset
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeReport === 'maintenance' && (
+              <>
+                <div className="col-md-10">
+                  <label className="form-label small text-muted mb-1">Ticket Progress Status</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="ALL">All Ticket Statuses</option>
+                    <option value="REPORTED">Reported</option>
+                    <option value="IN_INSPECTION">In Inspection</option>
+                    <option value="AWAITING_PARTS">Awaiting Parts</option>
+                    <option value="IN_REPAIR">In Repair</option>
+                    <option value="SENT_TO_VENDOR">Sent to Vendor</option>
+                    <option value="RESOLVED">Resolved / Restored</option>
+                    <option value="WRITTEN_OFF">Decommissioned</option>
+                  </select>
+                </div>
+                <div className="col-md-2 text-end pt-3">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary w-100"
+                    onClick={resetFilters}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1"></i> Reset
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

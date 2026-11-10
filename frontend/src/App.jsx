@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 // Common Layout
 import Navbar from './components/common/Navbar';
@@ -20,6 +21,7 @@ import Reports from './pages/Reports';
 import QRScannerPage from './pages/QRScannerPage';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 
 // Protected App Layout Wrapper
 const AppLayout = () => {
@@ -67,39 +69,42 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+        <SettingsProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            {/* Protected Workspace Routes */}
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/equipment" element={<EquipmentList />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/requests" element={<BorrowRequests />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/qr-tags" element={<QRScannerPage />} />
-              <Route path="/profile" element={<Profile />} />
+              {/* Protected Workspace Routes */}
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/equipment" element={<EquipmentList />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/requests" element={<BorrowRequests />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/qr-tags" element={<QRScannerPage />} />
+                <Route path="/profile" element={<Profile />} />
 
-              {/* Staff Only Routes (Admin & Stock Controller) */}
-              <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_CONTROLLER']} />}>
-                <Route path="/checkin-out" element={<CheckInOut />} />
-                <Route path="/maintenance" element={<Maintenance />} />
+                {/* Staff Only Routes (Admin & Stock Controller) */}
+                <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_CONTROLLER']} />}>
+                  <Route path="/checkin-out" element={<CheckInOut />} />
+                  <Route path="/maintenance" element={<Maintenance />} />
+                </Route>
+
+                {/* Admin Only Routes */}
+                <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
               </Route>
 
-              {/* Admin Only Routes */}
-              <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
-                <Route path="/users" element={<Users />} />
-              </Route>
-            </Route>
-
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </BrowserRouter>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </SettingsProvider>
       </NotificationProvider>
     </AuthProvider>
   );

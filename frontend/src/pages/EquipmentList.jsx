@@ -6,7 +6,10 @@ import {
   getCategories,
   createEquipment,
   updateEquipment,
-  deleteEquipment
+  deleteEquipment,
+  restoreEquipment,
+  adjustStock,
+  getStockDashboard
 } from '../services/equipmentService';
 import { createRequest } from '../services/requestService';
 import { checkoutItems, checkinItems } from '../services/checkInOutService';
@@ -21,12 +24,13 @@ import RequestFormModal from '../components/requests/RequestFormModal';
 import CheckoutModal from '../components/checkinout/CheckoutModal';
 import CheckinModal from '../components/checkinout/CheckinModal';
 import StatusBadge from '../components/common/StatusBadge';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 
 const EquipmentList = () => {
-  const { isStaff, isUser } = useAuth();
+  const { isStaff, isAdmin } = useAuth();
   const [searchParams] = useSearchParams();
 
+  const [activeMainView, setActiveMainView] = useState('catalog'); // 'catalog' or 'stock-dashboard'
   const [equipmentList, setEquipmentList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +39,13 @@ const EquipmentList = () => {
   // Filters
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [activeTabFilter, setActiveTabFilter] = useState('ALL'); // 'ALL', 'AVAILABLE', 'BORROWED', 'UNDER_MAINTENANCE'
+  const [activeTabFilter, setActiveTabFilter] = useState('ALL'); // 'ALL', 'AVAILABLE', 'BORROWED', 'MAINTENANCE', 'OUT_OF_STOCK', 'ARCHIVED'
   const [selectedCondition, setSelectedCondition] = useState('ALL');
+
+  // Stock Dashboard Data
+  const [dashboardTimeframe, setDashboardTimeframe] = useState('monthly');
+  const [stockDashboardData, setStockDashboardData] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
 
   // Modals state
   const [showFormModal, setShowFormModal] = useState(false);
@@ -47,6 +56,14 @@ const EquipmentList = () => {
   const [qrEquipment, setQrEquipment] = useState(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  // Stock Adjustment Modal
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustingEquipment, setAdjustingEquipment] = useState(null);
+  const [adjustmentAmount, setAdjustmentAmount] = useState(1);
+  const [adjustmentReason, setAdjustmentReason] = useState('Restock / New Purchase');
+  const [adjustmentNotes, setAdjustmentNotes] = useState('');
+  const [savingAdjustment, setSavingAdjustment] = useState(false);
 
   // Fast Workflow Modals (Checkout, Checkin, Request)
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -63,8 +80,12 @@ const EquipmentList = () => {
   }, []);
 
   useEffect(() => {
-    loadEquipment();
-  }, [search, selectedCategory, activeTabFilter, selectedCondition]);
+    if (activeMainView === 'catalog') {
+      loadEquipment();
+    } else {
+      loadStockDashboard();
+    }
+  }, [search, selectedCategory, activeTabFilter, selectedCondition, activeMainView, dashboardTimeframe]);
 
   const loadCategories = async () => {
     try {
@@ -80,11 +101,13 @@ const EquipmentList = () => {
   const loadEquipment = async () => {
     try {
       setLoading(true);
+      const isArchived = activeTabFilter === 'ARCHIVED';
       const params = {
         search: search.trim() || undefined,
         categoryId: selectedCategory !== 'ALL' ? selectedCategory : undefined,
-        status: activeTabFilter !== 'ALL' ? activeTabFilter : undefined,
+        status: (activeTabFilter !== 'ALL' && !isArchived) ? activeTabFilter : undefined,
         condition: selectedCondition !== 'ALL' ? selectedCondition : undefined,
+        showDeleted: isArchived ? true : false,
         limit: 100
       };
       const res = await getEquipment(params);
@@ -98,12 +121,39 @@ const EquipmentList = () => {
     }
   };
 
-  // Inventory Stock Calculations
-  const totalCount = equipmentList.length;
-  const availableCount = equipmentList.filter(e => e.status === 'AVAILABLE').length;
-  const borrowedCount = equipmentList.filter(e => e.status === 'BORROWED').length;
-  const maintenanceCount = equipmentList.filter(e => ['UNDER_MAINTENANCE', 'DAMAGED'].includes(e.status)).length;
-  const totalValuation = equipmentList.reduce((sum, item) => sum + (item.purchasePrice || 0), 0);
+  const loadStockDashboard = async () => {
+    try {
+      setLoadingDashboard(true);
+      const res = await getStockDashboard({ timeframe: dashboardTimeframe });
+      if (res.data?.success) {
+        setStockDashboardData(res.data);
+      }
+    } catch (err) {
+      console.warn('Could not load stock dashboard:', err);
+    } finally {
+      setLoadingDashboard(false);
+    }
+  };
+
+  // Stock Metrics Calculations
+  let totalStockUnits = 0;
+  let availableStockUnits = 0;
+  let borrowedStockUnits = 0;
+  let maintenanceStockUnits = 0;
+  let outOfStockCount = 0;
+  let totalValuation = 0;
+
+  equipmentList.forEach(item => {
+    const qty = item.quantity || 1;
+    const avail = item.availableQuantity !== undefined ? item.availableQuantity : (item.status === 'AVAILABLE' ? qty : 0);
+    totalStockUnits += qty;
+    availableStockUnits += avail;
+    totalValuation += (item.purchasePrice || 0) * qty;
+
+    if (avail === 0) outOfStockCount++;
+    if (item.status === 'BORROWED' || item.status === 'IN_USE') borrowedStockUnits += Math.max(1, qty - avail);
+    if (item.status === 'UNDER_MAINTENANCE' || item.status === 'DAMAGED') maintenanceStockUnits += Math.max(1, qty - avail);
+  });
 
   const handleCreateOrUpdate = async (formData) => {
     if (editingEquipment) {
@@ -111,16 +161,16 @@ const EquipmentList = () => {
       setAlertMsg({ type: 'success', text: `Equipment ${formData.assetTag} updated successfully.` });
     } else {
       await createEquipment(formData);
-      setAlertMsg({ type: 'success', text: `Equipment ${formData.assetTag} registered successfully.` });
+      setAlertMsg({ type: 'success', text: `Equipment ${formData.assetTag} registered in stock vault.` });
     }
     loadEquipment();
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this equipment item? This action cannot be undone.')) {
+    if (window.confirm('Archive this equipment? It will be moved to the Archived/Deleted tab and can be restored anytime.')) {
       try {
         await deleteEquipment(id);
-        setAlertMsg({ type: 'success', text: 'Equipment item deleted successfully.' });
+        setAlertMsg({ type: 'info', text: 'Equipment moved to archive.' });
         loadEquipment();
       } catch (err) {
         setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Cannot delete item.' });
@@ -128,537 +178,786 @@ const EquipmentList = () => {
     }
   };
 
-  // Fast Checkout
+  const handleRestore = async (id) => {
+    try {
+      const res = await restoreEquipment(id);
+      if (res.data?.success) {
+        setAlertMsg({ type: 'success', text: res.data.message || 'Equipment restored to active inventory.' });
+        loadEquipment();
+      }
+    } catch (err) {
+      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error restoring equipment.' });
+    }
+  };
+
+  const handleOpenAdjust = (eq) => {
+    setAdjustingEquipment(eq);
+    setAdjustmentAmount(1);
+    setAdjustmentReason('Restock / New Purchase');
+    setAdjustmentNotes('');
+    setShowAdjustModal(true);
+  };
+
+  const handleSaveStockAdjustment = async (e) => {
+    e.preventDefault();
+    if (!adjustingEquipment) return;
+
+    try {
+      setSavingAdjustment(true);
+      await adjustStock(adjustingEquipment.id, {
+        adjustment: adjustmentAmount,
+        reason: adjustmentReason,
+        notes: adjustmentNotes
+      });
+      setShowAdjustModal(false);
+      setAlertMsg({ type: 'success', text: `Stock adjusted for ${adjustingEquipment.assetTag}.` });
+      loadEquipment();
+    } catch (err) {
+      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to adjust stock.' });
+    } finally {
+      setSavingAdjustment(false);
+    }
+  };
+
   const handleFastCheckoutSubmit = async (payload) => {
     await checkoutItems(payload);
-    setAlertMsg({ type: 'success', text: 'Equipment checkout complete! Item marked as Borrowed.' });
+    setShowFastCheckout(false);
+    setAlertMsg({ type: 'success', text: 'Handover complete. Stock automatically updated.' });
     loadEquipment();
   };
 
-  // Fast Check-in
   const handleFastCheckinSubmit = async (payload) => {
     await checkinItems(payload);
-    setAlertMsg({ type: 'success', text: 'Equipment check-in and quality inspection recorded.' });
+    setShowFastCheckin(false);
+    setAlertMsg({ type: 'success', text: 'Return complete. Stock automatically restored.' });
     loadEquipment();
   };
 
-  // User Request
-  const handleSaveRequest = async (payload) => {
+  const handleRequestSubmit = async (payload) => {
     await createRequest(payload);
-    setAlertMsg({ type: 'success', text: 'Borrow request submitted successfully! Awaiting vault approval.' });
-  };
-
-  const handleExportCSV = () => {
-    if (equipmentList.length === 0) return;
-    const headers = ['Asset Tag', 'Name', 'Brand', 'Model', 'Serial Number', 'Category', 'Status', 'Condition', 'Daily Rate', 'Location'];
-    const rows = equipmentList.map(item => [
-      item.assetTag,
-      `"${item.name.replace(/"/g, '""')}"`,
-      item.brand,
-      item.model || '',
-      item.serialNumber,
-      item.category?.name || '',
-      item.status,
-      item.condition,
-      item.dailyRate || 0,
-      `"${(item.location || '').replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `CineVault-Inventory-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setShowRequestModal(false);
+    setAlertMsg({ type: 'success', text: 'Borrow request submitted for review.' });
+    loadEquipment();
   };
 
   return (
     <div>
-      {/* 1. Header & Primary Command Actions */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+      {/* Page Header */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-            <i className="bi bi-box-seam-fill text-primary"></i>
-            Inventory & Vault Control
-          </h4>
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <h4 className="fw-bold text-dark mb-0">Stock & Inventory Management System</h4>
+            <span className="badge bg-slate-900 text-white" style={{ fontSize: '0.72rem' }}>
+              Vault Operations
+            </span>
+          </div>
           <p className="text-muted small mb-0">
-            Real-time equipment tracking, accessories verification, storage locations, and active loans.
+            Real-time stock quantities, media gear catalog, asset tracking, and automatic stock updates.
           </p>
         </div>
 
-        <div className="d-flex gap-2 align-items-center flex-wrap">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setShowScannerModal(true)}
-            title="Scan QR or Barcode"
-          >
-            <i className="bi bi-qr-code-scan text-primary me-1"></i> Scan In/Out
-          </button>
-
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={handleExportCSV}
-            title="Export CSV"
-          >
-            <i className="bi bi-download me-1"></i> Export CSV
-          </button>
-
-          {isStaff && (
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          {/* Main View Switcher */}
+          <div className="btn-group btn-group-sm">
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => setShowCategoryModal(true)}
-              title="Create or Remove Categories"
+              className={`btn ${activeMainView === 'catalog' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setActiveMainView('catalog')}
             >
-              <i className="bi bi-tags me-1 text-primary"></i> Categories
+              <i className="bi bi-grid me-1"></i> Stock Vault
             </button>
-          )}
-
-          {isStaff && (
             <button
               type="button"
-              className="btn btn-sm btn-primary"
-              onClick={() => {
-                setEditingEquipment(null);
-                setShowFormModal(true);
-              }}
+              className={`btn ${activeMainView === 'stock-dashboard' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setActiveMainView('stock-dashboard')}
             >
-              <i className="bi bi-plus-lg me-1"></i> Register New Gear
+              <i className="bi bi-speedometer2 me-1"></i> Stock Dashboard & History
             </button>
-          )}
-        </div>
-      </div>
-
-      {alertMsg.text && (
-        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-3`} role="alert">
-          {alertMsg.text}
-          <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
-        </div>
-      )}
-
-      {/* 2. Top Stock Overview Cards */}
-      <div className="row g-2 mb-3">
-        <div className="col-6 col-lg-3">
-          <div className="inventory-stat-badge">
-            <div className="inventory-stat-icon bg-primary-subtle text-primary">
-              <i className="bi bi-camera"></i>
-            </div>
-            <div>
-              <div className="fs-5 fw-bold text-dark">{totalCount}</div>
-              <div className="small text-muted" style={{ fontSize: '0.74rem' }}>
-                Total Assets ({formatCurrency(totalValuation)})
-              </div>
-            </div>
           </div>
-        </div>
 
-        <div className="col-6 col-lg-3">
-          <div className="inventory-stat-badge">
-            <div className="inventory-stat-icon bg-success-subtle text-success">
-              <i className="bi bi-check-circle"></i>
-            </div>
-            <div>
-              <div className="fs-5 fw-bold text-success">{availableCount}</div>
-              <div className="small text-muted" style={{ fontSize: '0.74rem' }}>In Vault / Available</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-6 col-lg-3">
-          <div className="inventory-stat-badge">
-            <div className="inventory-stat-icon bg-warning-subtle text-warning-emphasis">
-              <i className="bi bi-box-arrow-right"></i>
-            </div>
-            <div>
-              <div className="fs-5 fw-bold text-warning-emphasis">{borrowedCount}</div>
-              <div className="small text-muted" style={{ fontSize: '0.74rem' }}>On Shoot / Borrowed</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-6 col-lg-3">
-          <div className="inventory-stat-badge">
-            <div className="inventory-stat-icon bg-danger-subtle text-danger">
-              <i className="bi bi-tools"></i>
-            </div>
-            <div>
-              <div className="fs-5 fw-bold text-danger">{maintenanceCount}</div>
-              <div className="small text-muted" style={{ fontSize: '0.74rem' }}>Service & Maintenance</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Filter Bar & Stock Status Tabs */}
-      <div className="card mb-3">
-        <div className="card-body p-3">
-          {/* Stock Status Filter Tabs */}
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 mb-3 border-bottom">
-            <div className="btn-group btn-group-sm">
+          {isStaff && (
+            <>
               <button
                 type="button"
-                className={`btn ${activeTabFilter === 'ALL' ? 'btn-dark' : 'btn-outline-secondary'}`}
-                onClick={() => setActiveTabFilter('ALL')}
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                onClick={() => setShowCategoryModal(true)}
               >
-                All Gear ({totalCount})
+                <i className="bi bi-tags"></i>
+                <span className="d-none d-sm-inline">Categories</span>
               </button>
+
               <button
                 type="button"
-                className={`btn ${activeTabFilter === 'AVAILABLE' ? 'btn-success text-white' : 'btn-outline-secondary'}`}
-                onClick={() => setActiveTabFilter('AVAILABLE')}
-              >
-                In Vault ({availableCount})
-              </button>
-              <button
-                type="button"
-                className={`btn ${activeTabFilter === 'BORROWED' ? 'btn-warning text-dark fw-medium' : 'btn-outline-secondary'}`}
-                onClick={() => setActiveTabFilter('BORROWED')}
-              >
-                On Loan ({borrowedCount})
-              </button>
-              <button
-                type="button"
-                className={`btn ${activeTabFilter === 'UNDER_MAINTENANCE' ? 'btn-secondary text-white' : 'btn-outline-secondary'}`}
-                onClick={() => setActiveTabFilter('UNDER_MAINTENANCE')}
-              >
-                In Repair ({maintenanceCount})
-              </button>
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="btn-group btn-group-sm">
-              <button
-                type="button"
-                className={`btn ${viewMode === 'grid' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                onClick={() => setViewMode('grid')}
-                title="Grid View"
-              >
-                <i className="bi bi-grid-fill"></i> Grid
-              </button>
-              <button
-                type="button"
-                className={`btn ${viewMode === 'table' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                onClick={() => setViewMode('table')}
-                title="Table Ledger View"
-              >
-                <i className="bi bi-list-ul"></i> Ledger
-              </button>
-            </div>
-          </div>
-
-          {/* Search & Filters Row */}
-          <div className="row g-2 align-items-center">
-            {/* Search Input */}
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search equipment..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    className="btn btn-outline-secondary"
-                    type="button"
-                    onClick={() => setSearch('')}
-                  >
-                    <i className="bi bi-x-lg"></i>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Condition filter */}
-            <div className="col-sm-6 col-md-3">
-              <select
-                className="form-select"
-                value={selectedCondition}
-                onChange={(e) => setSelectedCondition(e.target.value)}
-              >
-                <option value="ALL">All Physical Conditions</option>
-                <option value="EXCELLENT">Excellent (Like New)</option>
-                <option value="GOOD">Good (Certified Normal)</option>
-                <option value="FAIR">Fair (Minor Scuffs)</option>
-                <option value="POOR">Poor (Needs Inspection)</option>
-              </select>
-            </div>
-
-            {/* Category dropdown */}
-            <div className="col-sm-6 col-md-3">
-              <select
-                className="form-select"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="ALL">All Categories</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Category Quick Pills */}
-          <div className="d-flex align-items-center gap-1 overflow-x-auto pt-3 mt-3 border-top pb-1">
-            <span
-              className={`category-filter-pill ${selectedCategory === 'ALL' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('ALL')}
-            >
-              All Categories
-            </span>
-            {categories.map(cat => (
-              <span
-                key={cat.id}
-                className={`category-filter-pill ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                <i className={`bi ${cat.icon || 'bi-tag'} text-muted`}></i>
-                {cat.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Equipment Cards / Table Display */}
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="text-muted small mt-2">Loading inventory assets...</p>
-        </div>
-      ) : equipmentList.length === 0 ? (
-        <div className="card text-center py-5">
-          <div className="card-body">
-            <i className="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
-            <h6 className="fw-bold text-dark">No inventory items match your filters</h6>
-            <p className="text-muted small mb-3">
-              Try resetting your search query or registering new gear into the vault.
-            </p>
-            {isStaff && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
+                className="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm"
                 onClick={() => {
                   setEditingEquipment(null);
                   setShowFormModal(true);
                 }}
               >
-                <i className="bi bi-plus-lg me-1"></i> Register Equipment
+                <i className="bi bi-plus-lg"></i>
+                <span>Add Equipment</span>
               </button>
-            )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {alertMsg.text && (
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-4`} role="alert">
+          {alertMsg.text}
+          <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
+        </div>
+      )}
+
+      {/* KPI Stat Cards (Stock Overview) */}
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Total Stock Units</div>
+            <div className="fs-4 fw-bold text-dark">{totalStockUnits}</div>
+            <div className="text-muted" style={{ fontSize: '0.72rem' }}>{equipmentList.length} unique models</div>
           </div>
         </div>
-      ) : viewMode === 'grid' ? (
-        <div className="row g-3">
-          {equipmentList.map(item => (
-            <div key={item.id} className="col-sm-6 col-lg-4 col-xl-3">
-              <EquipmentCard
-                equipment={item}
-                canManage={isStaff}
-                onView={(eq) => {
-                  setViewingEquipment(eq);
-                  setShowDetailModal(true);
-                }}
-                onShowQR={(eq) => {
-                  setQrEquipment(eq);
-                  setShowQRModal(true);
-                }}
-                onEdit={(eq) => {
-                  setEditingEquipment(eq);
-                  setShowFormModal(true);
-                }}
-                onDelete={handleDelete}
-                onRequest={isUser ? (eq) => { setRequestItem(eq); setShowRequestModal(true); } : null}
-                onFastCheckout={isStaff ? (eq) => { setFastCheckoutItem(eq); setShowFastCheckout(true); } : null}
-                onFastCheckin={isStaff ? (eq) => { setFastCheckinItem(eq); setShowFastCheckin(true); } : null}
-              />
-            </div>
-          ))}
+
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Available in Vault</div>
+            <div className="fs-4 fw-bold text-success">{availableStockUnits}</div>
+            <div className="text-success small" style={{ fontSize: '0.72rem' }}>Ready for dispatch</div>
+          </div>
         </div>
-      ) : (
-        <div className="card shadow-sm border-0">
-          <div className="table-responsive">
-            <table className="table table-custom align-middle">
-              <thead>
-                <tr>
-                  <th style={{ width: 50 }}>Asset</th>
-                  <th>Equipment Description</th>
-                  <th>Category</th>
-                  <th>Serial #</th>
-                  <th>Vault Location</th>
-                  <th>Condition</th>
-                  <th>Status</th>
-                  <th>Daily Rate</th>
-                  <th className="text-end">Quick Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipmentList.map(item => (
-                  <tr key={item.id}>
-                    <td>
-                      <div
-                        style={{ width: 44, height: 44, borderRadius: 8, overflow: 'hidden', backgroundColor: '#f1f5f9' }}
-                        className="border shadow-xs"
-                      >
-                        <img
-                          src={item.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'}
-                          alt={item.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                          onClick={() => {
-                            setViewingEquipment(item);
-                            setShowDetailModal(true);
-                          }}
-                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center gap-2 mb-1">
-                        <span className="badge bg-slate-900 text-white font-monospace" style={{ fontSize: '0.72rem' }}>
-                          {item.assetTag}
-                        </span>
-                        <div
-                          className="fw-bold text-dark"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            setViewingEquipment(item);
-                            setShowDetailModal(true);
-                          }}
-                        >
-                          {item.name}
-                        </div>
-                      </div>
-                      <div className="small text-muted">{item.brand} {item.model}</div>
-                    </td>
-                    <td>
-                      <span className="badge bg-light text-secondary border">
-                        {item.category?.name || 'Vault Gear'}
+
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Borrowed / In Use</div>
+            <div className="fs-4 fw-bold text-warning">{borrowedStockUnits}</div>
+            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>Active on production</div>
+          </div>
+        </div>
+
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Maintenance / Damaged</div>
+            <div className="fs-4 fw-bold text-danger">{maintenanceStockUnits}</div>
+            <div className="text-danger small" style={{ fontSize: '0.72rem' }}>Quarantined</div>
+          </div>
+        </div>
+
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Out of Stock</div>
+            <div className="fs-4 fw-bold text-secondary">{outOfStockCount}</div>
+            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>0 available</div>
+          </div>
+        </div>
+
+        <div className="col-6 col-md-4 col-xl-2">
+          <div className="card border-0 shadow-sm text-center p-3 h-100">
+            <div className="text-muted small mb-1">Inventory Valuation</div>
+            <div className="fs-5 fw-bold text-dark">{formatCurrency(totalValuation)}</div>
+            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>Total asset cost</div>
+          </div>
+        </div>
+      </div>
+
+      {/* VIEW 1: CATALOG & INVENTORY VAULT */}
+      {activeMainView === 'catalog' && (
+        <>
+          {/* Horizontal Media Production Categories Pills */}
+          <div className="card mb-4 border-0 shadow-sm">
+            <div className="card-body p-2 bg-light rounded">
+              <div className="d-flex align-items-center gap-2 overflow-auto py-1" style={{ whiteSpace: 'nowrap' }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${selectedCategory === 'ALL' ? 'btn-primary' : 'btn-white border text-secondary'} rounded-pill px-3 py-1`}
+                  onClick={() => setSelectedCategory('ALL')}
+                >
+                  <i className="bi bi-grid-fill me-1"></i> All Categories
+                </button>
+
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`btn btn-sm ${selectedCategory === cat.id ? 'btn-primary' : 'btn-white border text-secondary'} rounded-pill px-3 py-1 d-flex align-items-center gap-1`}
+                    onClick={() => setSelectedCategory(cat.id)}
+                  >
+                    <i className={`bi ${cat.icon || 'bi-camera'}`}></i>
+                    <span>{cat.name}</span>
+                    {cat._count?.equipment !== undefined && (
+                      <span className={`badge rounded-pill ms-1 ${selectedCategory === cat.id ? 'bg-white text-primary' : 'bg-light text-muted border'}`} style={{ fontSize: '0.65rem' }}>
+                        {cat._count.equipment}
                       </span>
-                    </td>
-                    <td className="text-nowrap font-monospace small text-secondary">{item.serialNumber}</td>
-                    <td>
-                      <i className="bi bi-geo-alt me-1 text-primary"></i>
-                      <span className="small fw-medium text-dark">{item.location || 'Vault Main'}</span>
-                    </td>
-                    <td>
-                      <span className="badge bg-light text-secondary border" style={{ fontSize: '0.72rem' }}>
-                        {item.condition}
-                      </span>
-                    </td>
-                    <td>
-                      <StatusBadge status={item.status} />
-                    </td>
-                    <td className="fw-semibold text-dark small">{formatCurrency(item.dailyRate)}/day</td>
-                    <td className="text-end">
-                      <div className="btn-group btn-group-sm">
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary"
-                          title="Print / View QR Tag"
-                          onClick={() => {
-                            setQrEquipment(item);
-                            setShowQRModal(true);
-                          }}
-                        >
-                          <i className="bi bi-qr-code"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary"
-                          title="View Specifications & History"
-                          onClick={() => {
-                            setViewingEquipment(item);
-                            setShowDetailModal(true);
-                          }}
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
-
-                        {isStaff && item.status === 'AVAILABLE' && (
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            title="Fast Checkout / Handover"
-                            onClick={() => {
-                              setFastCheckoutItem(item);
-                              setShowFastCheckout(true);
-                            }}
-                          >
-                            <i className="bi bi-box-arrow-right"></i> Handover
-                          </button>
-                        )}
-
-                        {isStaff && item.status === 'BORROWED' && (
-                          <button
-                            type="button"
-                            className="btn btn-success text-white"
-                            title="Fast Return & Quality Check"
-                            onClick={() => {
-                              setFastCheckinItem(item);
-                              setShowFastCheckin(true);
-                            }}
-                          >
-                            <i className="bi bi-box-arrow-in-left"></i> Return
-                          </button>
-                        )}
-
-                        {isStaff && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary"
-                              title="Edit Gear"
-                              onClick={() => {
-                                setEditingEquipment(item);
-                                setShowFormModal(true);
-                              }}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger"
-                              title="Delete Item"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </>
-                        )}
-
-                        {isUser && item.status === 'AVAILABLE' && (
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => {
-                              setRequestItem(item);
-                              setShowRequestModal(true);
-                            }}
-                          >
-                            Request
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                    )}
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="card mb-4 border-0 shadow-sm">
+            <div className="card-body p-3">
+              <div className="row g-2 align-items-center">
+                {/* Search */}
+                <div className="col-md-4">
+                  <div className="input-group input-group-sm">
+                    <span className="input-group-text bg-white border-end-0">
+                      <i className="bi bi-search text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control border-start-0"
+                      placeholder="Search asset tag, gear name, brand, or serial..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Stock Status Pills */}
+                <div className="col-md-5">
+                  <div className="d-flex flex-wrap gap-1">
+                    {[
+                      { key: 'ALL', label: 'All Stock' },
+                      { key: 'AVAILABLE', label: 'Available' },
+                      { key: 'BORROWED', label: 'Borrowed' },
+                      { key: 'UNDER_MAINTENANCE', label: 'Maintenance' },
+                      { key: 'ARCHIVED', label: 'Archived / Deleted' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        className={`btn btn-sm py-1 px-2 ${activeTabFilter === tab.key ? 'btn-dark' : 'btn-outline-secondary'}`}
+                        style={{ fontSize: '0.76rem' }}
+                        onClick={() => setActiveTabFilter(tab.key)}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Condition Filter & View Toggle */}
+                <div className="col-md-3 d-flex justify-content-md-end align-items-center gap-2">
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ width: '130px' }}
+                    value={selectedCondition}
+                    onChange={(e) => setSelectedCondition(e.target.value)}
+                  >
+                    <option value="ALL">All Conditions</option>
+                    <option value="EXCELLENT">Excellent</option>
+                    <option value="GOOD">Good</option>
+                    <option value="FAIR">Fair</option>
+                    <option value="DAMAGED">Damaged</option>
+                  </select>
+
+                  <div className="btn-group btn-group-sm">
+                    <button
+                      type="button"
+                      className={`btn ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid View"
+                    >
+                      <i className="bi bi-grid-3x3-gap"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => setViewMode('table')}
+                      title="Table View"
+                    >
+                      <i className="bi bi-list-ul"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Equipment Cards or Table */}
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+              <p className="text-muted small mt-2">Loading stock vault catalog...</p>
+            </div>
+          ) : equipmentList.length === 0 ? (
+            <div className="card text-center p-5 border-0 shadow-sm">
+              <div className="py-4">
+                <div className="p-3 bg-light rounded-circle d-inline-block text-muted mb-3" style={{ width: 64, height: 64 }}>
+                  <i className="bi bi-box-seam fs-2"></i>
+                </div>
+                <h5 className="fw-bold text-dark">No Equipment Items Found</h5>
+                <p className="text-muted small mb-3">
+                  {activeTabFilter === 'ARCHIVED'
+                    ? 'There are currently no archived or deleted equipment items.'
+                    : 'Try clearing your category or search filters, or register a new equipment item.'}
+                </p>
+                {isStaff && activeTabFilter !== 'ARCHIVED' && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setEditingEquipment(null);
+                      setShowFormModal(true);
+                    }}
+                  >
+                    <i className="bi bi-plus-lg me-1"></i> Register Equipment
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="row g-3">
+              {equipmentList.map((eq) => (
+                <div key={eq.id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
+                  <EquipmentCard
+                    equipment={eq}
+                    canManage={isStaff}
+                    onView={(item) => {
+                      setViewingEquipment(item);
+                      setShowDetailModal(true);
+                    }}
+                    onShowQR={(item) => {
+                      setQrEquipment(item);
+                      setShowQRModal(true);
+                    }}
+                    onEdit={(item) => {
+                      setEditingEquipment(item);
+                      setShowFormModal(true);
+                    }}
+                    onDelete={handleDelete}
+                    onRestore={handleRestore}
+                    onAdjustStock={handleOpenAdjust}
+                    onRequest={(item) => {
+                      setRequestItem(item);
+                      setShowRequestModal(true);
+                    }}
+                    onFastCheckout={(item) => {
+                      setFastCheckoutItem(item);
+                      setShowFastCheckout(true);
+                    }}
+                    onFastCheckin={(item) => {
+                      setFastCheckinItem(item);
+                      setShowFastCheckin(true);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Table View */
+            <div className="card border-0 shadow-sm">
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0" style={{ fontSize: '9pt' }}>
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ width: '85px' }}>Asset Tag</th>
+                      <th>Equipment & Model</th>
+                      <th>Category</th>
+                      <th>Serial Number</th>
+                      <th>Stock Availability</th>
+                      <th>Status</th>
+                      <th>Condition</th>
+                      <th className="text-end">Value</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {equipmentList.map((eq) => {
+                      const q = eq.quantity || 1;
+                      const a = eq.availableQuantity !== undefined ? eq.availableQuantity : (eq.status === 'AVAILABLE' ? q : 0);
+                      const isArchived = Boolean(eq.isDeleted);
+
+                      return (
+                        <tr key={eq.id} className={isArchived ? 'opacity-75 bg-light' : ''}>
+                          <td>
+                            <span className="badge bg-slate-900 text-white font-monospace">
+                              {eq.assetTag}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              {eq.imageUrl && (
+                                <img
+                                  src={eq.imageUrl}
+                                  alt=""
+                                  className="rounded border"
+                                  style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                                />
+                              )}
+                              <div>
+                                <span
+                                  className="fw-bold text-dark cursor-pointer text-truncate d-block"
+                                  style={{ maxWidth: '240px' }}
+                                  onClick={() => {
+                                    setViewingEquipment(eq);
+                                    setShowDetailModal(true);
+                                  }}
+                                >
+                                  {eq.name}
+                                </span>
+                                <small className="text-muted">{eq.brand} {eq.model}</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-secondary border">
+                              {eq.category?.name || 'General'}
+                            </span>
+                          </td>
+                          <td className="font-monospace text-muted">{eq.serialNumber}</td>
+                          <td>
+                            <span className={`badge ${a === 0 ? 'bg-danger-subtle text-danger' : a <= 2 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-success-subtle text-success'} border`}>
+                              {a}/{q} in stock
+                            </span>
+                          </td>
+                          <td>
+                            {isArchived ? (
+                              <span className="badge bg-danger">ARCHIVED</span>
+                            ) : (
+                              <StatusBadge status={eq.status} />
+                            )}
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-secondary border">{eq.condition}</span>
+                          </td>
+                          <td className="text-end fw-semibold text-dark">
+                            {formatCurrency(eq.purchasePrice)}
+                          </td>
+                          <td className="text-end">
+                            <div className="d-flex justify-content-end gap-1">
+                              {isArchived ? (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-success py-1 px-2"
+                                  onClick={() => handleRestore(eq.id)}
+                                >
+                                  <i className="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-light border py-1 px-2"
+                                    title="View Details"
+                                    onClick={() => {
+                                      setViewingEquipment(eq);
+                                      setShowDetailModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-eye"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-light border py-1 px-2"
+                                    title="QR Tag"
+                                    onClick={() => {
+                                      setQrEquipment(eq);
+                                      setShowQRModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-qr-code"></i>
+                                  </button>
+                                  {isStaff && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-primary"
+                                        title="Adjust Stock"
+                                        onClick={() => handleOpenAdjust(eq)}
+                                      >
+                                        <i className="bi bi-plus-slash-minus"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2"
+                                        title="Edit"
+                                        onClick={() => {
+                                          setEditingEquipment(eq);
+                                          setShowFormModal(true);
+                                        }}
+                                      >
+                                        <i className="bi bi-pencil"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 text-danger"
+                                        title="Archive"
+                                        onClick={() => handleDelete(eq.id)}
+                                      >
+                                        <i className="bi bi-archive"></i>
+                                      </button>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* VIEW 2: STOCK DASHBOARD & HISTORY */}
+      {activeMainView === 'stock-dashboard' && (
+        <div>
+          {/* Timeframe Filter Bar */}
+          <div className="card mb-4 border-0 shadow-sm">
+            <div className="card-body p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+              <div>
+                <h6 className="fw-bold text-dark mb-0">Stock Movements & Inventory History</h6>
+                <small className="text-muted">Interactive time-range reports showing additions, loans, returns, and damages.</small>
+              </div>
+
+              <div className="btn-group btn-group-sm">
+                {['daily', 'weekly', 'monthly', 'yearly', 'all'].map((tf) => (
+                  <button
+                    key={tf}
+                    type="button"
+                    className={`btn text-capitalize ${dashboardTimeframe === tf ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    onClick={() => setDashboardTimeframe(tf)}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {loadingDashboard ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+              <p className="text-muted small mt-2">Compiling stock movements & alerts...</p>
+            </div>
+          ) : (
+            <div className="row g-4">
+              {/* Low Stock Alerts */}
+              <div className="col-lg-5">
+                <div className="card border-0 shadow-sm h-100">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <h6 className="fw-bold text-dark mb-0">
+                          <i className="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                          Low-Stock Critical Alerts
+                        </h6>
+                        <small className="text-muted">Items with 2 or fewer units ready in vault</small>
+                      </div>
+                      <span className="badge bg-warning text-dark">
+                        {stockDashboardData?.lowStockAlerts?.length || 0} items
+                      </span>
+                    </div>
+
+                    {!stockDashboardData?.lowStockAlerts?.length ? (
+                      <div className="text-center py-4 text-muted small">
+                        <i className="bi bi-check-circle text-success fs-3 d-block mb-1"></i>
+                        All equipment lines have sufficient stock reserves.
+                      </div>
+                    ) : (
+                      <div className="table-responsive" style={{ maxHeight: '340px' }}>
+                        <table className="table table-sm table-hover align-middle mb-0" style={{ fontSize: '8.5pt' }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Tag</th>
+                              <th>Item Name</th>
+                              <th>Available</th>
+                              <th>Status</th>
+                              <th className="text-end">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stockDashboardData.lowStockAlerts.map((alert) => (
+                              <tr key={alert.id}>
+                                <td className="fw-bold font-monospace">{alert.assetTag}</td>
+                                <td className="text-truncate fw-medium" style={{ maxWidth: '140px' }}>{alert.name}</td>
+                                <td>
+                                  <span className={`badge ${alert.availableQuantity === 0 ? 'bg-danger' : 'bg-warning text-dark'}`}>
+                                    {alert.availableQuantity} left
+                                  </span>
+                                </td>
+                                <td><StatusBadge status={alert.status} /></td>
+                                <td className="text-end">
+                                  {isStaff && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-xs btn-outline-primary py-0 px-2"
+                                      onClick={() => handleOpenAdjust(alert)}
+                                    >
+                                      + Restock
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stock Movement History Log */}
+              <div className="col-lg-7">
+                <div className="card border-0 shadow-sm h-100">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <h6 className="fw-bold text-dark mb-0">
+                          <i className="bi bi-clock-history text-primary me-2"></i>
+                          Stock Movements Log ({dashboardTimeframe})
+                        </h6>
+                        <small className="text-muted">Audit trail of quantities checked out, returned, or quarantined</small>
+                      </div>
+                    </div>
+
+                    {!stockDashboardData?.recentMovements?.length ? (
+                      <div className="text-center py-4 text-muted small">
+                        No recorded movements during this timeframe.
+                      </div>
+                    ) : (
+                      <div className="table-responsive" style={{ maxHeight: '340px' }}>
+                        <table className="table table-sm table-hover align-middle mb-0" style={{ fontSize: '8.5pt' }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Type</th>
+                              <th>Equipment</th>
+                              <th>Change</th>
+                              <th>Stock Balance</th>
+                              <th>By</th>
+                              <th>Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stockDashboardData.recentMovements.map((mov) => (
+                              <tr key={mov.id}>
+                                <td>
+                                  <span className={`badge ${
+                                    mov.type === 'INITIAL_STOCK' || mov.type === 'CHECK_IN' || mov.type === 'RESTORE'
+                                      ? 'bg-success'
+                                      : mov.type === 'CHECK_OUT'
+                                      ? 'bg-warning text-dark'
+                                      : mov.type === 'DAMAGE_REPORT' || mov.type === 'MAINTENANCE'
+                                      ? 'bg-danger'
+                                      : 'bg-secondary'
+                                  }`}>
+                                    {mov.type}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="fw-bold text-dark font-monospace me-1">{mov.assetTag}</span>
+                                  <span className="small text-muted text-truncate d-inline-block" style={{ maxWidth: '160px' }}>
+                                    {mov.equipmentName}
+                                  </span>
+                                </td>
+                                <td className={`fw-bold ${mov.quantityChanged > 0 ? 'text-success' : 'text-danger'}`}>
+                                  {mov.quantityChanged > 0 ? `+${mov.quantityChanged}` : mov.quantityChanged}
+                                </td>
+                                <td>
+                                  <span className="badge bg-light text-dark border">
+                                    {mov.newAvailable}/{mov.newTotal}
+                                  </span>
+                                </td>
+                                <td className="small text-muted">{mov.performedBy || 'Staff'}</td>
+                                <td className="text-nowrap">{formatDateTime(mov.createdAt)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stock Adjustment Modal */}
+      {showAdjustModal && adjustingEquipment && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+                <h6 className="modal-title fw-bold text-white mb-0">
+                  Adjust Stock Quantity: {adjustingEquipment.assetTag}
+                </h6>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAdjustModal(false)}></button>
+              </div>
+              <form onSubmit={handleSaveStockAdjustment}>
+                <div className="modal-body p-4">
+                  <div className="p-3 border rounded bg-light mb-3">
+                    <div className="fw-bold text-dark">{adjustingEquipment.name}</div>
+                    <div className="small text-muted">
+                      Current Stock: <strong className="text-dark">{adjustingEquipment.quantity || 1} total</strong> | Available: <strong className="text-success">{adjustingEquipment.availableQuantity !== undefined ? adjustingEquipment.availableQuantity : 1}</strong>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">
+                      Quantity Adjustment (+ to add stock, - to write off)
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control fw-bold"
+                      value={adjustmentAmount}
+                      onChange={(e) => setAdjustmentAmount(parseInt(e.target.value, 10) || 0)}
+                      required
+                    />
+                    <div className="form-text small">Enter positive number (e.g. 2) to increase inventory, negative (-1) to reduce.</div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">Reason for Adjustment</label>
+                    <select
+                      className="form-select"
+                      value={adjustmentReason}
+                      onChange={(e) => setAdjustmentReason(e.target.value)}
+                    >
+                      <option value="Restock / New Purchase">Restock / New Purchase</option>
+                      <option value="Physical Vault Count Correction">Physical Vault Count Correction</option>
+                      <option value="Damage / Write-Off">Damage / Write-Off</option>
+                      <option value="Loss / Missing Gear">Loss / Missing Gear</option>
+                      <option value="Transferred to Other Studio">Transferred to Other Studio</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-0">
+                    <label className="form-label small fw-semibold text-secondary">Adjustment Notes</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="PO number, audit reference, or explanation..."
+                      value={adjustmentNotes}
+                      onChange={(e) => setAdjustmentNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-footer bg-light px-4 py-2">
+                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowAdjustModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-sm btn-primary" disabled={savingAdjustment}>
+                    {savingAdjustment ? 'Saving...' : 'Apply Stock Change'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 5. Modals */}
-      {/* Equipment Intake Form Modal */}
+      {/* Equipment Form Modal (Create / Edit) */}
       <EquipmentFormModal
         show={showFormModal}
         onHide={() => setShowFormModal(false)}
@@ -667,7 +966,7 @@ const EquipmentList = () => {
         categories={categories}
       />
 
-      {/* Equipment Detailed Inspection Modal */}
+      {/* Equipment Detail Modal */}
       <EquipmentDetailModal
         show={showDetailModal}
         onHide={() => setShowDetailModal(false)}
@@ -679,52 +978,51 @@ const EquipmentList = () => {
         }}
       />
 
-      {/* QR Code Tag Modal */}
+      {/* QR & Barcode Modal */}
       <QRModal
         show={showQRModal}
         onHide={() => setShowQRModal(false)}
         equipment={qrEquipment}
       />
 
-      {/* Live QR Scanner Modal */}
-      <QRScannerModal
-        show={showScannerModal}
-        onHide={() => setShowScannerModal(false)}
-      />
-
-      {/* Fast Checkout Handover Modal */}
-      <CheckoutModal
-        show={showFastCheckout}
-        onHide={() => setShowFastCheckout(false)}
-        equipment={fastCheckoutItem}
-        onSubmit={handleFastCheckoutSubmit}
-      />
-
-      {/* Fast Return Inspection Modal */}
-      <CheckinModal
-        show={showFastCheckin}
-        onHide={() => setShowFastCheckin(false)}
-        equipment={fastCheckinItem}
-        onSubmit={handleFastCheckinSubmit}
-      />
-
-      {/* Categories Management Modal */}
+      {/* Categories Manager Modal */}
       <CategoryModal
         show={showCategoryModal}
         onHide={() => setShowCategoryModal(false)}
-        categories={categories}
-        onCategoriesUpdated={() => {
+        onCategoriesChanged={() => {
           loadCategories();
           loadEquipment();
         }}
       />
 
-      {/* Normal User Request Wizard */}
+      {/* Fast Checkout Modal */}
+      <CheckoutModal
+        show={showFastCheckout}
+        onHide={() => setShowFastCheckout(false)}
+        onSubmit={handleFastCheckoutSubmit}
+        initialItem={fastCheckoutItem}
+      />
+
+      {/* Fast Checkin Modal */}
+      <CheckinModal
+        show={showFastCheckin}
+        onHide={() => setShowFastCheckin(false)}
+        onSubmit={handleFastCheckinSubmit}
+        initialItem={fastCheckinItem}
+      />
+
+      {/* Request Form Modal */}
       <RequestFormModal
         show={showRequestModal}
         onHide={() => setShowRequestModal(false)}
-        onSubmit={handleSaveRequest}
+        onSubmit={handleRequestSubmit}
         initialEquipment={requestItem}
+      />
+
+      {/* Quick QR Scanner Modal */}
+      <QRScannerModal
+        show={showScannerModal}
+        onHide={() => setShowScannerModal(false)}
       />
     </div>
   );

@@ -19,8 +19,10 @@ enum Role {
 enum EquipmentStatus {
   AVAILABLE
   BORROWED
+  IN_USE
   UNDER_MAINTENANCE
   DAMAGED
+  OUT_OF_STOCK
   RETIRED
   RESERVED
 }
@@ -77,8 +79,10 @@ enum MaintenanceStatus {
   IN_INSPECTION
   SENT_TO_VENDOR
   IN_REPAIR
+  AWAITING_PARTS
   RESOLVED
   WRITTEN_OFF
+  DECOMMISSIONED
 }
 
 enum NotificationType {
@@ -97,6 +101,8 @@ model User {
   department       String?
   phone            String?
   avatar           String?
+  signatureUrl     String?
+  profilePhoto     String?
   isActive         Boolean         @default(true)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -133,6 +139,8 @@ model Equipment {
   model          String
   serialNumber   String          @unique
   categoryId     String
+  quantity       Int             @default(1)
+  availableQuantity Int          @default(1)
   status         EquipmentStatus @default(AVAILABLE)
   condition      ConditionStatus @default(EXCELLENT)
   purchaseDate   DateTime?
@@ -144,6 +152,8 @@ model Equipment {
   specifications Json?           // Key-value metadata
   notes          String?
   qrCode         String?         // Base64 QR code data URL
+  isDeleted      Boolean         @default(false)
+  deletedAt      DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -252,6 +262,9 @@ model Maintenance {
   severity        SeverityLevel     @default(MEDIUM)
   status          MaintenanceStatus @default(REPORTED)
   vendor          String?
+  technician      String?
+  damageCategory  String?
+  damageImageUrl  String?
   cost            Float?
   scheduledDate   DateTime?
   completedDate   DateTime?
@@ -293,4 +306,32 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+model StockMovement {
+  id              String   @id @default(uuid())
+  equipmentId     String
+  assetTag        String
+  equipmentName   String
+  type            String   // INITIAL_STOCK, CHECK_OUT, CHECK_IN, DAMAGE_REPORT, MAINTENANCE, ADJUSTMENT, RESTORE, ARCHIVE
+  quantityChanged Int
+  previousAvailable Int
+  newAvailable    Int
+  previousTotal   Int
+  newTotal        Int
+  reference       String?  // e.g. REQ-2026-001 or MNT-2026-001
+  notes           String?
+  performedBy     String?  // User Name
+  createdAt       DateTime @default(now())
+
+  @@map("stock_movements")
+}
+
+model SystemSetting {
+  id        String   @id @default("default")
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }
