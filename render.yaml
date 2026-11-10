@@ -1,35 +1,18 @@
 services:
-  # 1. Backend Web Service on Render
+  # All-in-One Fullstack Web Service for Render (Recommended)
+  # Builds both backend & React frontend, then serves everything on 1 single public URL.
   - type: web
-    name: cinevault-backend-api
+    name: cinevault-camera-management
     runtime: node
     plan: free
-    region: ohio
-    buildCommand: cd backend && npm install && npx prisma generate
-    startCommand: cd backend && npm start
+    region: oregon
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
       - key: DATABASE_URL
-        sync: false # Set in Render dashboard with your Neon connection string
+        sync: false # Paste your Neon PostgreSQL connection string here in Render Dashboard
       - key: JWT_SECRET
         generateValue: true
-      - key: CLIENT_URL
-        sync: false # Set in Render dashboard to your frontend URL
-
-  # 2. Frontend Static Site on Render
-  - type: static
-    name: cinevault-frontend
-    plan: free
-    region: ohio
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        sync: false # Set to your backend API URL, e.g. https://cinevault-backend-api.onrender.com/api

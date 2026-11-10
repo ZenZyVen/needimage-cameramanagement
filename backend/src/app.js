@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { checkDatabaseConnection } = require('./config/db');
@@ -97,10 +98,15 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Optional: In production, serve frontend build if hosted together
-const frontendDist = path.join(__dirname, '../../frontend/dist');
-const fs = require('fs');
-if (fs.existsSync(frontendDist)) {
+// Serve frontend build in production or when dist exists
+const possibleDistPaths = [
+  path.join(__dirname, '../../frontend/dist'),
+  path.join(process.cwd(), 'frontend/dist'),
+  path.join(process.cwd(), '../frontend/dist')
+];
+const frontendDist = possibleDistPaths.find(p => fs.existsSync(p));
+if (frontendDist) {
+  console.log(`📦 Serving frontend static production build from: ${frontendDist}`);
   app.use(express.static(frontendDist));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {

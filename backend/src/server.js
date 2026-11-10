@@ -1,4 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+// Load environment variables from backend/.env or root .env
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config();
 const app = require('./app');
 const { checkDatabaseConnection } = require('./config/db');
 
@@ -10,9 +14,10 @@ async function startServer() {
   // Test Neon PostgreSQL connection on startup
   await checkDatabaseConnection();
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    console.log(`📡 API Health Check: http://localhost:${PORT}/api/health`);
+  const HOST = '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on http://${HOST}:${PORT}`);
+    console.log(`📡 API Health Check: http://${HOST}:${PORT}/api/health`);
   });
 }
 
