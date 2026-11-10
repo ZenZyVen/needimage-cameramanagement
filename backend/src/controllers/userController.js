@@ -40,9 +40,14 @@ exports.getAllUsers = async (req, res, next) => {
       }
     });
 
+    const formatted = users.map(u => ({
+      ...u,
+      roleNote: u.avatar || ''
+    }));
+
     return res.json({
       success: true,
-      data: users
+      data: formatted
     });
   } catch (error) {
     next(error);
@@ -52,7 +57,7 @@ exports.getAllUsers = async (req, res, next) => {
 // 2. Create user (Admin only)
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, email, password, role = 'USER', department, phone } = req.body;
+    const { name, email, password, role = 'USER', department, phone, roleNote } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -82,6 +87,7 @@ exports.createUser = async (req, res, next) => {
         role,
         department: department ? department.trim() : null,
         phone: phone ? phone.trim() : null,
+        avatar: roleNote ? roleNote.trim() : null,
         isActive: true
       },
       select: {
@@ -91,6 +97,7 @@ exports.createUser = async (req, res, next) => {
         role: true,
         department: true,
         phone: true,
+        avatar: true,
         isActive: true,
         createdAt: true
       }
@@ -119,7 +126,7 @@ exports.createUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, role, department, phone, isActive, password } = req.body;
+    const { name, role, department, phone, isActive, password, roleNote } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) {
@@ -140,6 +147,7 @@ exports.updateUser = async (req, res, next) => {
     if (department !== undefined) dataToUpdate.department = department ? department.trim() : null;
     if (phone !== undefined) dataToUpdate.phone = phone ? phone.trim() : null;
     if (isActive !== undefined) dataToUpdate.isActive = Boolean(isActive);
+    if (roleNote !== undefined) dataToUpdate.avatar = roleNote ? roleNote.trim() : null;
 
     if (password && password.trim() !== '') {
       dataToUpdate.password = await bcrypt.hash(password.trim(), 10);
@@ -155,6 +163,7 @@ exports.updateUser = async (req, res, next) => {
         role: true,
         department: true,
         phone: true,
+        avatar: true,
         isActive: true,
         updatedAt: true
       }

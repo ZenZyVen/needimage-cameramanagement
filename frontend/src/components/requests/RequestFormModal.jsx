@@ -207,7 +207,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       type="text"
                       className="form-control"
                       name="purpose"
-                      placeholder="e.g. Commercial location exterior shots, scene 4-9"
+                      placeholder="Purpose of Loan"
                       value={formData.purpose}
                       onChange={handleChange}
                       required
@@ -219,7 +219,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       type="text"
                       className="form-control"
                       name="destination"
-                      placeholder="e.g. Vancouver Soundstage 4 / Outdoor Set"
+                      placeholder="Shooting Location"
                       value={formData.destination}
                       onChange={handleChange}
                     />
@@ -325,7 +325,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                   className="form-control"
                   rows="2"
                   name="notes"
-                  placeholder="e.g. Ensure all V-mount batteries are charged at 100%, include Pelican 1510 flight cases..."
+                  placeholder="Vault handling instructions and preparation notes"
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>

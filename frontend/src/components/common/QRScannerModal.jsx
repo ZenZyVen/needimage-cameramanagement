@@ -184,7 +184,7 @@ const QRScannerModal = ({ show, onHide, onScanSuccess }) => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. CAM-001 or SN-FX3-882194"
+                  placeholder="Asset Tag or Serial Number"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
                   autoFocus

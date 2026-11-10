@@ -246,3 +246,119 @@ exports.deleteProject = async (req, res, next) => {
     next(error);
   }
 };
+
+// Helper to parse notes & crew from a project
+const parseProjectCrewAndNotes = (notes) => {
+  if (!notes) return { general: '', crew: [] };
+  try {
+    const parsed = JSON.parse(notes);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.crew)) {
+      return { general: parsed.general || '', crew: parsed.crew };
+    }
+  } catch (e) {
+    // Plain text notes fallback
+  }
+  return { general: notes, crew: [] };
+};
+
+// 6. Get crew roster for project
+exports.getProjectCrew = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+    const { crew, general } = parseProjectCrewAndNotes(project.notes);
+    return res.json({
+      success: true,
+      projectTitle: project.title,
+      projectCode: project.projectCode,
+      data: crew,
+      generalNotes: general
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 7. Add crew member to project
+exports.addProjectCrewMember = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, role, shootDate, projectType, phone, callTime, notes, status } = req.body;
+
+    if (!name || !role) {
+      return res.status(400).json({ success: false, message: 'Crew member name and role are required.' });
+    }
+
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    const parsed = parseProjectCrewAndNotes(project.notes);
+    const newMember = {
+      id: `crew-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      name: name.trim(),
+      role: role.trim(),
+      shootDate: shootDate ? shootDate.trim() : new Date().toISOString().substring(0, 10),
+      projectType: projectType ? projectType.trim() : (project.title || 'Production Shoot'),
+      phone: phone ? phone.trim() : '',
+      callTime: callTime ? callTime.trim() : '',
+      notes: notes ? notes.trim() : '',
+      status: status || 'CONFIRMED',
+      registeredAt: new Date().toISOString()
+    };
+
+    parsed.crew.push(newMember);
+
+    await prisma.project.update({
+      where: { id },
+      data: {
+        notes: JSON.stringify(parsed)
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Crew member "${newMember.name}" registered for shoot.`,
+      data: newMember
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8. Remove crew member from project
+exports.removeProjectCrewMember = async (req, res, next) => {
+  try {
+    const { id, crewId } = req.params;
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    const parsed = parseProjectCrewAndNotes(project.notes);
+    const initialLen = parsed.crew.length;
+    parsed.crew = parsed.crew.filter(c => c.id !== crewId);
+
+    if (parsed.crew.length === initialLen) {
+      return res.status(404).json({ success: false, message: 'Crew member not found.' });
+    }
+
+    await prisma.project.update({
+      where: { id },
+      data: {
+        notes: JSON.stringify(parsed)
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Crew member removed from project.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -163,7 +163,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, onSubmi
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Full name of crew member picking up gear"
+                      placeholder="Borrower Full Name"
                       value={borrowerName}
                       onChange={(e) => setBorrowerName(e.target.value)}
                       required
@@ -177,7 +177,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, onSubmi
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. David Kim (Confirmed Pickup)"
+                      placeholder="Borrower Signature"
                       value={borrowerSignature}
                       onChange={(e) => setBorrowerSignature(e.target.value)}
                     />
@@ -188,7 +188,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, onSubmi
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Flight case with TSA lock, fully charged batteries..."
+                      placeholder="Handover notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                     />

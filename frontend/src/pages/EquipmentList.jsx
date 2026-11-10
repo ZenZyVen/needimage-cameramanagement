@@ -14,6 +14,7 @@ import { checkoutItems, checkinItems } from '../services/checkInOutService';
 import EquipmentCard from '../components/equipment/EquipmentCard';
 import EquipmentFormModal from '../components/equipment/EquipmentFormModal';
 import EquipmentDetailModal from '../components/equipment/EquipmentDetailModal';
+import CategoryModal from '../components/equipment/CategoryModal';
 import QRModal from '../components/common/QRModal';
 import QRScannerModal from '../components/common/QRScannerModal';
 import RequestFormModal from '../components/requests/RequestFormModal';
@@ -45,6 +46,7 @@ const EquipmentList = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrEquipment, setQrEquipment] = useState(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // Fast Workflow Modals (Checkout, Checkin, Request)
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -208,6 +210,17 @@ const EquipmentList = () => {
           {isStaff && (
             <button
               type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={() => setShowCategoryModal(true)}
+              title="Create or Remove Categories"
+            >
+              <i className="bi bi-tags me-1 text-primary"></i> Categories
+            </button>
+          )}
+
+          {isStaff && (
+            <button
+              type="button"
               className="btn btn-sm btn-primary"
               onClick={() => {
                 setEditingEquipment(null);
@@ -348,7 +361,7 @@ const EquipmentList = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search by asset tag (e.g. CAM-001), model, brand, serial number..."
+                  placeholder="Search equipment..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -693,6 +706,17 @@ const EquipmentList = () => {
         onHide={() => setShowFastCheckin(false)}
         equipment={fastCheckinItem}
         onSubmit={handleFastCheckinSubmit}
+      />
+
+      {/* Categories Management Modal */}
+      <CategoryModal
+        show={showCategoryModal}
+        onHide={() => setShowCategoryModal(false)}
+        categories={categories}
+        onCategoriesUpdated={() => {
+          loadCategories();
+          loadEquipment();
+        }}
       />
 
       {/* Normal User Request Wizard */}

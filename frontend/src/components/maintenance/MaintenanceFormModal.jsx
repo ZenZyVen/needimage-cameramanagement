@@ -149,7 +149,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control"
                       name="issueTitle"
-                      placeholder="e.g. Scratched Front Element / Loose 12G-SDI Output Port"
+                      placeholder="Issue Title"
                       value={formData.issueTitle}
                       onChange={handleChange}
                       required
@@ -184,7 +184,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                   className="form-control"
                   rows="3"
                   name="description"
-                  placeholder="Detail the failure condition, impact drop specifics, optical test results, or crew handover report..."
+                  placeholder="Describe observed malfunction and physical condition"
                   value={formData.description}
                   onChange={handleChange}
                   required
@@ -203,7 +203,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control"
                       name="vendor"
-                      placeholder="e.g. Sony Factory Pro Support / In-House Lab"
+                      placeholder="Service Center or Vendor"
                       value={formData.vendor}
                       onChange={handleChange}
                     />
@@ -226,7 +226,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control"
                       name="notes"
-                      placeholder="e.g. RMA #98214, shipped via FedEx Overnight with insurance"
+                      placeholder="Tracking and RMA notes"
                       value={formData.notes}
                       onChange={handleChange}
                     />

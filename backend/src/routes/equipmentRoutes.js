@@ -15,7 +15,8 @@ router.get('/:id', authenticate, equipmentController.getEquipmentById);
 router.post('/', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.createEquipment);
 router.put('/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.updateEquipment);
 router.delete('/:id', authenticate, requireRole('ADMIN'), equipmentController.deleteEquipment);
-router.post('/categories', authenticate, requireRole('ADMIN'), equipmentController.createCategory);
+router.post('/categories', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.createCategory);
+router.delete('/categories/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.deleteCategory);
 router.post('/upload', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), upload.single('image'), equipmentController.uploadImage);
 
 module.exports = router;

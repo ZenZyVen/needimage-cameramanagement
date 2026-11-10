@@ -176,7 +176,7 @@ const RequestReviewModal = ({ show, onHide, request, onApprove, onReject }) => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. Flight cases staged at Vault Locker A-02 for collection by 8:30 AM."
+                    placeholder="Pickup instructions"
                     value={approvalNotes}
                     onChange={(e) => setApprovalNotes(e.target.value)}
                   />
@@ -189,7 +189,7 @@ const RequestReviewModal = ({ show, onHide, request, onApprove, onReject }) => {
                   <input
                     type="text"
                     className="form-control border-danger"
-                    placeholder="e.g. Primary camera body is committed to maintenance/priority feature shoot."
+                    placeholder="Reason for rejection"
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                     required

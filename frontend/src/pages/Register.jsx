@@ -74,7 +74,7 @@ const Register = () => {
                   type="text"
                   className="form-control"
                   name="name"
-                  placeholder="e.g. Alex Rivera"
+                  placeholder="Full Name"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -90,7 +90,7 @@ const Register = () => {
                   type="email"
                   className="form-control"
                   name="email"
-                  placeholder="alex@cameragear.com"
+                  placeholder="Email Address"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -121,7 +121,7 @@ const Register = () => {
                   type="text"
                   className="form-control"
                   name="phone"
-                  placeholder="+1 555-019-2831"
+                  placeholder="Phone Number"
                   value={formData.phone}
                   onChange={handleChange}
                 />

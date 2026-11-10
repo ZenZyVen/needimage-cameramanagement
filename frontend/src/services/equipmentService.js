@@ -9,6 +9,7 @@ export const deleteEquipment = (id) => api.delete(`/equipment/${id}`);
 
 export const getCategories = () => api.get('/equipment/categories');
 export const createCategory = (data) => api.post('/equipment/categories', data);
+export const deleteCategory = (id) => api.delete(`/equipment/categories/${id}`);
 
 export const uploadEquipmentImage = (file) => {
   const formData = new FormData();

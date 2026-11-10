@@ -9,6 +9,7 @@ import {
 } from '../services/projectService';
 import ProjectCard from '../components/projects/ProjectCard';
 import ProjectFormModal from '../components/projects/ProjectFormModal';
+import ProjectCrewModal from '../components/projects/ProjectCrewModal';
 import StatusBadge from '../components/common/StatusBadge';
 import { formatDate } from '../utils/formatters';
 
@@ -25,6 +26,8 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [crewProject, setCrewProject] = useState(null);
+  const [showCrewModal, setShowCrewModal] = useState(false);
 
   const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
 
@@ -203,6 +206,10 @@ const Projects = () => {
                   setShowFormModal(true);
                 }}
                 onDelete={handleDelete}
+                onCrew={(proj) => {
+                  setCrewProject(proj);
+                  setShowCrewModal(true);
+                }}
               />
             </div>
           ))}
@@ -215,6 +222,13 @@ const Projects = () => {
         onHide={() => setShowFormModal(false)}
         onSubmit={handleCreateOrUpdate}
         project={editingProject}
+      />
+
+      {/* Project Crew Roster & Field Registration Modal */}
+      <ProjectCrewModal
+        show={showCrewModal}
+        onHide={() => setShowCrewModal(false)}
+        project={crewProject}
       />
 
       {/* Project Detail Modal */}

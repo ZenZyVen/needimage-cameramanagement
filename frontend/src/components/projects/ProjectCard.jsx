@@ -2,7 +2,7 @@ import React from 'react';
 import StatusBadge from '../common/StatusBadge';
 import { formatDate } from '../../utils/formatters';
 
-const ProjectCard = ({ project, onView, onEdit, onDelete, canManage }) => {
+const ProjectCard = ({ project, onView, onEdit, onDelete, onCrew, canManage }) => {
   return (
     <div className="card h-100">
       <div className="card-body p-3 d-flex flex-column justify-content-between">
@@ -60,7 +60,16 @@ const ProjectCard = ({ project, onView, onEdit, onDelete, canManage }) => {
             style={{ fontSize: '0.75rem' }}
             onClick={() => onView(project)}
           >
-            View Project Gear
+            Gear
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm flex-fill"
+            style={{ fontSize: '0.75rem' }}
+            onClick={() => onCrew(project)}
+            title="Crew Roster & Field Registration"
+          >
+            <i className="bi bi-people me-1"></i> Crew
           </button>
           {canManage && (
             <>

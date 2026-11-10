@@ -529,6 +529,42 @@ exports.createCategory = async (req, res, next) => {
   }
 };
 
+// 8b. Delete category (Admin / Stock Controller)
+exports.deleteCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.category.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Category not found.' });
+    }
+
+    const count = await prisma.equipment.count({
+      where: { categoryId: id }
+    });
+
+    if (count > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete category "${existing.name}". It contains ${count} equipment item(s). Reassign them first.`
+      });
+    }
+
+    await prisma.category.delete({
+      where: { id }
+    });
+
+    return res.json({
+      success: true,
+      message: `Category "${existing.name}" deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // 9. Upload equipment image
 exports.uploadImage = async (req, res, next) => {
   try {

@@ -12,7 +12,7 @@ const users = [
     role: 'ADMIN',
     department: 'Production Operations',
     phone: '+1 555-019-2831',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    avatar: 'Studio Administrator & Vault Authority',
     isActive: true,
     createdAt: new Date('2026-01-01')
   },
@@ -24,7 +24,7 @@ const users = [
     role: 'STOCK_CONTROLLER',
     department: 'Gear Vault & Logistics',
     phone: '+1 555-019-4822',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    avatar: 'Lead Equipment Custodian - Quality Assurance',
     isActive: true,
     createdAt: new Date('2026-01-02')
   },
@@ -36,7 +36,7 @@ const users = [
     role: 'USER',
     department: 'Cinematography Unit',
     phone: '+1 555-019-7711',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    avatar: 'Director of Photography - Tier 1 Camera Packages',
     isActive: true,
     createdAt: new Date('2026-01-03')
   },
@@ -48,7 +48,7 @@ const users = [
     role: 'USER',
     department: 'Documentary Division',
     phone: '+1 555-019-9944',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    avatar: 'Documentary Camera Operator - Field Approved',
     isActive: true,
     createdAt: new Date('2026-01-04')
   }
@@ -500,6 +500,13 @@ const mockStore = {
       const newCat = { id: `cat-${Date.now()}`, ...data };
       categories.push(newCat);
       return newCat;
+    },
+    delete: async ({ where }) => {
+      const idx = categories.findIndex(c => c.id === where.id);
+      if (idx !== -1) {
+        return categories.splice(idx, 1)[0];
+      }
+      return null;
     }
   },
 

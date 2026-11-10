@@ -121,7 +121,7 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
                 <textarea
                   className="form-control"
                   rows="3"
-                  placeholder="e.g. Replaced SDI BNC port, recalibrated sensor, verified flange focal distance, firmware updated..."
+                  placeholder="Resolution and technical service notes"
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
                   required

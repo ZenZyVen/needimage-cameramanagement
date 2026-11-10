@@ -119,7 +119,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control"
                       name="title"
-                      placeholder="e.g. EcoDrive Brand Commercial - 2026 Campaign"
+                      placeholder="Project Title"
                       value={formData.title}
                       onChange={handleChange}
                       required
@@ -145,7 +145,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control"
                       name="projectCode"
-                      placeholder="e.g. PRJ-2026-001 (auto if empty)"
+                      placeholder="Project Code"
                       value={formData.projectCode}
                       onChange={handleChange}
                     />
@@ -156,7 +156,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control"
                       name="client"
-                      placeholder="e.g. Apex Automotive / HBO"
+                      placeholder="Client or Production Company"
                       value={formData.client}
                       onChange={handleChange}
                     />
@@ -176,7 +176,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control"
                       name="director"
-                      placeholder="e.g. Alex Rivera, SOC"
+                      placeholder="Director or Lead DP"
                       value={formData.director}
                       onChange={handleChange}
                     />
@@ -187,7 +187,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control"
                       name="location"
-                      placeholder="e.g. Stage 3 & Pacific Coast Highway"
+                      placeholder="Shooting Location"
                       value={formData.location}
                       onChange={handleChange}
                     />
@@ -239,7 +239,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                   className="form-control"
                   rows="3"
                   name="notes"
-                  placeholder="Special lens package requirements, drone permits, high-speed camera gear..."
+                  placeholder="Production notes and gear requirements"
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>

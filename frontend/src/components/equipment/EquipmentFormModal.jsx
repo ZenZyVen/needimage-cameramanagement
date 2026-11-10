@@ -175,7 +175,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="assetTag"
-                      placeholder="e.g. CAM-005"
+                      placeholder="Asset Tag"
                       value={formData.assetTag}
                       onChange={handleChange}
                       required
@@ -190,7 +190,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="serialNumber"
-                      placeholder="e.g. SN-882194"
+                      placeholder="Serial Number"
                       value={formData.serialNumber}
                       onChange={handleChange}
                       required
@@ -223,7 +223,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="name"
-                      placeholder="e.g. Sony FX3 Full-Frame Cinema Camera"
+                      placeholder="Item Name"
                       value={formData.name}
                       onChange={handleChange}
                       required
@@ -238,7 +238,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="brand"
-                      placeholder="e.g. Sony"
+                      placeholder="Brand"
                       value={formData.brand}
                       onChange={handleChange}
                       required
@@ -251,7 +251,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="model"
-                      placeholder="e.g. ILME-FX3"
+                      placeholder="Model"
                       value={formData.model}
                       onChange={handleChange}
                     />
@@ -304,7 +304,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="text"
                       className="form-control"
                       name="location"
-                      placeholder="e.g. Shelf A-02 / Grip Bay"
+                      placeholder="Storage Location"
                       value={formData.location}
                       onChange={handleChange}
                     />
@@ -365,7 +365,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Type accessory name (e.g. 2x Sony NP-FZ100 Batteries)..."
+                    placeholder="Add accessory item"
                     value={newAccessory}
                     onChange={(e) => setNewAccessory(e.target.value)}
                     onKeyDown={(e) => {
@@ -437,7 +437,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       type="url"
                       className="form-control"
                       name="imageUrl"
-                      placeholder="https://... or upload photo on right"
+                      placeholder="Image URL"
                       value={formData.imageUrl}
                       onChange={handleChange}
                     />
@@ -461,7 +461,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                       className="form-control"
                       rows="2"
                       name="notes"
-                      placeholder="Firmware versions, calibrated accessories, sensor inspection date..."
+                      placeholder="Technical specifications and inspection notes"
                       value={formData.notes}
                       onChange={handleChange}
                     ></textarea>

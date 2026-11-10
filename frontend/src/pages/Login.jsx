@@ -77,7 +77,7 @@ const Login = () => {
                 <input
                   type="email"
                   className="form-control"
-                  placeholder="name@cameragear.com"
+                  placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

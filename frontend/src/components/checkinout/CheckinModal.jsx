@@ -154,7 +154,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
                             <input
                               type="text"
                               className="form-control form-control-sm"
-                              placeholder="Cleaned, batteries recharged, all cables present..."
+                              placeholder="Inspection notes"
                               value={insp.notes || ''}
                               onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
                             />
@@ -179,7 +179,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
                             <input
                               type="text"
                               className="form-control form-control-sm mt-2"
-                              placeholder="List missing parts (e.g. Lens cap, HDMI clamp, AC adapter)..."
+                              placeholder="List missing parts separated by comma"
                               value={insp.missingAccessoriesText || ''}
                               onChange={(e) => updateItemField(item.id, 'missingAccessoriesText', e.target.value)}
                             />
@@ -204,7 +204,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
                             <textarea
                               className="form-control form-control-sm mt-2 border-danger"
                               rows="2"
-                              placeholder="Detail the damage (e.g. Scratched front glass, loose BNC connector, dropped body)..."
+                              placeholder="Damage description and symptoms"
                               value={insp.damageNotes || ''}
                               onChange={(e) => updateItemField(item.id, 'damageNotes', e.target.value)}
                               required
@@ -239,7 +239,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. MV (Marcus Vance)"
+                      placeholder="Inspector Signature"
                       value={staffSignature}
                       onChange={(e) => setStaffSignature(e.target.value)}
                     />

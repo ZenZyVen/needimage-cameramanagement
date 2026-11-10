@@ -104,3 +104,163 @@ exports.getMaintenanceReport = async (req, res, next) => {
     next(error);
   }
 };
+
+// 4. Crew Field Work & Performance Report ("Who Went Out For Work")
+exports.getCrewWorkReport = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const [requests, projects] = await Promise.all([
+      prisma.borrowRequest.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true, department: true } },
+          project: { select: { id: true, title: true, client: true, projectCode: true } },
+          items: {
+            include: {
+              equipment: {
+                select: {
+                  id: true,
+                  assetTag: true,
+                  name: true,
+                  brand: true,
+                  purchasePrice: true,
+                  dailyRate: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.project.findMany({
+        orderBy: { startDate: 'desc' },
+        select: { id: true, title: true, projectCode: true, startDate: true, endDate: true, notes: true }
+      })
+    ]);
+
+    // 1. Crew Performance / Best Workers Ranking
+    const crewStats = {};
+
+    requests.forEach(reqItem => {
+      const u = reqItem.user;
+      if (!u) return;
+
+      if (!crewStats[u.id]) {
+        crewStats[u.id] = {
+          userId: u.id,
+          name: u.name,
+          email: u.email,
+          department: u.department || 'Production',
+          totalShoots: 0,
+          totalGearItems: 0,
+          totalDaysInField: 0,
+          totalAssetValue: 0,
+          completedReturns: 0,
+          activeLoans: 0
+        };
+      }
+
+      crewStats[u.id].totalShoots += 1;
+      const itemCount = reqItem.items?.length || 0;
+      crewStats[u.id].totalGearItems += itemCount;
+
+      const s = new Date(reqItem.startDate);
+      const e = new Date(reqItem.endDate);
+      const days = Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
+      crewStats[u.id].totalDaysInField += days;
+
+      const reqValue = reqItem.items?.reduce((sum, i) => sum + (i.equipment?.purchasePrice || 0), 0) || 0;
+      crewStats[u.id].totalAssetValue += reqValue;
+
+      if (reqItem.status === 'RETURNED') {
+        crewStats[u.id].completedReturns += 1;
+      } else if (['APPROVED', 'CHECKED_OUT'].includes(reqItem.status)) {
+        crewStats[u.id].activeLoans += 1;
+      }
+    });
+
+    const crewLeaderboard = Object.values(crewStats).sort((a, b) => {
+      // Sort by total days in field first, then total shoots
+      if (b.totalDaysInField !== a.totalDaysInField) return b.totalDaysInField - a.totalDaysInField;
+      return b.totalShoots - a.totalShoots;
+    });
+
+    // Assign ranking badges
+    crewLeaderboard.forEach((crew, idx) => {
+      if (idx === 0) crew.rankBadge = 'Top Field Lead';
+      else if (idx === 1) crew.rankBadge = 'Most Active Crew';
+      else if (idx === 2) crew.rankBadge = 'Reliable Specialist';
+      else crew.rankBadge = 'Active Crew';
+    });
+
+    // 2. Work by Day (Timeline breakdown)
+    const dayMap = {};
+    requests.forEach(reqItem => {
+      const dateKey = new Date(reqItem.startDate).toISOString().substring(0, 10);
+      if (!dayMap[dateKey]) {
+        dayMap[dateKey] = {
+          date: dateKey,
+          shootsCount: 0,
+          itemsDeployed: 0,
+          crewMembers: new Set(),
+          projectTitles: new Set()
+        };
+      }
+      dayMap[dateKey].shootsCount += 1;
+      dayMap[dateKey].itemsDeployed += (reqItem.items?.length || 0);
+      if (reqItem.user?.name) dayMap[dateKey].crewMembers.add(reqItem.user.name);
+      if (reqItem.project?.title) dayMap[dateKey].projectTitles.add(reqItem.project.title);
+    });
+
+    const workByDay = Object.values(dayMap)
+      .map(d => ({
+        date: d.date,
+        shootsCount: d.shootsCount,
+        itemsDeployed: d.itemsDeployed,
+        crewMembers: Array.from(d.crewMembers),
+        projects: Array.from(d.projectTitles)
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    // 3. Most Deployed Gear
+    const gearMap = {};
+    requests.forEach(reqItem => {
+      reqItem.items?.forEach(i => {
+        if (!i.equipment) return;
+        const eq = i.equipment;
+        if (!gearMap[eq.id]) {
+          gearMap[eq.id] = {
+            id: eq.id,
+            assetTag: eq.assetTag,
+            name: eq.name,
+            brand: eq.brand,
+            timesDeployed: 0,
+            dailyRate: eq.dailyRate || 0
+          };
+        }
+        gearMap[eq.id].timesDeployed += 1;
+      });
+    });
+
+    const topGear = Object.values(gearMap)
+      .sort((a, b) => b.timesDeployed - a.timesDeployed)
+      .slice(0, 10);
+
+    const totalDaysLogged = crewLeaderboard.reduce((sum, c) => sum + c.totalDaysInField, 0);
+
+    return res.json({
+      success: true,
+      summary: {
+        totalCrewMembers: crewLeaderboard.length,
+        totalShootsLogged: requests.length,
+        totalDaysLogged,
+        topPerformer: crewLeaderboard[0]?.name || 'N/A'
+      },
+      crewLeaderboard,
+      workByDay,
+      topGear
+    });
+  } catch (error) {
+    next(error);
+  }
+};

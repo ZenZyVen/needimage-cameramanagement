@@ -10,4 +10,9 @@ router.post('/', authenticate, projectController.createProject); // all authenti
 router.put('/:id', authenticate, projectController.updateProject);
 router.delete('/:id', authenticate, requireRole('ADMIN'), projectController.deleteProject);
 
+// Project Crew Registration routes
+router.get('/:id/crew', authenticate, projectController.getProjectCrew);
+router.post('/:id/crew', authenticate, projectController.addProjectCrewMember);
+router.delete('/:id/crew/:crewId', authenticate, projectController.removeProjectCrewMember);
+
 module.exports = router;
