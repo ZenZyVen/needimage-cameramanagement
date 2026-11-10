@@ -1,0 +1,124 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
+import QRScannerModal from './QRScannerModal';
+
+const Navbar = ({ onToggleSidebar }) => {
+  const { user, logout } = useAuth();
+  const [showScanner, setShowScanner] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const getRoleBadge = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return <span className="badge bg-dark" style={{ fontSize: '0.65rem' }}>ADMIN</span>;
+      case 'STOCK_CONTROLLER':
+        return <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>STOCK CONTROLLER</span>;
+      case 'USER':
+      default:
+        return <span className="badge bg-primary" style={{ fontSize: '0.65rem' }}>USER</span>;
+    }
+  };
+
+  return (
+    <>
+      <header className="top-navbar no-print">
+        <div className="d-flex align-items-center gap-3">
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            className="btn btn-sm btn-light border d-lg-none"
+            onClick={onToggleSidebar}
+            aria-label="Toggle Navigation"
+          >
+            <i className="bi bi-list fs-5"></i>
+          </button>
+
+          {/* Quick Scanner Shortcut */}
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+            onClick={() => setShowScanner(true)}
+            title="Scan Equipment Barcode / QR Code"
+          >
+            <i className="bi bi-qr-code-scan text-primary"></i>
+            <span className="d-none d-md-inline small fw-medium">Quick Scan</span>
+          </button>
+        </div>
+
+        {/* Right Nav Utilities */}
+        <div className="d-flex align-items-center gap-3">
+          {/* Notifications */}
+          <NotificationDropdown />
+
+          {/* User Profile Menu */}
+          <div className="position-relative">
+            <button
+              type="button"
+              className="btn btn-light border d-flex align-items-center gap-2 px-2 py-1"
+              style={{ borderRadius: '8px' }}
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+            >
+              <img
+                src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                alt={user?.name || 'User'}
+                className="rounded-circle"
+                style={{ width: '28px', height: '28px', objectFit: 'cover' }}
+              />
+              <div className="text-start d-none d-sm-block">
+                <div className="fw-semibold text-dark small leading-tight" style={{ fontSize: '0.82rem' }}>
+                  {user?.name || 'User'}
+                </div>
+                <div>{getRoleBadge(user?.role)}</div>
+              </div>
+              <i className="bi bi-chevron-down text-muted small ms-1" style={{ fontSize: '0.7rem' }}></i>
+            </button>
+
+            {userMenuOpen && (
+              <div
+                className="card position-absolute end-0 mt-2 shadow-sm py-1"
+                style={{ width: '200px', zIndex: 1060, border: '1px solid #e2e8f0' }}
+                onMouseLeave={() => setUserMenuOpen(false)}
+              >
+                <div className="px-3 py-2 border-bottom">
+                  <div className="fw-bold small text-dark">{user?.name}</div>
+                  <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>{user?.email}</div>
+                </div>
+                <Link
+                  to="/profile"
+                  className="dropdown-item px-3 py-2 small d-flex align-items-center gap-2 text-secondary"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <i className="bi bi-person"></i> My Profile
+                </Link>
+                <div className="dropdown-divider my-1"></div>
+                <button
+                  type="button"
+                  className="dropdown-item px-3 py-2 small d-flex align-items-center gap-2 text-danger"
+                  onClick={handleLogout}
+                >
+                  <i className="bi bi-box-arrow-right"></i> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Global Quick QR Scanner Modal */}
+      <QRScannerModal
+        show={showScanner}
+        onHide={() => setShowScanner(false)}
+      />
+    </>
+  );
+};
+
+export default Navbar;

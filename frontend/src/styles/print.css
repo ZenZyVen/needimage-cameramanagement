@@ -1,0 +1,154 @@
+/* Print Stylesheet for Professional A4 Forms & Reports */
+@page {
+  size: A4 portrait;
+  margin: 15mm 15mm 15mm 15mm;
+}
+
+@media print {
+  /* Hide interactive web UI components */
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  .sidebar,
+  .top-navbar,
+  .btn,
+  .no-print,
+  .modal-backdrop,
+  .toast-container,
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background-color: #ffffff !important;
+  }
+
+  .page-body {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Printable container display */
+  .printable-document {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    page-break-after: always;
+  }
+
+  .card {
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #333333 !important;
+    padding: 6px 8px !important;
+    font-size: 9.5pt !important;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Avoid page breaks inside table rows */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Asset Tag Stickers Grid */
+  .asset-tags-sheet {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8mm !important;
+    page-break-inside: avoid;
+  }
+
+  .asset-tag-label {
+    border: 1.5px solid #000000 !important;
+    padding: 3mm !important;
+    text-align: center !important;
+    page-break-inside: avoid;
+    border-radius: 4px !important;
+  }
+}
+
+/* Screen display for printable document preview */
+.printable-document {
+  background-color: #ffffff;
+  color: #0f172a;
+  padding: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  max-width: 820px;
+  margin: 0 auto 2rem auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.document-header {
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.document-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.document-meta-table td {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.signature-block {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.signature-line {
+  border-top: 1px solid #475569;
+  padding-top: 0.5rem;
+  margin-top: 3.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.terms-box {
+  margin-top: 2rem;
+  padding: 0.85rem 1rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.45;
+}

@@ -1,0 +1,24 @@
+{
+  "name": "camera-equipment-system-management",
+  "version": "1.0.0",
+  "description": "Production-grade Camera Equipment Management System (React, Vite, Node, Express, PostgreSQL, Prisma, Bootstrap 5)",
+  "scripts": {
+    "install:all": "cmd /c \"cd backend && npm install\" && cmd /c \"cd frontend && npm install\"",
+    "dev:backend": "cmd /c \"cd backend && npm run dev\"",
+    "dev:frontend": "cmd /c \"cd frontend && npm run dev\"",
+    "build:frontend": "cmd /c \"cd frontend && npm run build\"",
+    "build:backend": "cmd /c \"cd backend && npx prisma generate\"",
+    "build": "cmd /c \"cd backend && npm install && npx prisma generate\" && cmd /c \"cd frontend && npm install && npm run build\"",
+    "start": "cmd /c \"cd backend && npm start\""
+  },
+  "keywords": [
+    "camera-equipment",
+    "inventory-management",
+    "prisma",
+    "postgresql",
+    "react",
+    "bootstrap"
+  ],
+  "author": "",
+  "license": "MIT"
+}

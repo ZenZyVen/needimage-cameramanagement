@@ -1,0 +1,296 @@
+// Prisma Schema for Professional Camera Equipment Management System
+// Designed for PostgreSQL (Neon Serverless Postgres / Supabase / Local)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STOCK_CONTROLLER
+  USER
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  BORROWED
+  UNDER_MAINTENANCE
+  DAMAGED
+  RETIRED
+  RESERVED
+}
+
+enum ConditionStatus {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PRODUCTION
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  CHECKED_OUT
+  PARTIALLY_RETURNED
+  RETURNED
+  OVERDUE
+}
+
+enum ItemLoanStatus {
+  REQUESTED
+  PREPARED
+  CHECKED_OUT
+  RETURNED
+  DAMAGED_RETURN
+  MISSING_RETURN
+}
+
+enum CheckType {
+  CHECK_OUT
+  CHECK_IN
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum MaintenanceStatus {
+  REPORTED
+  IN_INSPECTION
+  SENT_TO_VENDOR
+  IN_REPAIR
+  RESOLVED
+  WRITTEN_OFF
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  DANGER
+}
+
+model User {
+  id               String          @id @default(uuid())
+  name             String
+  email            String          @unique
+  password         String
+  role             Role            @default(USER)
+  department       String?
+  phone            String?
+  avatar           String?
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  borrowRequests   BorrowRequest[] @relation("UserBorrowRequests")
+  approvedRequests BorrowRequest[] @relation("ApprovedBorrowRequests")
+  createdProjects  Project[]       @relation("CreatedProjects")
+  checkInsOuts     CheckInOut[]    @relation("HandledCheckInsOuts")
+  maintenances     Maintenance[]   @relation("ReportedMaintenances")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  icon        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  equipment   Equipment[]
+
+  @@map("categories")
+}
+
+model Equipment {
+  id             String          @id @default(uuid())
+  assetTag       String          @unique // e.g., CAM-001
+  name           String
+  brand          String
+  model          String
+  serialNumber   String          @unique
+  categoryId     String
+  status         EquipmentStatus @default(AVAILABLE)
+  condition      ConditionStatus @default(EXCELLENT)
+  purchaseDate   DateTime?
+  purchasePrice  Float?
+  dailyRate      Float?
+  location       String?         // Shelf/Locker e.g., "A-01", "Grip Room"
+  imageUrl       String?
+  accessories    Json?           // Array of strings e.g., ["2x Battery", "Charger", "Case"]
+  specifications Json?           // Key-value metadata
+  notes          String?
+  qrCode         String?         // Base64 QR code data URL
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  borrowItems    BorrowRequestItem[]
+  checkInsOuts   CheckInOut[]
+  maintenances   Maintenance[]
+
+  @@map("equipment")
+}
+
+model Project {
+  id             String          @id @default(uuid())
+  projectCode    String          @unique // e.g., PRJ-2026-001
+  title          String
+  client         String?
+  director       String?
+  location       String?
+  startDate      DateTime
+  endDate        DateTime
+  status         ProjectStatus   @default(PLANNING)
+  createdById    String
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  createdBy      User            @relation("CreatedProjects", fields: [createdById], references: [id])
+  borrowRequests BorrowRequest[]
+
+  @@map("projects")
+}
+
+model BorrowRequest {
+  id               String          @id @default(uuid())
+  requestNumber    String          @unique // e.g., REQ-2026-001
+  userId           String
+  projectId        String?
+  startDate        DateTime
+  endDate          DateTime
+  actualReturnDate DateTime?
+  purpose          String
+  destination      String?
+  status           RequestStatus   @default(PENDING)
+  rejectionReason  String?
+  approvedById     String?
+  approvedAt       DateTime?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  user             User            @relation("UserBorrowRequests", fields: [userId], references: [id])
+  project          Project?        @relation(fields: [projectId], references: [id])
+  approvedBy       User?           @relation("ApprovedBorrowRequests", fields: [approvedById], references: [id])
+  items            BorrowRequestItem[]
+  checkInsOuts     CheckInOut[]
+
+  @@map("borrow_requests")
+}
+
+model BorrowRequestItem {
+  id                String          @id @default(uuid())
+  requestId         String
+  equipmentId       String
+  status            ItemLoanStatus  @default(REQUESTED)
+  returnedCondition ConditionStatus?
+  notes             String?
+
+  request           BorrowRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  equipment         Equipment       @relation(fields: [equipmentId], references: [id])
+
+  @@map("borrow_request_items")
+}
+
+model CheckInOut {
+  id                 String          @id @default(uuid())
+  requestId          String?
+  equipmentId        String
+  type               CheckType       // CHECK_OUT or CHECK_IN
+  handledById        String
+  borrowerName       String?
+  borrowerSignature  String?         // Base64 signature data URL
+  staffSignature     String?
+  conditionAtAction  ConditionStatus @default(GOOD)
+  accessoriesChecked Json?           // Array of verified items
+  missingAccessories Json?           // Array of missing parts
+  damageReported     Boolean         @default(false)
+  damageNotes        String?
+  actionDate         DateTime        @default(now())
+  notes              String?
+  createdAt          DateTime        @default(now())
+
+  request            BorrowRequest?  @relation(fields: [requestId], references: [id])
+  equipment          Equipment       @relation(fields: [equipmentId], references: [id])
+  handledBy          User            @relation("HandledCheckInsOuts", fields: [handledById], references: [id])
+
+  @@map("check_in_outs")
+}
+
+model Maintenance {
+  id              String            @id @default(uuid())
+  ticketNumber    String            @unique // e.g., MNT-2026-001
+  equipmentId     String
+  reportedById    String
+  issueTitle      String
+  description     String
+  severity        SeverityLevel     @default(MEDIUM)
+  status          MaintenanceStatus @default(REPORTED)
+  vendor          String?
+  cost            Float?
+  scheduledDate   DateTime?
+  completedDate   DateTime?
+  resolutionNotes String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  equipment       Equipment         @relation(fields: [equipmentId], references: [id])
+  reportedBy      User              @relation("ReportedMaintenances", fields: [reportedById], references: [id])
+
+  @@map("maintenances")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
