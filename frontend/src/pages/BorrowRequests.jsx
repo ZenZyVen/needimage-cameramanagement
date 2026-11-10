@@ -115,32 +115,41 @@ const BorrowRequests = () => {
       )}
 
       {/* Filter toolbar */}
-      <div className="card mb-4">
+      <div className="card mb-4 border-0 shadow-sm">
         <div className="card-body p-3">
           <div className="row g-2 align-items-center">
-            <div className="col-md-6">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-white border-end-0">
-                  <i className="bi bi-search text-muted"></i>
+            <div className="col-md-7">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
                 </span>
                 <input
                   type="text"
-                  className="form-control border-start-0"
-                  placeholder="Search request #, requester, purpose..."
+                  className="form-control"
+                  placeholder="Search by request #, borrower name, purpose, or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="col-md-4">
+            <div className="col-md-5">
               <select
-                className="form-select form-select-sm"
+                className="form-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="ALL">All Request Statuses</option>
-                <option value="PENDING">Pending Review</option>
+                <option value="PENDING">Pending Review (Awaiting Staff)</option>
                 <option value="APPROVED">Approved (Ready for Pickup)</option>
                 <option value="CHECKED_OUT">Checked Out (Active Loan)</option>
                 <option value="PARTIALLY_RETURNED">Partially Returned</option>

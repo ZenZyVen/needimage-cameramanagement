@@ -35,78 +35,93 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
   };
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
       <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 shadow">
-          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#1e293b' }}>
-            <h6 className="modal-title fw-bold text-white mb-0">
-              <i className="bi bi-check-circle me-2 text-success"></i>
-              Resolve Maintenance: {ticket.ticketNumber}
-            </h6>
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+            <div className="d-flex align-items-center gap-2">
+              <div className="p-2 rounded bg-success-subtle text-success d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
+                <i className="bi bi-check2-circle"></i>
+              </div>
+              <div>
+                <h6 className="modal-title fw-bold text-white mb-0">Complete Maintenance Resolution</h6>
+                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>Ticket #{ticket.ticketNumber} • Verify service and return to inventory</p>
+              </div>
+            </div>
             <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
           </div>
 
           <form onSubmit={handleResolve}>
             <div className="modal-body p-4">
               {errorMsg && (
-                <div className="alert alert-danger py-2 small mb-3">
-                  <i className="bi bi-exclamation-circle me-1"></i> {errorMsg}
+                <div className="alert alert-danger py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                  <i className="bi bi-exclamation-triangle-fill"></i>
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
+              {/* Equipment Summary Banner */}
               <div className="p-3 border rounded bg-light mb-3">
-                <span className="small text-muted d-block">Equipment:</span>
-                <strong className="text-dark">{ticket.equipment?.assetTag} - {ticket.equipment?.name}</strong>
-                <div className="small text-muted mt-1">Issue: {ticket.issueTitle}</div>
+                <span className="small text-muted text-uppercase fw-semibold d-block" style={{ fontSize: '0.7rem' }}>Equipment Item</span>
+                <strong className="text-dark fs-6">{ticket.equipment?.assetTag} - {ticket.equipment?.name}</strong>
+                <div className="small text-danger mt-1">
+                  <i className="bi bi-tools me-1"></i> Issue: {ticket.issueTitle}
+                </div>
               </div>
 
+              {/* Final Disposition & Rating */}
               <div className="row g-3 mb-3">
                 <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Final Status</label>
+                  <label className="form-label">Final Status</label>
                   <select
-                    className="form-select form-select-sm"
+                    className="form-select"
                     value={finalStatus}
                     onChange={(e) => setFinalStatus(e.target.value)}
                   >
-                    <option value="RESOLVED">Resolved (Return to Available)</option>
-                    <option value="WRITTEN_OFF">Written Off (Decommission/Retire)</option>
+                    <option value="RESOLVED">Resolved (Return to Vault)</option>
+                    <option value="WRITTEN_OFF">Written Off (Decommission)</option>
                   </select>
                 </div>
                 <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Equipment Condition</label>
+                  <label className="form-label">Equipment Condition</label>
                   <select
-                    className="form-select form-select-sm"
+                    className="form-select"
                     value={equipmentCondition}
                     onChange={(e) => setEquipmentCondition(e.target.value)}
                     disabled={finalStatus === 'WRITTEN_OFF'}
                   >
-                    <option value="EXCELLENT">Excellent</option>
-                    <option value="GOOD">Good</option>
-                    <option value="FAIR">Fair</option>
+                    <option value="EXCELLENT">Excellent (Like New)</option>
+                    <option value="GOOD">Good (Certified Working)</option>
+                    <option value="FAIR">Fair (Operational)</option>
                   </select>
                 </div>
               </div>
 
+              {/* Repair Cost */}
               <div className="mb-3">
-                <label className="form-label small fw-semibold text-secondary">Actual Repair Cost ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-control form-control-sm"
-                  placeholder="0.00"
-                  defaultValue={ticket.cost || ''}
-                  onChange={(e) => setFinalCost(e.target.value)}
-                />
+                <label className="form-label">Final Invoiced Repair Cost ($ USD)</label>
+                <div className="input-group">
+                  <span className="input-group-text">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-control"
+                    placeholder="0.00"
+                    defaultValue={ticket.cost || ''}
+                    onChange={(e) => setFinalCost(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="mb-3">
-                <label className="form-label small fw-semibold text-secondary">
-                  Resolution & Technical Notes <span className="text-danger">*</span>
+              {/* Technical Notes */}
+              <div className="mb-0">
+                <label className="form-label">
+                  Resolution & Technical Service Notes <span className="required-star">*</span>
                 </label>
                 <textarea
-                  className="form-control form-control-sm"
+                  className="form-control"
                   rows="3"
-                  placeholder="e.g. Replaced SDI BNC port, recalibrated sensor, optical element polished and verified..."
+                  placeholder="e.g. Replaced SDI BNC port, recalibrated sensor, verified flange focal distance, firmware updated..."
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
                   required
@@ -114,12 +129,20 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
               </div>
             </div>
 
-            <div className="modal-footer bg-light py-2">
-              <button type="button" className="btn btn-sm btn-secondary" onClick={onHide} disabled={submitting}>
+            <div className="modal-footer bg-light py-3 d-flex justify-content-end gap-2">
+              <button type="button" className="btn btn-outline-secondary" onClick={onHide} disabled={submitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-sm btn-success text-white" disabled={submitting}>
-                {submitting ? 'Resolving...' : 'Confirm Resolution'}
+              <button type="submit" className="btn btn-success text-white fw-semibold" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-1"></span> Processing...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check2-circle me-1"></i> Confirm & Return to Vault
+                  </>
+                )}
               </button>
             </div>
           </form>

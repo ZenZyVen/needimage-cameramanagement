@@ -120,34 +120,43 @@ const Projects = () => {
       )}
 
       {/* Filter toolbar */}
-      <div className="card mb-4">
+      <div className="card mb-4 border-0 shadow-sm">
         <div className="card-body p-3">
           <div className="row g-2 align-items-center">
-            <div className="col-md-6">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-white border-end-0">
-                  <i className="bi bi-search text-muted"></i>
+            <div className="col-md-7">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
                 </span>
                 <input
                   type="text"
-                  className="form-control border-start-0"
+                  className="form-control"
                   placeholder="Search project title, client, director, code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="col-md-4">
+            <div className="col-md-5">
               <select
-                className="form-select form-select-sm"
+                className="form-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="ALL">All Project Statuses</option>
-                <option value="PLANNING">Planning</option>
-                <option value="IN_PRODUCTION">In Production</option>
-                <option value="COMPLETED">Completed</option>
+                <option value="PLANNING">Planning (Pre-Production)</option>
+                <option value="IN_PRODUCTION">In Production (Active Shooting)</option>
+                <option value="COMPLETED">Completed (Wrap)</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
             </div>

@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { uploadEquipmentImage } from '../../services/equipmentService';
 
+const COMMON_ACCESSORIES_SUGGESTIONS = [
+  '2x Batteries',
+  'Dual Charger',
+  'Body Cap',
+  'Lens Front Cap',
+  'Rear Cap',
+  'Lens Hood',
+  'Pelican Hard Case',
+  'HDMI Cable Clamp',
+  'AC Power Supply',
+  'Top XLR Handle',
+  'CFexpress 512GB Card'
+];
+
 const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categories = [] }) => {
   const isEdit = Boolean(equipment);
 
@@ -59,7 +73,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
         purchaseDate: '',
         purchasePrice: '',
         dailyRate: '',
-        location: '',
+        location: 'Vault Locker A-01',
         imageUrl: '',
         notes: ''
       });
@@ -73,9 +87,10 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddAccessory = () => {
-    if (newAccessory.trim()) {
-      setAccessories([...accessories, newAccessory.trim()]);
+  const handleAddAccessory = (accToAdd) => {
+    const val = (accToAdd || newAccessory).trim();
+    if (val && !accessories.includes(val)) {
+      setAccessories([...accessories, val]);
       setNewAccessory('');
     }
   };
@@ -95,7 +110,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
         setFormData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Failed to upload image.');
+      setErrorMsg(err.response?.data?.message || 'Failed to upload photo.');
     } finally {
       setUploadingImage(false);
     }
@@ -104,21 +119,17 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.assetTag || !formData.name || !formData.brand || !formData.serialNumber || !formData.categoryId) {
-      setErrorMsg('Please fill in all required fields (Asset Tag, Name, Brand, Serial Number, Category).');
+      setErrorMsg('Please fill out all required fields marked with an asterisk (*).');
       return;
     }
 
     try {
       setSubmitting(true);
       setErrorMsg('');
-      const payload = {
-        ...formData,
-        accessories
-      };
-      await onSubmit(payload);
+      await onSubmit({ ...formData, accessories });
       onHide();
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Error saving equipment item.');
+      setErrorMsg(err.response?.data?.message || 'Failed to save equipment.');
     } finally {
       setSubmitting(false);
     }
@@ -130,236 +141,231 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow">
-          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#1e293b' }}>
-            <h6 className="modal-title fw-bold text-white mb-0">
-              <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-plus-circle'} me-2 text-primary`}></i>
-              {isEdit ? 'Edit Equipment Item' : 'Register New Equipment Asset'}
-            </h6>
+          {/* Header */}
+          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+            <div className="d-flex align-items-center gap-2">
+              <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-plus-circle'} text-primary fs-5`}></i>
+              <h6 className="modal-title fw-bold text-white mb-0">
+                {isEdit ? `Edit Equipment: ${formData.assetTag}` : 'Register New Inventory Asset'}
+              </h6>
+            </div>
             <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="modal-body p-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+            <div className="modal-body p-4" style={{ maxHeight: '74vh', overflowY: 'auto' }}>
               {errorMsg && (
                 <div className="alert alert-danger py-2 small mb-3">
                   <i className="bi bi-exclamation-circle me-1"></i> {errorMsg}
                 </div>
               )}
 
-              {/* Basic Identifiers */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Asset Tag <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="assetTag"
-                    placeholder="e.g. CAM-005"
-                    value={formData.assetTag}
-                    onChange={handleChange}
-                    required
-                  />
+              {/* 1. Basic Information Section */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-tag-fill text-primary"></i> 1. Asset Identity & Classification
                 </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Serial Number <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="serialNumber"
-                    placeholder="e.g. SN-FX3-99120"
-                    value={formData.serialNumber}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Category <span className="text-danger">*</span>
-                  </label>
-                  <select
-                    className="form-select"
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Asset Tag <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="assetTag"
+                      placeholder="e.g. CAM-005"
+                      value={formData.assetTag}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Serial Number <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="serialNumber"
+                      placeholder="e.g. SN-882194"
+                      value={formData.serialNumber}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Category <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      className="form-select"
+                      name="categoryId"
+                      value={formData.categoryId}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Item Name <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="name"
+                      placeholder="e.g. Sony FX3 Full-Frame Cinema Camera"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Brand <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="brand"
+                      placeholder="e.g. Sony"
+                      value={formData.brand}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">Model</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="model"
+                      placeholder="e.g. ILME-FX3"
+                      value={formData.model}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Name & Model */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Item Name <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="name"
-                    placeholder="e.g. Sony FX3 Full-Frame Cinema Camera"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
+              {/* 2. Vault Status & Financials */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-geo-alt-fill text-primary"></i> 2. Vault Location, Status & Valuation
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Brand <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="brand"
-                    placeholder="e.g. Sony"
-                    value={formData.brand}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Model
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="model"
-                    placeholder="e.g. ILME-FX3"
-                    value={formData.model}
-                    onChange={handleChange}
-                  />
+
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <label className="form-label">Vault Status</label>
+                    <select
+                      className="form-select"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                    >
+                      <option value="AVAILABLE">Available (In Vault)</option>
+                      <option value="BORROWED">Borrowed (On Shoot)</option>
+                      <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                      <option value="DAMAGED">Damaged / Defective</option>
+                      <option value="RETIRED">Retired / Decommissioned</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Physical Condition</label>
+                    <select
+                      className="form-select"
+                      name="condition"
+                      value={formData.condition}
+                      onChange={handleChange}
+                    >
+                      <option value="EXCELLENT">Excellent (Like New)</option>
+                      <option value="GOOD">Good (Normal Wear)</option>
+                      <option value="FAIR">Fair (Minor Scuffs)</option>
+                      <option value="POOR">Poor (Needs Inspection)</option>
+                      <option value="DAMAGED">Damaged / Non-functional</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Storage Shelf / Locker</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="location"
+                      placeholder="e.g. Shelf A-02 / Grip Bay"
+                      value={formData.location}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Purchase Price ($)</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        name="purchasePrice"
+                        placeholder="0.00"
+                        value={formData.purchasePrice}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Daily Rental Rate ($)</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        name="dailyRate"
+                        placeholder="0.00"
+                        value={formData.dailyRate}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Purchase Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="purchaseDate"
+                      value={formData.purchaseDate}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Status, Condition, Location */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Status</label>
-                  <select
-                    className="form-select"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                  >
-                    <option value="AVAILABLE">Available</option>
-                    <option value="BORROWED">Borrowed</option>
-                    <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-                    <option value="DAMAGED">Damaged</option>
-                    <option value="RETIRED">Retired</option>
-                  </select>
+              {/* 3. Included Accessories Checklist (The Interactive Tag Builder) */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-box-fill text-primary"></i> 3. Kit Accessories Checklist ({accessories.length})
                 </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Condition</label>
-                  <select
-                    className="form-select"
-                    name="condition"
-                    value={formData.condition}
-                    onChange={handleChange}
-                  >
-                    <option value="EXCELLENT">Excellent</option>
-                    <option value="GOOD">Good</option>
-                    <option value="FAIR">Fair</option>
-                    <option value="POOR">Poor</option>
-                    <option value="DAMAGED">Damaged</option>
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Location / Vault Shelf</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="location"
-                    placeholder="e.g. Shelf A-02 / Grip Room"
-                    value={formData.location}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
 
-              {/* Financial & Daily Rate */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Purchase Price ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    name="purchasePrice"
-                    placeholder="0.00"
-                    value={formData.purchasePrice}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Estimated Daily Rate ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    name="dailyRate"
-                    placeholder="0.00"
-                    value={formData.dailyRate}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Purchase Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="purchaseDate"
-                    value={formData.purchaseDate}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              {/* Image URL & File Upload */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-8">
-                  <label className="form-label small fw-semibold text-secondary">Image URL</label>
-                  <input
-                    type="url"
-                    className="form-control"
-                    name="imageUrl"
-                    placeholder="https://... or upload below"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-semibold text-secondary">Or Upload Photo</label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={uploadingImage}
-                  />
-                  {uploadingImage && <span className="small text-muted">Uploading...</span>}
-                </div>
-              </div>
-
-              {/* Dynamic Accessories Checklist */}
-              <div className="mb-3">
-                <label className="form-label small fw-semibold text-secondary d-flex justify-content-between">
-                  <span>Accessories & Case Checklist (Verified during Handover)</span>
-                  <span className="text-muted fw-normal">{accessories.length} item(s)</span>
-                </label>
                 <div className="input-group mb-2">
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. 2x Sony NP-FZ100 Batteries, Lens Hood, Pelican Case"
+                    placeholder="Type accessory name (e.g. 2x Sony NP-FZ100 Batteries)..."
                     value={newAccessory}
                     onChange={(e) => setNewAccessory(e.target.value)}
                     onKeyDown={(e) => {
@@ -372,23 +378,45 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    onClick={handleAddAccessory}
+                    onClick={() => handleAddAccessory()}
                   >
                     <i className="bi bi-plus-lg"></i> Add
                   </button>
                 </div>
 
-                <div className="p-2 border rounded bg-light" style={{ minHeight: '48px' }}>
+                {/* Quick Add Suggestions Chips */}
+                <div className="mb-2">
+                  <span className="text-muted small me-2" style={{ fontSize: '0.72rem' }}>Quick add:</span>
+                  <div className="d-inline-flex flex-wrap gap-1">
+                    {COMMON_ACCESSORIES_SUGGESTIONS.map((sug, idx) => (
+                      <span
+                        key={idx}
+                        className="badge bg-white text-secondary border accessory-badge-clickable"
+                        style={{ fontSize: '0.7rem' }}
+                        onClick={() => handleAddAccessory(sug)}
+                      >
+                        + {sug}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Current Active Accessories Tags */}
+                <div className="p-2 border rounded bg-white" style={{ minHeight: '44px' }}>
                   {accessories.length === 0 ? (
-                    <span className="small text-muted">No accessories added yet.</span>
+                    <span className="small text-muted" style={{ fontSize: '0.78rem' }}>
+                      No accessories added. Standard body/item only.
+                    </span>
                   ) : (
                     accessories.map((acc, index) => (
                       <span key={index} className="accessory-badge">
+                        <i className="bi bi-check2 text-success me-1"></i>
                         {acc}
                         <i
                           className="bi bi-x ms-1 text-danger"
                           style={{ cursor: 'pointer' }}
                           onClick={() => handleRemoveAccessory(index)}
+                          title="Remove item"
                         ></i>
                       </span>
                     ))
@@ -396,34 +424,58 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                 </div>
               </div>
 
-              {/* Notes */}
-              <div>
-                <label className="form-label small fw-semibold text-secondary">Notes & Firmware Specs</label>
-                <textarea
-                  className="form-control"
-                  rows="2"
-                  name="notes"
-                  placeholder="e.g. Firmware v5.0 installed. Sensor inspected Nov 2026."
-                  value={formData.notes}
-                  onChange={handleChange}
-                ></textarea>
+              {/* 4. Equipment Photo & Vault Notes */}
+              <div className="form-section-card mb-0">
+                <div className="form-section-title">
+                  <i className="bi bi-image-fill text-primary"></i> 4. Equipment Image & Maintenance Notes
+                </div>
+
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <label className="form-label">Image URL</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      name="imageUrl"
+                      placeholder="https://... or upload photo on right"
+                      value={formData.imageUrl}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">Or Upload File</label>
+                    <input
+                      type="file"
+                      className="form-control"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage && <span className="small text-muted">Uploading...</span>}
+                  </div>
+
+                  <div className="col-12">
+                    <label className="form-label">Vault Notes / Technical Specifications</label>
+                    <textarea
+                      className="form-control"
+                      rows="2"
+                      name="notes"
+                      placeholder="Firmware versions, calibrated accessories, sensor inspection date..."
+                      value={formData.notes}
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="modal-footer bg-light py-2">
+            <div className="modal-footer">
               <button type="button" className="btn btn-sm btn-secondary" onClick={onHide} disabled={submitting}>
                 Cancel
               </button>
               <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-1"></span> Saving...
-                  </>
-                ) : isEdit ? (
-                  'Update Equipment'
-                ) : (
-                  'Create Equipment'
-                )}
+                {submitting ? 'Saving...' : isEdit ? 'Update Asset' : 'Save & Register Gear'}
               </button>
             </div>
           </form>

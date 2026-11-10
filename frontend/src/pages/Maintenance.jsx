@@ -115,12 +115,12 @@ const Maintenance = () => {
       </div>
 
       {/* Filter toolbar */}
-      <div className="card mb-4">
+      <div className="card mb-4 border-0 shadow-sm">
         <div className="card-body p-3">
           <div className="row g-2 align-items-center">
             <div className="col-md-6">
               <select
-                className="form-select form-select-sm"
+                className="form-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -136,7 +136,7 @@ const Maintenance = () => {
 
             <div className="col-md-6">
               <select
-                className="form-select form-select-sm"
+                className="form-select"
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
               >

@@ -18,11 +18,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         <img
           src="/logo.svg"
           alt="CineVault"
-          style={{ width: '34px', height: '34px' }}
+          style={{ width: '36px', height: '36px' }}
         />
         <div>
           <h1 className="sidebar-brand-name">CineVault</h1>
-          <p className="sidebar-brand-sub">Gear Management</p>
+          <p className="sidebar-brand-sub">Inventory & Vault System</p>
         </div>
       </div>
 
@@ -39,15 +39,15 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span>Dashboard</span>
         </NavLink>
 
-        {/* Inventory Section */}
-        <div className="nav-section-title">Inventory & Operations</div>
+        {/* Core Inventory Section */}
+        <div className="nav-section-title">Vault & Inventory</div>
         <NavLink
           to="/equipment"
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
-          <i className="bi bi-camera-fill"></i>
-          <span>Equipment Catalog</span>
+          <i className="bi bi-box-seam-fill"></i>
+          <span>Inventory & Vault</span>
         </NavLink>
 
         <NavLink
@@ -64,13 +64,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
-          <i className="bi bi-calendar2-check"></i>
+          <i className="bi bi-calendar2-check-fill"></i>
           <span>Borrow Requests</span>
         </NavLink>
 
-        {/* Staff Operations: Stock Controller & Admin */}
+        {/* Vault Logistics Operations: Stock Controller & Admin */}
         {(isAdmin || isStockController) && (
           <>
+            <div className="nav-section-title">Vault Logistics</div>
             <NavLink
               to="/checkin-out"
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
@@ -92,14 +93,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* Documents & Reports */}
-        <div className="nav-section-title">Reports & Tools</div>
+        <div className="nav-section-title">Reports & Documents</div>
         <NavLink
           to="/reports"
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
-          <i className="bi bi-file-earmark-bar-graph"></i>
-          <span>Reports & A4 Forms</span>
+          <i className="bi bi-file-earmark-bar-graph-fill"></i>
+          <span>A4 Reports & Audits</span>
         </NavLink>
 
         <NavLink
@@ -111,7 +112,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span>Asset Tag Printing</span>
         </NavLink>
 
-        {/* Admin Section */}
+        {/* Administration */}
         {isAdmin && (
           <>
             <div className="nav-section-title">Administration</div>
@@ -121,13 +122,13 @@ const Sidebar = ({ isOpen, onClose }) => {
               onClick={onClose}
             >
               <i className="bi bi-people-fill"></i>
-              <span>User Management</span>
+              <span>User & Role Access</span>
             </NavLink>
           </>
         )}
       </div>
 
-      {/* Footer / System Status */}
+      {/* Footer / Status */}
       <div className="sidebar-footer">
         <div className="d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2">
@@ -135,12 +136,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               className="badge rounded-pill bg-success"
               style={{ width: '8px', height: '8px', padding: 0 }}
             ></span>
-            <span className="small text-muted" style={{ fontSize: '0.72rem' }}>
-              Neon DB Connected
+            <span className="small text-white-50" style={{ fontSize: '0.72rem' }}>
+              Vault System Online
             </span>
           </div>
-          <span className="badge bg-secondary-subtle text-secondary" style={{ fontSize: '0.65rem' }}>
-            v1.0.0
+          <span className="badge bg-slate-800 text-slate-300" style={{ fontSize: '0.65rem' }}>
+            v1.2.0
           </span>
         </div>
       </div>

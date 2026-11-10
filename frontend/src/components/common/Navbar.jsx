@@ -18,12 +18,12 @@ const Navbar = ({ onToggleSidebar }) => {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'ADMIN':
-        return <span className="badge bg-dark" style={{ fontSize: '0.65rem' }}>ADMIN</span>;
+        return <span className="badge bg-slate-900 text-white" style={{ fontSize: '0.65rem' }}>ADMIN</span>;
       case 'STOCK_CONTROLLER':
         return <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>STOCK CONTROLLER</span>;
       case 'USER':
       default:
-        return <span className="badge bg-primary" style={{ fontSize: '0.65rem' }}>USER</span>;
+        return <span className="badge bg-primary" style={{ fontSize: '0.65rem' }}>CREW / USER</span>;
     }
   };
 
@@ -49,7 +49,7 @@ const Navbar = ({ onToggleSidebar }) => {
             title="Scan Equipment Barcode / QR Code"
           >
             <i className="bi bi-qr-code-scan text-primary"></i>
-            <span className="d-none d-md-inline small fw-medium">Quick Scan</span>
+            <span className="d-none d-md-inline small fw-medium">Quick Barcode & QR Scan</span>
           </button>
         </div>
 
@@ -73,7 +73,7 @@ const Navbar = ({ onToggleSidebar }) => {
                 style={{ width: '28px', height: '28px', objectFit: 'cover' }}
               />
               <div className="text-start d-none d-sm-block">
-                <div className="fw-semibold text-dark small leading-tight" style={{ fontSize: '0.82rem' }}>
+                <div className="fw-semibold text-dark small" style={{ fontSize: '0.82rem', lineHeight: '1.2' }}>
                   {user?.name || 'User'}
                 </div>
                 <div>{getRoleBadge(user?.role)}</div>
@@ -83,20 +83,23 @@ const Navbar = ({ onToggleSidebar }) => {
 
             {userMenuOpen && (
               <div
-                className="card position-absolute end-0 mt-2 shadow-sm py-1"
-                style={{ width: '200px', zIndex: 1060, border: '1px solid #e2e8f0' }}
+                className="card position-absolute end-0 mt-2 shadow-lg py-1"
+                style={{ width: '220px', zIndex: 1060, border: '1px solid #e2e8f0', borderRadius: '10px' }}
                 onMouseLeave={() => setUserMenuOpen(false)}
               >
                 <div className="px-3 py-2 border-bottom">
                   <div className="fw-bold small text-dark">{user?.name}</div>
                   <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>{user?.email}</div>
+                  <div className="text-muted text-truncate mt-1" style={{ fontSize: '0.72rem' }}>
+                    <i className="bi bi-building me-1"></i>{user?.department || 'Production Department'}
+                  </div>
                 </div>
                 <Link
                   to="/profile"
                   className="dropdown-item px-3 py-2 small d-flex align-items-center gap-2 text-secondary"
                   onClick={() => setUserMenuOpen(false)}
                 >
-                  <i className="bi bi-person"></i> My Profile
+                  <i className="bi bi-person"></i> My Profile & Settings
                 </Link>
                 <div className="dropdown-divider my-1"></div>
                 <button

@@ -117,127 +117,167 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
   if (!show) return null;
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
-        <div className="modal-content border-0 shadow">
-          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#1e293b' }}>
-            <h6 className="modal-title fw-bold text-white mb-0">
-              <i className="bi bi-calendar2-plus me-2 text-primary"></i>
-              New Equipment Borrowing Request
-            </h6>
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+            <div className="d-flex align-items-center gap-2">
+              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
+                <i className="bi bi-calendar2-plus"></i>
+              </div>
+              <div>
+                <h6 className="modal-title fw-bold text-white mb-0">Equipment Borrowing Requisition</h6>
+                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>Request camera, lighting, and sound gear from the vault</p>
+              </div>
+            </div>
             <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="modal-body p-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+            <div className="modal-body p-4" style={{ maxHeight: '74vh', overflowY: 'auto' }}>
               {errorMsg && (
-                <div className="alert alert-danger py-2 small mb-3">
-                  <i className="bi bi-exclamation-circle me-1"></i> {errorMsg}
+                <div className="alert alert-danger py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                  <i className="bi bi-exclamation-octagon-fill"></i>
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
-              {/* Project & Dates */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Associated Production Project
-                  </label>
-                  <select
-                    className="form-select"
-                    name="projectId"
-                    value={formData.projectId}
-                    onChange={handleChange}
-                  >
-                    <option value="">None / Standalone Production</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.projectCode} - {p.title}
-                      </option>
-                    ))}
-                  </select>
+              {/* SECTION 1: PROJECT & DATES */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-calendar-event text-primary"></i> 1. Production Project & Schedule
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Required From <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Return By <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Purpose & Destination */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-7">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Purpose of Loan / Shoot Details <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="purpose"
-                    placeholder="e.g. Commercial location exterior shots, scene 4-9"
-                    value={formData.purpose}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="col-md-5">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Shooting Destination / Location
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="destination"
-                    placeholder="e.g. Vancouver Soundstage 4"
-                    value={formData.destination}
-                    onChange={handleChange}
-                  />
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Associated Production Project</label>
+                    <select
+                      className="form-select"
+                      name="projectId"
+                      value={formData.projectId}
+                      onChange={handleChange}
+                    >
+                      <option value="">None / Standalone Production</option>
+                      {projects.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.projectCode} - {p.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Required From <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="startDate"
+                      value={formData.startDate}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Return By <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="endDate"
+                      value={formData.endDate}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Equipment Picker */}
-              <div className="border rounded p-3 mb-3 bg-light">
+              {/* SECTION 2: PURPOSE & LOCATION */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-geo-alt text-primary"></i> 2. Shoot Purpose & Destination
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-7">
+                    <label className="form-label">
+                      Purpose of Loan / Scene Details <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="purpose"
+                      placeholder="e.g. Commercial location exterior shots, scene 4-9"
+                      value={formData.purpose}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-5">
+                    <label className="form-label">Shooting Destination / Location</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="destination"
+                      placeholder="e.g. Vancouver Soundstage 4 / Outdoor Set"
+                      value={formData.destination}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: EQUIPMENT SELECTION */}
+              <div className="form-section-card">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span className="fw-semibold small text-dark">
-                    Select Equipment Items ({selectedGearIds.length} chosen)
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    style={{ maxWidth: '220px' }}
-                    placeholder="Search available gear..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                  <div className="form-section-title mb-0">
+                    <i className="bi bi-camera-reels text-primary"></i> 3. Select Gear Items ({selectedGearIds.length} Selected)
+                  </div>
+                  <div className="input-group input-group-sm" style={{ maxWidth: '240px' }}>
+                    <span className="input-group-text bg-white border-end-0">
+                      <i className="bi bi-search text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control border-start-0"
+                      placeholder="Search vault gear..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                 </div>
 
+                {/* Selected gear chips tray */}
+                {selectedGearIds.length > 0 && (
+                  <div className="p-2 mb-2 bg-white border rounded d-flex flex-wrap gap-1 align-items-center">
+                    <span className="small text-muted fw-semibold me-1" style={{ fontSize: '0.72rem' }}>Chosen:</span>
+                    {selectedGearIds.map(id => {
+                      const item = availableGear.find(g => g.id === id);
+                      if (!item) return null;
+                      return (
+                        <span key={id} className="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1 py-1 px-2">
+                          <strong>{item.assetTag}</strong> {item.name}
+                          <button
+                            type="button"
+                            className="btn-close btn-close-dark ms-1"
+                            style={{ width: '8px', height: '8px' }}
+                            onClick={() => toggleSelectGear(id)}
+                          ></button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Scrollable Gear Checklist */}
                 <div
                   className="bg-white border rounded p-2"
-                  style={{ maxHeight: '200px', overflowY: 'auto' }}
+                  style={{ maxHeight: '210px', overflowY: 'auto' }}
                 >
                   {filteredGear.length === 0 ? (
-                    <div className="text-center py-3 text-muted small">
-                      No matching available equipment found.
+                    <div className="text-center py-4 text-muted small">
+                      <i className="bi bi-inbox fs-3 d-block text-secondary mb-1"></i>
+                      No matching available equipment found in the vault.
                     </div>
                   ) : (
                     filteredGear.map(gear => {
@@ -245,10 +285,10 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       return (
                         <div
                           key={gear.id}
-                          className={`d-flex align-items-center justify-content-between p-2 border-bottom ${
-                            isSelected ? 'bg-primary-subtle' : ''
+                          className={`d-flex align-items-center justify-content-between p-2 mb-1 rounded border ${
+                            isSelected ? 'bg-primary-subtle border-primary' : 'bg-light border-light-subtle'
                           }`}
-                          style={{ cursor: 'pointer' }}
+                          style={{ cursor: 'pointer', transition: 'background-color 0.15s ease' }}
                           onClick={() => toggleSelectGear(gear.id)}
                         >
                           <div className="d-flex align-items-center gap-2">
@@ -258,13 +298,17 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                               checked={isSelected}
                               onChange={() => {}}
                             />
-                            <span className="badge bg-dark" style={{ fontSize: '0.68rem' }}>
+                            <span className="badge bg-dark px-2 py-1" style={{ fontSize: '0.72rem', letterSpacing: '0.04em' }}>
                               {gear.assetTag}
                             </span>
                             <span className="small fw-semibold text-dark">{gear.name}</span>
                             <span className="small text-muted">({gear.brand})</span>
                           </div>
-                          <span className="small text-muted">{gear.location || 'Vault'}</span>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="badge bg-secondary-subtle text-secondary" style={{ fontSize: '0.7rem' }}>
+                              <i className="bi bi-geo-alt me-1"></i>{gear.location || 'Vault Shelf'}
+                            </span>
+                          </div>
                         </div>
                       );
                     })
@@ -272,29 +316,42 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                 </div>
               </div>
 
-              {/* Notes */}
-              <div>
-                <label className="form-label small fw-semibold text-secondary">
-                  Special Notes / Vault Instructions
-                </label>
+              {/* SECTION 4: VAULT NOTES */}
+              <div className="form-section-card mb-0">
+                <div className="form-section-title">
+                  <i className="bi bi-chat-left-text text-primary"></i> 4. Special Handling & Vault Notes
+                </div>
                 <textarea
                   className="form-control"
                   rows="2"
                   name="notes"
-                  placeholder="Need extra batteries charged, specific flight cases..."
+                  placeholder="e.g. Ensure all V-mount batteries are charged at 100%, include Pelican 1510 flight cases..."
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>
               </div>
             </div>
 
-            <div className="modal-footer bg-light py-2">
-              <button type="button" className="btn btn-sm btn-secondary" onClick={onHide} disabled={submitting}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Request'}
-              </button>
+            <div className="modal-footer bg-light py-3 d-flex justify-content-between align-items-center">
+              <span className="small text-muted" style={{ fontSize: '0.78rem' }}>
+                <i className="bi bi-info-circle me-1"></i> Requisition will be routed to the vault team for approval.
+              </span>
+              <div className="d-flex gap-2">
+                <button type="button" className="btn btn-outline-secondary" onClick={onHide} disabled={submitting}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1"></span> Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-send-check me-1"></i> Submit Request
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>

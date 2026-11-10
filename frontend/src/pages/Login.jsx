@@ -11,6 +11,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -49,7 +51,7 @@ const Login = () => {
       className="d-flex align-items-center justify-content-center min-vh-100 p-3"
       style={{ backgroundColor: '#0f172a' }}
     >
-      <div className="card shadow-lg border-0" style={{ maxWidth: '440px', width: '100%', borderRadius: '12px' }}>
+      <div className="card shadow-lg border-0" style={{ maxWidth: '440px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
         <div className="card-body p-4 p-sm-5">
           {/* Logo & Heading */}
           <div className="text-center mb-4">
@@ -59,21 +61,22 @@ const Login = () => {
           </div>
 
           {errorMsg && (
-            <div className="alert alert-danger py-2 px-3 small mb-3">
-              <i className="bi bi-exclamation-triangle-fill me-1"></i> {errorMsg}
+            <div className="alert alert-danger py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+              <i className="bi bi-exclamation-triangle-fill"></i>
+              <span>{errorMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label small fw-semibold text-secondary">Work Email Address</label>
+              <label className="form-label">Work Email Address</label>
               <div className="input-group">
-                <span className="input-group-text bg-light border-end-0">
-                  <i className="bi bi-envelope text-muted"></i>
+                <span className="input-group-text">
+                  <i className="bi bi-envelope"></i>
                 </span>
                 <input
                   type="email"
-                  className="form-control border-start-0"
+                  className="form-control"
                   placeholder="name@cameragear.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -83,27 +86,34 @@ const Login = () => {
             </div>
 
             <div className="mb-4">
-              <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="form-label small fw-semibold text-secondary mb-0">Password</label>
-              </div>
+              <label className="form-label">Password</label>
               <div className="input-group">
-                <span className="input-group-text bg-light border-end-0">
-                  <i className="bi bi-lock text-muted"></i>
+                <span className="input-group-text">
+                  <i className="bi bi-lock"></i>
                 </span>
                 <input
-                  type="password"
-                  className="form-control border-start-0"
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-control"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  style={{ borderLeft: 'none' }}
+                >
+                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="btn btn-primary w-100 py-2 fw-semibold"
+              className="btn btn-primary w-100 py-2.5 fw-semibold"
               disabled={loading}
             >
               {loading ? (
@@ -111,7 +121,7 @@ const Login = () => {
                   <span className="spinner-border spinner-border-sm me-2"></span> Authenticating...
                 </>
               ) : (
-                'Sign In'
+                'Sign In to Vault'
               )}
             </button>
           </form>
@@ -121,10 +131,10 @@ const Login = () => {
             <span className="text-muted small d-block mb-2 text-center fw-medium" style={{ fontSize: '0.75rem' }}>
               One-Click Role Demonstration Accounts:
             </span>
-            <div className="d-flex flex-column gap-1">
+            <div className="d-flex flex-column gap-1.5">
               <button
                 type="button"
-                className="btn btn-sm btn-outline-dark d-flex justify-content-between align-items-center"
+                className="btn btn-sm btn-outline-dark d-flex justify-content-between align-items-center py-2"
                 style={{ fontSize: '0.78rem' }}
                 onClick={() => handleQuickLogin('admin@cameragear.com', 'password123')}
                 disabled={loading}
@@ -135,7 +145,7 @@ const Login = () => {
 
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary d-flex justify-content-between align-items-center"
+                className="btn btn-sm btn-outline-secondary d-flex justify-content-between align-items-center py-2"
                 style={{ fontSize: '0.78rem' }}
                 onClick={() => handleQuickLogin('stock@cameragear.com', 'password123')}
                 disabled={loading}
@@ -146,7 +156,7 @@ const Login = () => {
 
               <button
                 type="button"
-                className="btn btn-sm btn-outline-primary d-flex justify-content-between align-items-center"
+                className="btn btn-sm btn-outline-primary d-flex justify-content-between align-items-center py-2"
                 style={{ fontSize: '0.78rem' }}
                 onClick={() => handleQuickLogin('user@cameragear.com', 'password123')}
                 disabled={loading}

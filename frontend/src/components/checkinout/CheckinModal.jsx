@@ -90,156 +90,165 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow">
-          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#1e293b' }}>
-            <h6 className="modal-title fw-bold text-white mb-0">
-              <i className="bi bi-box-arrow-in-left me-2 text-success"></i>
-              Equipment Return & Quality Inspection
-            </h6>
+          {/* Header */}
+          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-box-arrow-in-left text-success fs-5"></i>
+              <h6 className="modal-title fw-bold text-white mb-0">
+                Equipment Return & Quality Inspection
+              </h6>
+            </div>
             <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
           </div>
 
           <form onSubmit={handleCheckin}>
-            <div className="modal-body p-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+            <div className="modal-body p-4" style={{ maxHeight: '74vh', overflowY: 'auto' }}>
               {errorMsg && (
                 <div className="alert alert-danger py-2 small mb-3">
                   <i className="bi bi-exclamation-circle me-1"></i> {errorMsg}
                 </div>
               )}
 
-              {/* Items List for inspection */}
-              <div className="mb-4">
-                <span className="text-muted small text-uppercase fw-semibold d-block mb-2">
-                  Items to Inspect & Return ({items.length} item{items.length > 1 ? 's' : ''})
-                </span>
+              {/* 1. Items to inspect */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-shield-check text-success"></i> 1. Inspected Equipment ({items.length} item{items.length > 1 ? 's' : ''})
+                </div>
 
-                {items.map(item => {
-                  const insp = itemInspections[item.id] || {};
-                  return (
-                    <div key={item.id} className="p-3 border rounded bg-light mb-3">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                          <span className="badge bg-dark me-2">{item.assetTag}</span>
-                          <strong className="text-dark">{item.name}</strong>
-                          <span className="text-muted small ms-2">SN: {item.serialNumber}</span>
+                <div className="d-flex flex-column gap-3">
+                  {items.map(item => {
+                    const insp = itemInspections[item.id] || {};
+                    return (
+                      <div key={item.id} className="p-3 border rounded bg-white shadow-sm">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="badge bg-slate-900 text-white fw-bold">{item.assetTag}</span>
+                            <strong className="text-dark small">{item.name}</strong>
+                            <span className="text-muted small">SN: {item.serialNumber}</span>
+                          </div>
+                        </div>
+
+                        {/* Condition & Notes row */}
+                        <div className="row g-2 mb-2">
+                          <div className="col-md-6">
+                            <label className="form-label" style={{ fontSize: '0.72rem' }}>
+                              Inspected Physical Condition
+                            </label>
+                            <select
+                              className="form-select form-select-sm"
+                              value={insp.condition || 'GOOD'}
+                              onChange={(e) => updateItemField(item.id, 'condition', e.target.value)}
+                            >
+                              <option value="EXCELLENT">Excellent (Like New, Pristine)</option>
+                              <option value="GOOD">Good (Normal Studio Wear)</option>
+                              <option value="FAIR">Fair (Noticeable Scuffs)</option>
+                              <option value="POOR">Poor (Requires Service)</option>
+                              <option value="DAMAGED">Damaged / Defective</option>
+                            </select>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label" style={{ fontSize: '0.72rem' }}>
+                              Vault Check-in Notes
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              placeholder="Cleaned, batteries recharged, all cables present..."
+                              value={insp.notes || ''}
+                              onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Missing accessories checkbox */}
+                        <div className="p-2 border rounded bg-light mb-2">
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`missing-${item.id}`}
+                              checked={Boolean(insp.hasMissingAccessories)}
+                              onChange={(e) => updateItemField(item.id, 'hasMissingAccessories', e.target.checked)}
+                            />
+                            <label className="form-check-label small fw-semibold text-warning-emphasis" htmlFor={`missing-${item.id}`}>
+                              Flag Missing Accessories or Cables
+                            </label>
+                          </div>
+                          {insp.hasMissingAccessories && (
+                            <input
+                              type="text"
+                              className="form-control form-control-sm mt-2"
+                              placeholder="List missing parts (e.g. Lens cap, HDMI clamp, AC adapter)..."
+                              value={insp.missingAccessoriesText || ''}
+                              onChange={(e) => updateItemField(item.id, 'missingAccessoriesText', e.target.value)}
+                            />
+                          )}
+                        </div>
+
+                        {/* Damage report toggle */}
+                        <div className={`p-2 border rounded ${insp.damageReported ? 'bg-danger-subtle border-danger-subtle' : 'bg-light'}`}>
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`damage-${item.id}`}
+                              checked={Boolean(insp.damageReported)}
+                              onChange={(e) => updateItemField(item.id, 'damageReported', e.target.checked)}
+                            />
+                            <label className="form-check-label small fw-semibold text-danger" htmlFor={`damage-${item.id}`}>
+                              Report Physical / Optical Damage (Auto-creates Maintenance Ticket)
+                            </label>
+                          </div>
+                          {insp.damageReported && (
+                            <textarea
+                              className="form-control form-control-sm mt-2 border-danger"
+                              rows="2"
+                              placeholder="Detail the damage (e.g. Scratched front glass, loose BNC connector, dropped body)..."
+                              value={insp.damageNotes || ''}
+                              onChange={(e) => updateItemField(item.id, 'damageNotes', e.target.value)}
+                              required
+                            ></textarea>
+                          )}
                         </div>
                       </div>
-
-                      {/* Condition selection */}
-                      <div className="row g-2 mb-2">
-                        <div className="col-md-6">
-                          <label className="form-label small text-secondary fw-semibold mb-1">
-                            Returned Condition:
-                          </label>
-                          <select
-                            className="form-select form-select-sm"
-                            value={insp.condition || 'GOOD'}
-                            onChange={(e) => updateItemField(item.id, 'condition', e.target.value)}
-                          >
-                            <option value="EXCELLENT">Excellent (Like New)</option>
-                            <option value="GOOD">Good (Normal Wear)</option>
-                            <option value="FAIR">Fair (Noticeable Scuffs)</option>
-                            <option value="POOR">Poor (Requires Service)</option>
-                            <option value="DAMAGED">Damaged / Broken</option>
-                          </select>
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label small text-secondary fw-semibold mb-1">
-                            Check-in Notes:
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            placeholder="Cleaned, battery charged, etc."
-                            value={insp.notes || ''}
-                            onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Missing Accessories Checkbox */}
-                      <div className="mb-2">
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`missing-${item.id}`}
-                            checked={Boolean(insp.hasMissingAccessories)}
-                            onChange={(e) => updateItemField(item.id, 'hasMissingAccessories', e.target.checked)}
-                          />
-                          <label className="form-check-label small fw-medium text-warning-emphasis" htmlFor={`missing-${item.id}`}>
-                            Flag missing accessories or cables
-                          </label>
-                        </div>
-                        {insp.hasMissingAccessories && (
-                          <input
-                            type="text"
-                            className="form-control form-control-sm mt-1"
-                            placeholder="Specify missing items (e.g. Lens cap, USB-C cable)"
-                            value={insp.missingAccessoriesText || ''}
-                            onChange={(e) => updateItemField(item.id, 'missingAccessoriesText', e.target.value)}
-                          />
-                        )}
-                      </div>
-
-                      {/* Damage Reported Checkbox */}
-                      <div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`damage-${item.id}`}
-                            checked={Boolean(insp.damageReported)}
-                            onChange={(e) => updateItemField(item.id, 'damageReported', e.target.checked)}
-                          />
-                          <label className="form-check-label small fw-medium text-danger" htmlFor={`damage-${item.id}`}>
-                            Report physical/optical damage (Auto-creates Maintenance Ticket)
-                          </label>
-                        </div>
-                        {insp.damageReported && (
-                          <textarea
-                            className="form-control form-control-sm mt-1 border-danger"
-                            rows="2"
-                            placeholder="Describe damage details (e.g. Cracked front element, loose HDMI port)..."
-                            value={insp.damageNotes || ''}
-                            onChange={(e) => updateItemField(item.id, 'damageNotes', e.target.value)}
-                            required
-                          ></textarea>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Custodian & Inspector sign-off */}
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Returning Custodian
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={borrowerName}
-                    onChange={(e) => setBorrowerName(e.target.value)}
-                  />
+              {/* 2. Inspector Sign-off */}
+              <div className="form-section-card mb-0">
+                <div className="form-section-title">
+                  <i className="bi bi-person-check-fill text-success"></i> 2. Technical Inspection Sign-Off
                 </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Inspector Signature Acknowledgment
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Vault Controller Initials"
-                    value={staffSignature}
-                    onChange={(e) => setStaffSignature(e.target.value)}
-                  />
+
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Returning Custodian Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={borrowerName}
+                      onChange={(e) => setBorrowerName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">Vault Inspector Signature / Initials</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. MV (Marcus Vance)"
+                      value={staffSignature}
+                      onChange={(e) => setStaffSignature(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer bg-light py-2">
+            <div className="modal-footer">
               <button type="button" className="btn btn-sm btn-secondary" onClick={onHide} disabled={submitting}>
                 Cancel
               </button>

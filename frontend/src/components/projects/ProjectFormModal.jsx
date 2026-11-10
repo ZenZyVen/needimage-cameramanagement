@@ -76,153 +76,190 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
   if (!show) return null;
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 shadow">
-          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#1e293b' }}>
-            <h6 className="modal-title fw-bold text-white mb-0">
-              <i className={`bi ${isEdit ? 'bi-pencil' : 'bi-folder-plus'} me-2 text-primary`}></i>
-              {isEdit ? 'Edit Production Project' : 'Create Production Project'}
-            </h6>
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
+      <div className="modal-dialog modal-dialog-centered modal-lg">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+            <div className="d-flex align-items-center gap-2">
+              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
+                <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-folder-plus'}`}></i>
+              </div>
+              <div>
+                <h6 className="modal-title fw-bold text-white mb-0">
+                  {isEdit ? 'Edit Production Project' : 'Register New Production Project'}
+                </h6>
+                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
+                  Manage film shoots, documentaries, commercials, and assigned camera kits
+                </p>
+              </div>
+            </div>
             <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="modal-body p-4">
+            <div className="modal-body p-4" style={{ maxHeight: '74vh', overflowY: 'auto' }}>
               {errorMsg && (
-                <div className="alert alert-danger py-2 small mb-3">
-                  <i className="bi bi-exclamation-circle me-1"></i> {errorMsg}
+                <div className="alert alert-danger py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                  <i className="bi bi-exclamation-octagon-fill"></i>
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
-              <div className="mb-3">
-                <label className="form-label small fw-semibold text-secondary">
-                  Project Title <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="title"
-                  placeholder="e.g. EcoDrive Brand Commercial"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Project Code</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="projectCode"
-                    placeholder="Auto-generated if empty"
-                    value={formData.projectCode}
-                    onChange={handleChange}
-                  />
+              {/* SECTION 1: IDENTITY */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-tag text-primary"></i> 1. Project Identification
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Status</label>
-                  <select
-                    className="form-select"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                  >
-                    <option value="PLANNING">Planning</option>
-                    <option value="IN_PRODUCTION">In Production</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="CANCELLED">Cancelled</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Client / Production Studio</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="client"
-                    placeholder="e.g. Apex Automotive"
-                    value={formData.client}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">Director / Production Lead</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="director"
-                    placeholder="e.g. Alex Rivera"
-                    value={formData.director}
-                    onChange={handleChange}
-                  />
+                <div className="row g-3">
+                  <div className="col-md-7">
+                    <label className="form-label">
+                      Project Title <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="title"
+                      placeholder="e.g. EcoDrive Brand Commercial - 2026 Campaign"
+                      value={formData.title}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-5">
+                    <label className="form-label">Status</label>
+                    <select
+                      className="form-select"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                    >
+                      <option value="PLANNING">Planning (Pre-Production)</option>
+                      <option value="IN_PRODUCTION">In Production (Active Shooting)</option>
+                      <option value="COMPLETED">Completed (Wrap)</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Project Code (Reference)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="projectCode"
+                      placeholder="e.g. PRJ-2026-001 (auto if empty)"
+                      value={formData.projectCode}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Client / Production Studio</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="client"
+                      placeholder="e.g. Apex Automotive / HBO"
+                      value={formData.client}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    Start Date <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    required
-                  />
+              {/* SECTION 2: PRODUCTION TEAM & LOCATION */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-people text-primary"></i> 2. Key Personnel & Location
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-secondary">
-                    End Date <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    required
-                  />
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Director / Lead DP</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="director"
+                      placeholder="e.g. Alex Rivera, SOC"
+                      value={formData.director}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Primary Shooting Location</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="location"
+                      placeholder="e.g. Stage 3 & Pacific Coast Highway"
+                      value={formData.location}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-3">
-                <label className="form-label small fw-semibold text-secondary">Shooting Location</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="location"
-                  placeholder="e.g. Stage 3 & Pacific Coast Highway"
-                  value={formData.location}
-                  onChange={handleChange}
-                />
+              {/* SECTION 3: DATES */}
+              <div className="form-section-card">
+                <div className="form-section-title">
+                  <i className="bi bi-calendar-range text-primary"></i> 3. Production Timeline
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Start Date (First Shoot) <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="startDate"
+                      value={formData.startDate}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Wrap Date (Estimated Wrap) <span className="required-star">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="endDate"
+                      value={formData.endDate}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="form-label small fw-semibold text-secondary">Production Notes</label>
+              {/* SECTION 4: NOTES */}
+              <div className="form-section-card mb-0">
+                <div className="form-section-title">
+                  <i className="bi bi-card-text text-primary"></i> 4. Production Notes & Camera Kit Requirements
+                </div>
                 <textarea
                   className="form-control"
-                  rows="2"
+                  rows="3"
                   name="notes"
-                  placeholder="Gear requirements, special permits..."
+                  placeholder="Special lens package requirements, drone permits, high-speed camera gear..."
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>
               </div>
             </div>
 
-            <div className="modal-footer bg-light py-2">
-              <button type="button" className="btn btn-sm btn-secondary" onClick={onHide} disabled={submitting}>
+            <div className="modal-footer bg-light py-3 d-flex justify-content-end gap-2">
+              <button type="button" className="btn btn-outline-secondary" onClick={onHide} disabled={submitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-                {submitting ? 'Saving...' : isEdit ? 'Update Project' : 'Create Project'}
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-1"></span> Saving...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check2-circle me-1"></i> {isEdit ? 'Update Project' : 'Register Project'}
+                  </>
+                )}
               </button>
             </div>
           </form>
