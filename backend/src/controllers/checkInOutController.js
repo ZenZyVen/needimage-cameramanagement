@@ -1,5 +1,6 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
+const { notifyTeam } = require('../utils/notify');
 
 // 1. Equipment Checkout (Handover)
 exports.checkoutItems = async (req, res, next) => {
@@ -118,20 +119,20 @@ exports.checkoutItems = async (req, res, next) => {
           where: { id: requestId },
           data: { status: 'CHECKED_OUT' }
         });
-
-        // Notify user
-        if (request && request.userId) {
-          await tx.notification.create({
-            data: {
-              userId: request.userId,
-              title: 'Equipment Handed Over',
-              message: `${itemIds.length} item(s) from ${request.requestNumber} have been checked out by ${req.user.name}.`,
-              type: 'SUCCESS',
-              link: `/requests/${request.id}`
-            }
-          });
-        }
       }
+    });
+
+    // Notify Borrower and Staff in Real-Time
+    const borrowerTarget = request?.userId ? [request.userId] : [];
+    const borrowerDisplayName = request?.user?.name || borrowerName || 'Borrower';
+    await notifyTeam({
+      userIds: borrowerTarget,
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'Equipment Handover / Checkout Complete',
+      message: `${req.user.name} checked out ${itemIds.length} item(s) to ${borrowerDisplayName} for ${request ? `request ${request.requestNumber}` : 'vault loan'}.`,
+      type: 'SUCCESS',
+      link: '/checkin-out'
     });
 
     await logAudit({
@@ -318,21 +319,20 @@ exports.checkinItems = async (req, res, next) => {
             actualReturnDate: isFullyReturned ? new Date() : null
           }
         });
-
-        if (request && request.userId) {
-          await tx.notification.create({
-            data: {
-              userId: request.userId,
-              title: isFullyReturned ? 'Equipment Return Complete' : 'Partial Equipment Return Received',
-              message: isFullyReturned
-                ? `All equipment for ${request.requestNumber} has been received and inspected.`
-                : `${items.length} item(s) returned for ${request.requestNumber}. Some items remain checked out.`,
-              type: isFullyReturned ? 'SUCCESS' : 'INFO',
-              link: `/requests/${request.id}`
-            }
-          });
-        }
       }
+    });
+
+    // Notify Borrower and Staff in Real-Time
+    const borrowerTarget = request?.userId ? [request.userId] : [];
+    const borrowerDisplayName = request?.user?.name || finalBorrower || 'Borrower';
+    await notifyTeam({
+      userIds: borrowerTarget,
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'Equipment Return & Inspection Logged',
+      message: `${req.user.name} inspected and confirmed return of ${items.length} item(s) from ${borrowerDisplayName} (${request ? request.requestNumber : 'Direct Return'}).`,
+      type: 'SUCCESS',
+      link: '/checkin-out'
     });
 
     await logAudit({

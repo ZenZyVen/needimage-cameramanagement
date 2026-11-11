@@ -1,6 +1,7 @@
 const { prisma } = require('../config/db');
 const { generateQRCode } = require('../utils/qrGenerator');
 const { logAudit } = require('../utils/auditLogger');
+const { notifyTeam } = require('../utils/notify');
 
 // 1. Get all equipment with filters, search, soft-delete filter, and pagination
 exports.getAllEquipment = async (req, res, next) => {
@@ -409,6 +410,16 @@ exports.updateEquipment = async (req, res, next) => {
       req
     });
 
+    // Notify staff of record update
+    await notifyTeam({
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'Equipment Record Updated',
+      message: `${req.user.name} updated gear details for [${updated.assetTag}] ${updated.name}.`,
+      type: 'INFO',
+      link: '/equipment'
+    });
+
     return res.json({
       success: true,
       message: 'Equipment updated successfully.',
@@ -603,6 +614,16 @@ exports.adjustStock = async (req, res, next) => {
         notes: notes || null
       },
       req
+    });
+
+    // Notify all staff in real-time
+    await notifyTeam({
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: delta > 0 ? 'Equipment Restocked' : 'Equipment Stock Reduced',
+      message: `${req.user.name} ${delta > 0 ? 'restocked' : 'deducted'} ${Math.abs(delta)} unit(s) of [${equipment.assetTag}] ${equipment.name}. New available: ${newAvail} units. Reason: ${reason || 'Inventory Adjustment'}.`,
+      type: delta > 0 ? 'SUCCESS' : 'WARNING',
+      link: '/stock'
     });
 
     return res.json({

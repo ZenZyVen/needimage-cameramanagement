@@ -29,9 +29,20 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchNotifications();
-      // Poll notifications every 60 seconds
-      const interval = setInterval(fetchNotifications, 60000);
-      return () => clearInterval(interval);
+
+      // Real-time polling every 8 seconds for responsive alerts
+      const interval = setInterval(fetchNotifications, 8000);
+
+      // Listen for immediate app-wide notification trigger
+      const handleTrigger = () => {
+        fetchNotifications();
+      };
+      window.addEventListener('notification-trigger', handleTrigger);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('notification-trigger', handleTrigger);
+      };
     } else {
       setNotifications([]);
       setUnreadCount(0);
@@ -60,6 +71,11 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  const triggerRefresh = () => {
+    fetchNotifications();
+    window.dispatchEvent(new CustomEvent('notification-trigger'));
+  };
+
   return (
     <NotificationContext.Provider
       value={{
@@ -68,7 +84,8 @@ export const NotificationProvider = ({ children }) => {
         loading,
         fetchNotifications,
         markAsRead,
-        markAllAsRead
+        markAllAsRead,
+        triggerRefresh
       }}
     >
       {children}
@@ -82,4 +99,11 @@ export const useNotifications = () => {
     throw new Error('useNotifications must be used within a NotificationProvider');
   }
   return context;
+};
+
+// Global helper to trigger real-time refresh from any service or component
+export const triggerNotificationRefresh = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('notification-trigger'));
+  }
 };

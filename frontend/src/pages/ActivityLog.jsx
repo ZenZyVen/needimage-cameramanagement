@@ -359,72 +359,65 @@ const ActivityLog = () => {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light text-muted small">
                   <tr>
-                    <th style={{ width: '170px' }}>Timestamp</th>
-                    <th>User / Actor</th>
-                    <th>Action</th>
-                    <th>Target Entity</th>
+                    <th style={{ width: '180px' }}>Date & Actor</th>
+                    <th style={{ width: '160px' }}>Action & Entity</th>
                     <th>Activity Summary</th>
-                    <th>IP Address</th>
-                    <th className="text-end" style={{ width: '80px' }}>Inspect</th>
+                    <th className="text-end" style={{ width: '85px' }}>Inspect</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLogs.map(log => {
                     const actorName = log.user?.name || 'System / Automated';
                     const actorRole = log.user?.role || 'SYSTEM';
-                    const actorEmail = log.user?.email || '—';
 
                     return (
                       <tr key={log.id}>
-                        <td className="small text-nowrap font-monospace text-secondary">
-                          {formatDateTime(log.createdAt)}
-                        </td>
-
                         <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="rounded-circle bg-slate-800 text-white d-flex align-items-center justify-content-center fw-bold"
-                              style={{ width: '32px', height: '32px', fontSize: '0.75rem', backgroundColor: '#1e293b' }}
+                          <div className="small font-monospace text-secondary text-nowrap">
+                            {formatDateTime(log.createdAt)}
+                          </div>
+                          <div className="d-flex align-items-center gap-1 mt-1">
+                            <span className="fw-semibold text-dark small">{actorName}</span>
+                            <span
+                              className={`badge ${
+                                actorRole === 'ADMIN'
+                                  ? 'bg-danger text-white'
+                                  : actorRole === 'STOCK_CONTROLLER'
+                                  ? 'bg-warning text-dark'
+                                  : 'bg-primary text-white'
+                              }`}
+                              style={{ fontSize: '0.62rem', padding: '1px 5px' }}
                             >
-                              {actorName.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="fw-bold text-dark small">{actorName}</div>
-                              <div className="d-flex align-items-center gap-1">
-                                <span className={`badge ${actorRole === 'ADMIN' ? 'bg-danger text-white' : actorRole === 'STOCK_CONTROLLER' ? 'bg-warning text-dark' : 'bg-primary text-white'}`} style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
-                                  {actorRole}
-                                </span>
-                                <span className="text-muted" style={{ fontSize: '0.7rem' }}>{actorEmail}</span>
-                              </div>
-                            </div>
+                              {actorRole}
+                            </span>
                           </div>
                         </td>
 
                         <td>
-                          <span className={`badge ${getActionBadgeClass(log.action)} font-monospace`} style={{ fontSize: '0.72rem' }}>
-                            {formatActionName(log.action)}
-                          </span>
-                        </td>
-
-                        <td>
-                          <div className="d-flex align-items-center gap-1">
-                            <span className="badge bg-light text-dark border small">
+                          <div>
+                            <span className={`badge ${getActionBadgeClass(log.action)} font-monospace`} style={{ fontSize: '0.72rem' }}>
+                              {formatActionName(log.action)}
+                            </span>
+                          </div>
+                          <div className="d-flex align-items-center gap-1 mt-1">
+                            <span className="badge bg-light text-secondary border small" style={{ fontSize: '0.68rem' }}>
                               {log.entity}
                             </span>
                             {log.entityId && (
-                              <span className="font-monospace text-secondary small" style={{ fontSize: '0.72rem' }}>
+                              <span className="font-monospace text-muted small" style={{ fontSize: '0.68rem' }}>
                                 #{log.entityId}
                               </span>
                             )}
                           </div>
                         </td>
 
-                        <td className="small text-dark text-truncate" style={{ maxWidth: '300px' }} title={getHumanDescription(log)}>
-                          {getHumanDescription(log)}
-                        </td>
-
-                        <td className="small font-monospace text-muted">
-                          {log.ipAddress || '127.0.0.1'}
+                        <td className="small text-dark">
+                          <div style={{ wordBreak: 'break-word', lineHeight: '1.4' }}>
+                            {getHumanDescription(log)}
+                          </div>
+                          <div className="text-muted font-monospace mt-1" style={{ fontSize: '0.68rem' }}>
+                            IP: {log.ipAddress || '127.0.0.1'}
+                          </div>
                         </td>
 
                         <td className="text-end">

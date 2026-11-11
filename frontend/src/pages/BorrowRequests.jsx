@@ -7,6 +7,7 @@ import {
   rejectRequest,
   cancelRequest
 } from '../services/requestService';
+import { getCategories } from '../services/equipmentService';
 import { checkoutItems, checkinItems } from '../services/checkInOutService';
 import RequestFormModal from '../components/requests/RequestFormModal';
 import RequestReviewModal from '../components/requests/RequestReviewModal';
@@ -20,8 +21,10 @@ import { formatDate } from '../utils/formatters';
 const BorrowRequests = () => {
   const { user, isStaff, isUser } = useAuth();
   const [requests, setRequests] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modals
@@ -39,11 +42,27 @@ const BorrowRequests = () => {
   const [printHandoverReq, setPrintHandoverReq] = useState(null);
   const [printReturnReq, setPrintReturnReq] = useState(null);
 
+  // Inspection modal for gear bundle preview
+  const [viewItemsReq, setViewItemsReq] = useState(null);
+
   const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     loadRequests();
   }, [statusFilter, searchTerm]);
+
+  const loadCategories = async () => {
+    try {
+      const res = await getCategories();
+      if (res.data?.data) setCategories(res.data.data);
+    } catch (e) {
+      console.warn('Failed to load categories:', e);
+    }
+  };
 
   const loadRequests = async () => {
     try {
@@ -117,6 +136,15 @@ const BorrowRequests = () => {
     return ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(req.status) && new Date(req.endDate) < new Date();
   };
 
+  // Filter by category
+  const displayRequests = requests.filter(req => {
+    if (categoryFilter !== 'ALL') {
+      const hasCat = req.items?.some(i => i.equipment?.categoryId === categoryFilter);
+      if (!hasCat) return false;
+    }
+    return true;
+  });
+
   return (
     <div>
       {/* Header */}
@@ -146,15 +174,16 @@ const BorrowRequests = () => {
       <div className="card mb-4 border-0 shadow-sm">
         <div className="card-body p-3">
           <div className="row g-2 align-items-center">
-            <div className="col-md-7">
-              <div className="input-group">
+            {/* Search */}
+            <div className="col-md-5">
+              <div className="input-group input-group-sm">
                 <span className="input-group-text bg-white border-end-0">
                   <i className="bi bi-search text-muted"></i>
                 </span>
                 <input
                   type="text"
                   className="form-control border-start-0 ps-0"
-                  placeholder="Search by request #, borrower name, purpose, or project..."
+                  placeholder="Search request #, borrower, project..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -170,16 +199,33 @@ const BorrowRequests = () => {
               </div>
             </div>
 
-            <div className="col-md-5">
+            {/* Equipment Category Selection Filter */}
+            <div className="col-md-4">
               <select
-                className="form-select"
+                className="form-select form-select-sm"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="ALL">All Equipment Categories ({categories.length})</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="col-md-3">
+              <select
+                className="form-select form-select-sm"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="ALL">All Request Statuses</option>
-                <option value="PENDING">Pending Review (Awaiting Approval)</option>
-                <option value="APPROVED">Approved (Ready for Handover)</option>
-                <option value="CHECKED_OUT">Borrowed / In Use (Active Loan)</option>
+                <option value="PENDING">Pending Review (Awaiting)</option>
+                <option value="APPROVED">Approved (Ready for Pickup)</option>
+                <option value="CHECKED_OUT">In Field / On Loan</option>
                 <option value="OVERDUE">Overdue Returns</option>
                 <option value="RETURNED">Returned & Inspected</option>
                 <option value="REJECTED">Rejected</option>
@@ -196,7 +242,7 @@ const BorrowRequests = () => {
           <div className="spinner-border text-primary" role="status"></div>
           <p className="text-muted small mt-2">Loading requests...</p>
         </div>
-      ) : requests.length === 0 ? (
+      ) : displayRequests.length === 0 ? (
         <div className="card text-center py-5 border-0 shadow-sm">
           <div className="card-body">
             <i className="bi bi-calendar-x fs-1 text-muted d-block mb-2"></i>
@@ -221,17 +267,17 @@ const BorrowRequests = () => {
             <table className="table table-custom align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Request #</th>
+                  <th style={{ width: '130px' }}>Request #</th>
                   {isStaff && <th>Borrower</th>}
                   <th>Production Project</th>
-                  <th>Dates (Start - Return)</th>
-                  <th>Requested Gear Items</th>
-                  <th>Status</th>
-                  <th className="text-end">Actions</th>
+                  <th style={{ width: '170px' }}>Dates (Start - Return)</th>
+                  <th style={{ minWidth: '180px' }}>Requested Gear Items</th>
+                  <th style={{ width: '130px' }}>Status</th>
+                  <th className="text-end" style={{ width: '160px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {requests.map(req => {
+                {displayRequests.map(req => {
                   const overdue = isOverdue(req);
                   return (
                     <tr key={req.id} className={overdue ? 'bg-danger-subtle' : ''}>
@@ -267,31 +313,22 @@ const BorrowRequests = () => {
                       </td>
 
                       <td>
-                        <div className="d-flex flex-column gap-1" style={{ maxWidth: '300px' }}>
-                          {req.items?.map(item => (
-                            <div key={item.id} className="d-flex align-items-center gap-2 p-1 border rounded bg-white">
-                              {item.equipment?.imageUrl ? (
-                                <img
-                                  src={item.equipment.imageUrl}
-                                  alt={item.equipment.name}
-                                  className="rounded object-fit-cover flex-shrink-0"
-                                  style={{ width: '28px', height: '28px' }}
-                                />
-                              ) : (
-                                <div className="bg-light rounded d-flex align-items-center justify-content-center text-muted flex-shrink-0" style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>
-                                  <i className="bi bi-camera"></i>
-                                </div>
-                              )}
-                              <div className="text-truncate flex-grow-1" style={{ fontSize: '0.75rem' }}>
-                                <span className="fw-bold text-dark me-1">{item.equipment?.assetTag}</span>
-                                <span className="text-muted">{item.equipment?.name}</span>
-                              </div>
-                              <span className="badge bg-light text-dark border px-1" style={{ fontSize: '0.68rem' }}>
-                                ×{item.quantity || 1}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm border d-flex align-items-center gap-2 py-1 px-2 text-start shadow-xs w-100"
+                          style={{ fontSize: '0.75rem', maxWidth: '240px' }}
+                          onClick={() => setViewItemsReq(req)}
+                          title="Click to view all gear items in this request"
+                        >
+                          <span className="badge bg-primary text-white">
+                            {req.items?.length || 0}
+                          </span>
+                          <span className="text-truncate text-secondary flex-grow-1" style={{ fontSize: '0.74rem' }}>
+                            {req.items?.map(i => i.equipment?.name).filter(Boolean).slice(0, 2).join(', ')}
+                            {(req.items?.length || 0) > 2 ? '...' : ''}
+                          </span>
+                          <i className="bi bi-eye text-muted small ms-auto"></i>
+                        </button>
                       </td>
 
                       <td>
@@ -398,6 +435,82 @@ const BorrowRequests = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Gear Bundle Preview Modal */}
+      {viewItemsReq && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header py-2 px-3 bg-light border-bottom">
+                <div className="d-flex align-items-center gap-2">
+                  <i className="bi bi-camera text-primary fs-5"></i>
+                  <div>
+                    <h6 className="modal-title fw-bold text-dark mb-0">
+                      Requested Equipment ({viewItemsReq.requestNumber})
+                    </h6>
+                    <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                      Project: {viewItemsReq.project?.title || 'Standalone Shoot'} • Requester: {viewItemsReq.user?.name}
+                    </small>
+                  </div>
+                </div>
+                <button type="button" className="btn-close" onClick={() => setViewItemsReq(null)}></button>
+              </div>
+
+              <div className="modal-body p-3">
+                <div className="list-group">
+                  {viewItemsReq.items?.map((item, idx) => (
+                    <div key={item.id || idx} className="list-group-item d-flex align-items-center gap-3 p-3">
+                      {item.equipment?.imageUrl ? (
+                        <img
+                          src={item.equipment.imageUrl}
+                          alt={item.equipment.name}
+                          className="rounded border flex-shrink-0"
+                          style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div
+                          className="rounded bg-light border d-flex align-items-center justify-content-center text-muted flex-shrink-0"
+                          style={{ width: '48px', height: '48px' }}
+                        >
+                          <i className="bi bi-camera fs-4"></i>
+                        </div>
+                      )}
+
+                      <div className="flex-grow-1 min-width-0">
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <span className="badge bg-slate-900 text-white font-monospace" style={{ fontSize: '0.72rem' }}>
+                            {item.equipment?.assetTag || 'GEAR-TAG'}
+                          </span>
+                          <span className="badge bg-light text-secondary border" style={{ fontSize: '0.68rem' }}>
+                            {item.equipment?.category?.name || 'Equipment'}
+                          </span>
+                        </div>
+                        <div className="fw-bold text-dark small">{item.equipment?.name}</div>
+                        <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                          Brand: {item.equipment?.brand || '—'} • Model: {item.equipment?.model || '—'}
+                        </div>
+                      </div>
+
+                      <div className="text-end flex-shrink-0">
+                        <div className="fw-bold text-primary fs-6">×{item.quantity || 1}</div>
+                        <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.65rem' }}>
+                          Requested
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="modal-footer py-2 px-3 bg-light border-top">
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setViewItemsReq(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

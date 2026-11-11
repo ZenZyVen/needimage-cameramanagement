@@ -118,6 +118,15 @@ const Sidebar = ({ isOpen, onClose }) => {
             </NavLink>
 
             <NavLink
+              to="/handover-logs"
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <i className="bi bi-card-checklist text-success"></i>
+              <span>Handover & Return Logs</span>
+            </NavLink>
+
+            <NavLink
               to="/maintenance"
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
               onClick={onClose}
@@ -137,6 +146,15 @@ const Sidebar = ({ isOpen, onClose }) => {
         >
           <i className="bi bi-file-earmark-bar-graph-fill"></i>
           <span>Loan Activity Report</span>
+        </NavLink>
+
+        <NavLink
+          to="/history"
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          onClick={onClose}
+        >
+          <i className="bi bi-archive-fill text-warning"></i>
+          <span>History Records</span>
         </NavLink>
 
         {isAdmin && (

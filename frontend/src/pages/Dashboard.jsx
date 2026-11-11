@@ -143,6 +143,10 @@ const Dashboard = () => {
                 <i className="bi bi-clock-history text-info"></i>
                 <span className="d-none d-sm-inline">Movements</span>
               </Link>
+              <Link to="/history" className="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-xs" title="Complete Historical Records">
+                <i className="bi bi-archive-fill"></i>
+                <span className="d-none d-sm-inline">History</span>
+              </Link>
               <Link to="/checkin-out?tab=checkout" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-xs fw-medium">
                 <i className="bi bi-box-arrow-right"></i>
                 <span>Fast Checkout</span>
@@ -402,123 +406,135 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* 4. TABLES ROW: Recent Requests & Recent Check-in/Out Handover Log */}
+      {/* 4. DEDICATED OPERATIONS HUBS (Separated into dedicated pages) */}
       <div className="row g-3">
-        {/* Recent Requests */}
-        <div className="col-lg-7">
+        {/* Hub 1: Dedicated Borrow Requests Portal */}
+        <div className="col-lg-6">
           <div className="card h-100 border-0 shadow-sm">
             <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-              <span className="fw-semibold small text-secondary">
-                Recent Borrowing Requisitions
-              </span>
-              <Link to="/requests" className="small text-primary text-decoration-none">
-                View All Requests <i className="bi bi-arrow-right"></i>
+              <div className="d-flex align-items-center gap-2">
+                <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                  <i className="bi bi-calendar2-check-fill"></i>
+                </div>
+                <div>
+                  <h6 className="fw-bold text-dark mb-0">Borrow Requests Operations</h6>
+                  <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    {stats.pendingRequestsCount || 0} pending review • {stats.checkedOutRequestsCount || 0} in field
+                  </small>
+                </div>
+              </div>
+
+              <Link to="/requests" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-xs px-3">
+                <span>Open Dedicated Page</span>
+                <i className="bi bi-arrow-right"></i>
               </Link>
             </div>
-            <div className="table-responsive">
-              <table className="table table-custom align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Request #</th>
-                    <th>Requester</th>
-                    <th>Project</th>
-                    <th>Dates</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentRequests.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="text-center py-4 text-muted small">
-                        No requests recorded for this timeframe.
-                      </td>
-                    </tr>
-                  ) : (
-                    recentRequests.map(req => (
-                      <tr key={req.id}>
-                        <td className="fw-bold">{req.requestNumber}</td>
-                        <td>{req.user?.name}</td>
-                        <td className="text-truncate" style={{ maxWidth: '140px' }}>
-                          {req.project?.title || 'Standalone Shoot'}
-                        </td>
-                        <td className="small text-nowrap">
-                          {formatDate(req.startDate)} - {formatDate(req.endDate)}
-                        </td>
-                        <td>
-                          <StatusBadge status={req.status} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
-        {/* Handover & Check-in Activity Stream */}
-        <div className="col-lg-5">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-              <span className="fw-semibold small text-secondary">
-                Recent Handover & Return Logs
-              </span>
-              {(isAdmin || isStockController) && (
-                <Link to="/checkin-out" className="small text-primary text-decoration-none">
-                  Check-in / Out <i className="bi bi-arrow-right"></i>
-                </Link>
-              )}
-            </div>
-
-            <div className="card-body p-0" style={{ maxHeight: '360px', overflowY: 'auto' }}>
-              {recentActivity.length === 0 ? (
+            <div className="card-body p-3">
+              {recentRequests.length === 0 ? (
                 <div className="text-center py-4 text-muted small">
-                  No checkout or return actions logged for this timeframe.
+                  No active borrow requisitions for this period.
                 </div>
               ) : (
                 <div className="list-group list-group-flush">
-                  {recentActivity.map(act => (
-                    <div key={act.id} className="list-group-item p-3">
-                      <div className="d-flex justify-content-between align-items-center mb-1">
-                        <span
-                          className={`badge ${
-                            act.type === 'CHECK_OUT'
-                              ? 'bg-primary'
-                              : 'bg-success'
-                          }`}
-                          style={{ fontSize: '0.65rem' }}
-                        >
-                          {act.type === 'CHECK_OUT' ? 'HANDOVER' : 'RETURN'}
-                        </span>
-                        <span className="text-muted" style={{ fontSize: '0.72rem' }}>
-                          {formatDateTime(act.actionDate)}
-                        </span>
+                  {recentRequests.slice(0, 4).map(req => (
+                    <div key={req.id} className="list-group-item px-0 py-2 d-flex justify-content-between align-items-center border-bottom">
+                      <div>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="fw-bold text-dark small">{req.requestNumber}</span>
+                          <StatusBadge status={req.status} />
+                        </div>
+                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                          Requester: <strong>{req.user?.name}</strong> • Project: {req.project?.title || 'Standalone'}
+                        </div>
                       </div>
-                      <div className="fw-semibold text-dark small">
-                        {act.equipment?.assetTag} - {act.equipment?.name}
-                      </div>
-                      <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
-                        Borrower: <strong>{act.borrowerName || 'Staff'}</strong> • Handled by: {act.handledBy?.name || 'Vault Tech'}
-                      </div>
+                      <span className="small text-secondary font-monospace" style={{ fontSize: '0.72rem' }}>
+                        {formatDate(req.startDate)} – {formatDate(req.endDate)}
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Dedicated Pages Link Footnote */}
-            {(isAdmin || isStockController) && (
-              <div className="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
-                <Link to="/stock-movements" className="small text-secondary text-decoration-none d-flex align-items-center gap-1">
-                  <i className="bi bi-clock-history text-info"></i>
-                  <span>Dedicated Stock Movements Log</span>
-                </Link>
-                <Link to="/low-stock" className="small text-secondary text-decoration-none d-flex align-items-center gap-1">
-                  <i className="bi bi-exclamation-triangle-fill text-warning"></i>
-                  <span>Low-Stock Alerts</span>
-                </Link>
+            <div className="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
+              <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
+                Full filtering by category, status, and printable vouchers available on dedicated page.
+              </span>
+              <Link to="/requests" className="small text-primary text-decoration-none fw-semibold">
+                Manage Requests →
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Hub 2: Dedicated Handover & Return Logs Portal */}
+        <div className="col-lg-6">
+          <div className="card h-100 border-0 shadow-sm">
+            <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+              <div className="d-flex align-items-center gap-2">
+                <div className="p-2 rounded bg-success-subtle text-success d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                  <i className="bi bi-arrow-left-right"></i>
+                </div>
+                <div>
+                  <h6 className="fw-bold text-dark mb-0">Handover & Return Logs</h6>
+                  <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    Equipment checkout handovers & return inspection condition logs
+                  </small>
+                </div>
               </div>
-            )}
+
+              <Link to="/handover-logs" className="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-xs px-3">
+                <span>Open Dedicated Page</span>
+                <i className="bi bi-arrow-right"></i>
+              </Link>
+            </div>
+
+            <div className="card-body p-3">
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-4 text-muted small">
+                  No handover or return activity logged for this timeframe.
+                </div>
+              ) : (
+                <div className="list-group list-group-flush">
+                  {recentActivity.slice(0, 4).map(act => (
+                    <div key={act.id} className="list-group-item px-0 py-2 d-flex justify-content-between align-items-center border-bottom">
+                      <div>
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <span
+                            className={`badge ${act.type === 'CHECK_OUT' ? 'bg-primary' : 'bg-success'}`}
+                            style={{ fontSize: '0.62rem' }}
+                          >
+                            {act.type === 'CHECK_OUT' ? 'HANDOVER' : 'RETURN'}
+                          </span>
+                          <span className="fw-bold text-dark small">
+                            {act.equipment?.assetTag}
+                          </span>
+                          <span className="text-muted small text-truncate" style={{ maxWidth: '160px' }}>
+                            {act.equipment?.name}
+                          </span>
+                        </div>
+                        <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                          Borrower: <strong>{act.borrowerName || 'Staff Lead'}</strong> • By: {act.handledBy?.name || 'Vault Tech'}
+                        </div>
+                      </div>
+                      <span className="text-muted small font-monospace" style={{ fontSize: '0.7rem' }}>
+                        {formatDateTime(act.actionDate)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
+              <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
+                Full condition notes, CSV export, and date filtering available on dedicated page.
+              </span>
+              <Link to="/handover-logs" className="small text-success text-decoration-none fw-semibold">
+                Browse Full Logs →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

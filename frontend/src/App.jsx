@@ -26,6 +26,9 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import LowStockAlerts from './pages/LowStockAlerts';
 import StockMovements from './pages/StockMovements';
+import HandoverLogs from './pages/HandoverLogs';
+import HistoryRecords from './pages/HistoryRecords';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Protected App Layout Wrapper
 const AppLayout = () => {
@@ -75,6 +78,7 @@ function App() {
       <NotificationProvider>
         <SettingsProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               {/* Public Auth Routes */}
               <Route path="/login" element={<Login />} />
@@ -88,6 +92,7 @@ function App() {
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/requests" element={<BorrowRequests />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/history" element={<HistoryRecords />} />
                 <Route path="/qr-tags" element={<QRScannerPage />} />
                 <Route path="/profile" element={<Profile />} />
 
@@ -96,6 +101,7 @@ function App() {
                   <Route path="/stock" element={<StockManagement />} />
                   <Route path="/low-stock" element={<LowStockAlerts />} />
                   <Route path="/stock-movements" element={<StockMovements />} />
+                  <Route path="/handover-logs" element={<HandoverLogs />} />
                   <Route path="/checkin-out" element={<CheckInOut />} />
                   <Route path="/maintenance" element={<Maintenance />} />
                 </Route>

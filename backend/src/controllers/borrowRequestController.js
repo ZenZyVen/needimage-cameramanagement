@@ -1,5 +1,6 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
+const { notifyTeam } = require('../utils/notify');
 
 // 1. Get all borrow requests (User gets their own; Admin/Stock gets all)
 exports.getAllRequests = async (req, res, next) => {
@@ -221,22 +222,15 @@ exports.createRequest = async (req, res, next) => {
       }
     });
 
-    // Notify Admins and Stock Controllers
-    const staffUsers = await prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'STOCK_CONTROLLER'] } }
+    // Notify Admins and Stock Controllers in real-time
+    await notifyTeam({
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'New Borrow Request Submitted',
+      message: `${req.user.name} submitted requisition ${newRequest.requestNumber} requesting ${requestedEquipment.length} equipment item(s).`,
+      type: 'INFO',
+      link: '/requests'
     });
-
-    for (const staff of staffUsers) {
-      await prisma.notification.create({
-        data: {
-          userId: staff.id,
-          title: 'New Equipment Request',
-          message: `${req.user.name} submitted ${newRequest.requestNumber} for ${requestedEquipment.length} item(s).`,
-          type: 'INFO',
-          link: '/requests'
-        }
-      });
-    }
 
     await logAudit({
       userId: req.user.id,
@@ -293,15 +287,15 @@ exports.approveRequest = async (req, res, next) => {
       }
     });
 
-    // Notify requester
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        title: 'Borrow Request Approved',
-        message: `Your request ${request.requestNumber} has been approved by ${req.user.name}. You may proceed to checkout.`,
-        type: 'SUCCESS',
-        link: '/requests'
-      }
+    // Notify requester and staff
+    await notifyTeam({
+      userIds: [request.userId],
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'Borrow Request Approved',
+      message: `${req.user.name} approved request ${request.requestNumber} for ${request.user?.name || 'borrower'}. Ready for checkout.`,
+      type: 'SUCCESS',
+      link: '/requests'
     });
 
     await logAudit({
@@ -361,15 +355,15 @@ exports.rejectRequest = async (req, res, next) => {
       }
     });
 
-    // Notify requester
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        title: 'Borrow Request Rejected',
-        message: `Your request ${request.requestNumber} was rejected. Reason: ${rejectionReason.trim()}`,
-        type: 'DANGER',
-        link: '/requests'
-      }
+    // Notify requester and staff
+    await notifyTeam({
+      userIds: [request.userId],
+      notifyStaff: true,
+      actorId: req.user.id,
+      title: 'Borrow Request Rejected',
+      message: `${req.user.name} rejected request ${request.requestNumber} for ${request.user?.name || 'borrower'}. Reason: ${rejectionReason.trim()}`,
+      type: 'DANGER',
+      link: '/requests'
     });
 
     await logAudit({

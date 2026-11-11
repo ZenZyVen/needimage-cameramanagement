@@ -42,6 +42,7 @@ const StockManagement = () => {
   // Restock Modal
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [selectedItemForAction, setSelectedItemForAction] = useState(null);
+  const [actionModalCategory, setActionModalCategory] = useState('ALL');
   const [restockQty, setRestockQty] = useState(1);
   const [restockReason, setRestockReason] = useState('PO-2026-INSPECTION');
   const [restockNotes, setRestockNotes] = useState('');
@@ -140,6 +141,8 @@ const StockManagement = () => {
 
   // Open Restock Modal
   const openRestock = (item = null) => {
+    const cat = item ? (item.categoryId || 'ALL') : 'ALL';
+    setActionModalCategory(cat);
     setSelectedItemForAction(item || equipmentList[0] || null);
     setRestockQty(1);
     setRestockReason('RESTOCK_INTAKE');
@@ -150,6 +153,8 @@ const StockManagement = () => {
   // Open Deduct Modal
   const openDeduct = (item = null) => {
     const target = item || equipmentList[0] || null;
+    const cat = target ? (target.categoryId || 'ALL') : 'ALL';
+    setActionModalCategory(cat);
     setSelectedItemForAction(target);
     setDeductQty(1);
     setDeductType('DAMAGED_WRITE_OFF');
@@ -157,6 +162,12 @@ const StockManagement = () => {
     setDeductNotes('');
     setShowDeductModal(true);
   };
+
+  // Filter equipment list for modal by selected category
+  const modalEquipmentOptions = equipmentList.filter(item => {
+    if (actionModalCategory === 'ALL') return true;
+    return item.categoryId === actionModalCategory;
+  });
 
   // Handle Restock Submit
   const handleRestockSubmit = async (e) => {
@@ -759,9 +770,39 @@ const StockManagement = () => {
 
               <form onSubmit={handleRestockSubmit}>
                 <div className="modal-body p-4">
+                  {/* Category Selection Filter */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">
+                      <i className="bi bi-tags-fill text-primary me-1"></i> 1. Select Equipment Category
+                    </label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={actionModalCategory}
+                      onChange={(e) => {
+                        const catId = e.target.value;
+                        setActionModalCategory(catId);
+                        const matching = equipmentList.filter(i => catId === 'ALL' || i.categoryId === catId);
+                        setSelectedItemForAction(matching.length > 0 ? matching[0] : null);
+                      }}
+                    >
+                      <option value="ALL">All Categories ({equipmentList.length} total items)</option>
+                      {categories.map(cat => {
+                        const count = equipmentList.filter(i => i.categoryId === cat.id).length;
+                        return (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name} ({count} items)
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <small className="text-muted">Displays only equipment belonging to the selected category.</small>
+                  </div>
+
                   {/* Equipment Selector */}
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Equipment Item to Restock</label>
+                    <label className="form-label small fw-semibold text-secondary">
+                      <i className="bi bi-camera-fill text-primary me-1"></i> 2. Choose Gear to Restock
+                    </label>
                     <select
                       className="form-select form-select-sm"
                       value={selectedItemForAction?.id || ''}
@@ -770,12 +811,17 @@ const StockManagement = () => {
                         setSelectedItemForAction(item || null);
                       }}
                       required
+                      disabled={modalEquipmentOptions.length === 0}
                     >
-                      {equipmentList.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.assetTag} - {item.name} (Current: {item.availableQuantity || item.quantity} avail / {item.quantity} total)
-                        </option>
-                      ))}
+                      {modalEquipmentOptions.length === 0 ? (
+                        <option value="">No equipment registered in this category</option>
+                      ) : (
+                        modalEquipmentOptions.map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.assetTag} - {item.name} (Current: {item.availableQuantity || item.quantity} avail / {item.quantity} total)
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -870,9 +916,39 @@ const StockManagement = () => {
 
               <form onSubmit={handleDeductSubmit}>
                 <div className="modal-body p-4">
+                  {/* Category Selection Filter */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">
+                      <i className="bi bi-tags-fill text-danger me-1"></i> 1. Select Equipment Category
+                    </label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={actionModalCategory}
+                      onChange={(e) => {
+                        const catId = e.target.value;
+                        setActionModalCategory(catId);
+                        const matching = equipmentList.filter(i => catId === 'ALL' || i.categoryId === catId);
+                        setSelectedItemForAction(matching.length > 0 ? matching[0] : null);
+                      }}
+                    >
+                      <option value="ALL">All Categories ({equipmentList.length} total items)</option>
+                      {categories.map(cat => {
+                        const count = equipmentList.filter(i => i.categoryId === cat.id).length;
+                        return (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name} ({count} items)
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <small className="text-muted">Displays only equipment belonging to the selected category.</small>
+                  </div>
+
                   {/* Equipment Selector */}
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Equipment Item to Deduct</label>
+                    <label className="form-label small fw-semibold text-secondary">
+                      <i className="bi bi-camera-fill text-secondary me-1"></i> 2. Choose Gear to Deduct
+                    </label>
                     <select
                       className="form-select form-select-sm"
                       value={selectedItemForAction?.id || ''}
@@ -881,12 +957,17 @@ const StockManagement = () => {
                         setSelectedItemForAction(item || null);
                       }}
                       required
+                      disabled={modalEquipmentOptions.length === 0}
                     >
-                      {equipmentList.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.assetTag} - {item.name} (Available: {item.availableQuantity || item.quantity} / {item.quantity} total)
-                        </option>
-                      ))}
+                      {modalEquipmentOptions.length === 0 ? (
+                        <option value="">No equipment registered in this category</option>
+                      ) : (
+                        modalEquipmentOptions.map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.assetTag} - {item.name} (Available: {item.availableQuantity || item.quantity} / {item.quantity} total)
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
