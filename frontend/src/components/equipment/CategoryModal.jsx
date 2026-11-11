@@ -80,14 +80,16 @@ const CategoryModal = ({ show, onHide, categories = [], onCategoriesUpdated }) =
               <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                 <i className="bi bi-tags-fill"></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">Equipment Categories Management</h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
-                  Create and organize vault categories and inventory groupings
-                </p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">Equipment Categories Management</h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <div className="modal-body p-4" style={{ maxHeight: '74vh', overflowY: 'auto' }}>

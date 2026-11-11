@@ -43,12 +43,16 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
               <div className="p-2 rounded bg-success-subtle text-success d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                 <i className="bi bi-check2-circle"></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">Complete Maintenance Resolution</h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>Ticket #{ticket.ticketNumber} • Verify service and return to inventory</p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">Complete Maintenance Resolution</h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <form onSubmit={handleResolve}>

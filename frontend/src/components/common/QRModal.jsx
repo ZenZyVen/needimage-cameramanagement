@@ -23,7 +23,14 @@ const QRModal = ({ show, onHide, equipment }) => {
               <i className="bi bi-qr-code me-1 text-primary"></i>
               Equipment Asset Tag
             </h6>
-            <button type="button" className="btn-close" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <div className="modal-body text-center p-4">

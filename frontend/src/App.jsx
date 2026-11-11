@@ -28,6 +28,7 @@ import LowStockAlerts from './pages/LowStockAlerts';
 import StockMovements from './pages/StockMovements';
 import HandoverLogs from './pages/HandoverLogs';
 import HistoryRecords from './pages/HistoryRecords';
+import ProductManagement from './pages/ProductManagement';
 import ScrollToTop from './components/common/ScrollToTop';
 
 // Protected App Layout Wrapper
@@ -108,6 +109,7 @@ function App() {
 
                 {/* Admin Only Routes */}
                 <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/products" element={<ProductManagement />} />
                   <Route path="/activity-log" element={<ActivityLog />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />

@@ -253,7 +253,15 @@ const Projects = () => {
                   <span className="badge bg-primary fs-6">{selectedProject?.projectCode}</span>
                   <h6 className="modal-title fw-bold text-white mb-0">{selectedProject?.title}</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDetailModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowDetailModal(false)}
+                  aria-label="Close"
+                  title="Close modal"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <div className="modal-body p-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>

@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   getStockMovements,
   getEquipment,
+  getCategories,
   adjustStock
 } from '../services/equipmentService';
+import { triggerNotificationRefresh } from '../context/NotificationContext';
 import { formatDateTime } from '../utils/formatters';
 
 const MOVEMENT_TYPES = [
@@ -32,6 +34,8 @@ const StockMovements = () => {
 
   // Quick Restock Modal
   const [equipmentList, setEquipmentList] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [restockCategory, setRestockCategory] = useState('ALL');
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [selectedGearId, setSelectedGearId] = useState('');
   const [restockQty, setRestockQty] = useState(1);
@@ -42,7 +46,19 @@ const StockMovements = () => {
 
   useEffect(() => {
     loadEquipmentOptions();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const res = await getCategories();
+      if (res.data?.success) {
+        setCategories(res.data.data || []);
+      }
+    } catch (e) {
+      console.warn('Error loading categories:', e);
+    }
+  };
 
   useEffect(() => {
     loadMovements();
@@ -50,7 +66,7 @@ const StockMovements = () => {
 
   const loadEquipmentOptions = async () => {
     try {
-      const res = await getEquipment({ limit: 100 });
+      const res = await getEquipment({ limit: 200 });
       if (res.data?.success) {
         setEquipmentList(res.data.data || []);
       }
@@ -95,6 +111,7 @@ const StockMovements = () => {
         type: 'RESTOCK'
       });
       setAlertMsg({ type: 'success', text: `Stock successfully added (+${qty}). Movement ledger updated!` });
+      triggerNotificationRefresh();
       setShowRestockModal(false);
       loadMovements();
     } catch (err) {
@@ -333,14 +350,11 @@ const StockMovements = () => {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light text-muted small">
                   <tr>
-                    <th style={{ width: '160px' }}>Timestamp</th>
-                    <th>Equipment Item</th>
-                    <th>Movement Type</th>
-                    <th className="text-center">Quantity Delta</th>
-                    <th className="text-center">Stock Progression</th>
-                    <th>Reference / Order</th>
-                    <th>Description / Notes</th>
-                    <th>Responsible Staff</th>
+                    <th style={{ width: '170px' }}>Date & Staff</th>
+                    <th style={{ minWidth: '220px' }}>Equipment Item</th>
+                    <th style={{ width: '160px' }}>Movement & Delta</th>
+                    <th style={{ width: '190px' }}>Progression & Ref</th>
+                    <th>Notes & Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -348,61 +362,71 @@ const StockMovements = () => {
                     const isPositive = m.quantityChanged > 0;
                     return (
                       <tr key={m.id}>
-                        <td className="small text-nowrap font-monospace text-secondary">
-                          {formatDateTime(m.createdAt)}
+                        {/* 1. Date & Staff */}
+                        <td>
+                          <div className="font-monospace small text-dark fw-semibold">
+                            {formatDateTime(m.createdAt)}
+                          </div>
+                          <div className="small text-muted d-flex align-items-center gap-1 mt-0">
+                            <i className="bi bi-person text-primary" style={{ fontSize: '0.8rem' }}></i>
+                            <span>{m.performedBy || 'System Admin'}</span>
+                          </div>
                         </td>
 
+                        {/* 2. Equipment */}
                         <td>
                           <div className="d-flex align-items-center gap-2">
-                            <span className="badge bg-dark font-monospace" style={{ fontSize: '0.7rem' }}>
+                            <span className="badge bg-dark font-monospace" style={{ fontSize: '0.72rem' }}>
                               {m.assetTag}
                             </span>
-                            <span className="fw-semibold text-dark small text-truncate" style={{ maxWidth: '200px' }}>
+                            <span className="fw-semibold text-dark small">
                               {m.equipmentName}
                             </span>
                           </div>
                         </td>
 
+                        {/* 3. Movement & Delta */}
                         <td>
-                          <span className={`badge ${
-                            m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
-                              ? 'bg-success-subtle text-success border border-success-subtle'
-                              : m.type === 'DAMAGED_WRITE_OFF' || m.type === 'STOCK_REDUCTION'
-                              ? 'bg-danger-subtle text-danger border border-danger-subtle'
-                              : m.type === 'CHECK_OUT'
-                              ? 'bg-primary-subtle text-primary border border-primary-subtle'
-                              : 'bg-warning-subtle text-warning border border-warning-subtle'
-                          } small font-monospace`}>
-                            {m.type}
-                          </span>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className={`badge ${
+                              m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
+                                ? 'bg-success-subtle text-success border border-success-subtle'
+                                : m.type === 'DAMAGED_WRITE_OFF' || m.type === 'STOCK_REDUCTION'
+                                ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                                : m.type === 'CHECK_OUT'
+                                ? 'bg-primary-subtle text-primary border border-primary-subtle'
+                                : 'bg-warning-subtle text-warning border border-warning-subtle'
+                            } small font-monospace`}>
+                              {m.type}
+                            </span>
+                            <span className={`fw-bold small ${isPositive ? 'text-success' : 'text-danger'}`}>
+                              {isPositive ? `+${m.quantityChanged}` : m.quantityChanged}
+                            </span>
+                          </div>
                         </td>
 
-                        <td className="text-center">
-                          <span className={`fw-bold fs-6 ${isPositive ? 'text-success' : 'text-danger'}`}>
-                            {isPositive ? `+${m.quantityChanged}` : m.quantityChanged}
-                          </span>
+                        {/* 4. Stock Progression & Ref */}
+                        <td>
+                          <div className="small font-monospace">
+                            <span className="text-muted">{m.previousAvailable}</span>
+                            <i className="bi bi-arrow-right mx-1 text-secondary"></i>
+                            <strong className="text-dark">{m.newAvailable}</strong>
+                            <span className="text-muted ms-1" style={{ fontSize: '0.72rem' }}>
+                              ({m.newTotal} tot)
+                            </span>
+                          </div>
+                          {m.reference && (
+                            <div className="small font-monospace text-secondary text-truncate" style={{ maxWidth: '180px' }} title={m.reference}>
+                              <i className="bi bi-hash me-1 text-muted"></i>{m.reference}
+                            </div>
+                          )}
                         </td>
 
-                        <td className="text-center small font-monospace">
-                          <span className="text-muted">{m.previousAvailable}</span>
-                          <i className="bi bi-arrow-right mx-1 text-secondary"></i>
-                          <strong className="text-dark">{m.newAvailable} avail</strong>
-                          <span className="text-muted ms-1" style={{ fontSize: '0.7rem' }}>
-                            ({m.newTotal} total)
-                          </span>
-                        </td>
-
-                        <td className="small font-monospace text-secondary">
-                          {m.reference || '—'}
-                        </td>
-
-                        <td className="small text-muted text-truncate" style={{ maxWidth: '240px' }} title={m.notes}>
-                          {m.notes || '—'}
-                        </td>
-
-                        <td className="small fw-semibold text-dark">
-                          <i className="bi bi-person me-1 text-primary"></i>
-                          {m.performedBy || 'System Admin'}
+                        {/* 5. Notes & Details */}
+                        <td>
+                          <div className="small text-secondary" style={{ wordBreak: 'break-word' }}>
+                            {m.notes || <span className="text-muted fst-italic">No additional notes</span>}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -426,22 +450,63 @@ const StockMovements = () => {
                   </div>
                   <h6 className="modal-title fw-bold text-white mb-0">Restock Equipment</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowRestockModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowRestockModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleRestockSubmit}>
                 <div className="modal-body p-4">
+                  {/* Category Selection Filter */}
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Select Gear Model</label>
+                    <label className="form-label small fw-semibold text-secondary">Filter Equipment by Category</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={restockCategory}
+                      onChange={(e) => {
+                        const cat = e.target.value;
+                        setRestockCategory(cat);
+                        const filtered = cat === 'ALL'
+                          ? equipmentList
+                          : equipmentList.filter(item => item.categoryId === cat || item.category?.id === cat);
+                        if (filtered.length > 0) {
+                          setSelectedGearId(filtered[0].id);
+                        } else {
+                          setSelectedGearId('');
+                        }
+                      }}
+                    >
+                      <option value="ALL">All Categories ({equipmentList.length} items)</option>
+                      {categories.map(c => {
+                        const count = equipmentList.filter(item => item.categoryId === c.id || item.category?.id === c.id).length;
+                        return (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({count} items)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">Select Gear Model <span className="text-danger">*</span></label>
                     <select
                       className="form-select form-select-sm"
                       value={selectedGearId}
                       onChange={(e) => setSelectedGearId(e.target.value)}
                       required
                     >
-                      {equipmentList.map(item => (
+                      {(restockCategory === 'ALL'
+                        ? equipmentList
+                        : equipmentList.filter(item => item.categoryId === restockCategory || item.category?.id === restockCategory)
+                      ).map(item => (
                         <option key={item.id} value={item.id}>
-                          {item.assetTag} - {item.name} ({item.availableQuantity || item.quantity} avail / {item.quantity} total)
+                          {item.assetTag} - {item.name} ({item.availableQuantity ?? item.quantity} avail / {item.quantity} total)
                         </option>
                       ))}
                     </select>

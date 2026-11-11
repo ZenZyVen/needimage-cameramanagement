@@ -883,7 +883,14 @@ const EquipmentList = () => {
                 <h6 className="modal-title fw-bold text-white mb-0">
                   Adjust Stock Quantity: {adjustingEquipment.assetTag}
                 </h6>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAdjustModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowAdjustModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <form onSubmit={handleSaveStockAdjustment}>
                 <div className="modal-body p-4">

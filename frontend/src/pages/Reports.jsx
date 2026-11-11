@@ -507,10 +507,7 @@ const Reports = () => {
                   <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
                     <i className="bi bi-receipt"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Equipment Custody & Loan Invoice</h6>
-                    <small className="text-secondary" style={{ fontSize: '0.72rem' }}>Official printable custody invoice for {selectedReqForInvoice.requestNumber}</small>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Equipment Custody & Loan Invoice</h6>
                 </div>
                 <div className="d-flex align-items-center gap-2">
                   <button
@@ -520,7 +517,14 @@ const Reports = () => {
                   >
                     <i className="bi bi-printer"></i> Print Invoice (PDF)
                   </button>
-                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowInvoiceModal(false)}></button>
+                  <button
+                    type="button"
+                    className="modal-close-btn"
+                    onClick={() => setShowInvoiceModal(false)}
+                    aria-label="Close"
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </button>
                 </div>
               </div>
 

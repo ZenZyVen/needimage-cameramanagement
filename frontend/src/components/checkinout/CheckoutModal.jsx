@@ -84,7 +84,14 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, onSubmi
                 Equipment Handover & Checkout
               </h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <form onSubmit={handleCheckout}>

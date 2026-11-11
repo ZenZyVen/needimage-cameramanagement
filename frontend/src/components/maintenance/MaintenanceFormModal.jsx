@@ -155,14 +155,16 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
               <div className="p-2 rounded bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                 <i className="bi bi-tools"></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">Report Damage & Maintenance Ticket</h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
-                  Log physical or optical damage, assign technician, and isolate item from stock rotation
-                </p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">Report Damage & Maintenance Ticket</h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit}>

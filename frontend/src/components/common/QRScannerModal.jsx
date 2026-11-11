@@ -116,9 +116,12 @@ const QRScannerModal = ({ show, onHide, onScanSuccess }) => {
             </h6>
             <button
               type="button"
-              className="btn-close btn-close-white"
+              className="modal-close-btn"
               onClick={onHide}
-            ></button>
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <div className="modal-body p-4">

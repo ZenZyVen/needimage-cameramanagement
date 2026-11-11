@@ -456,7 +456,14 @@ const BorrowRequests = () => {
                     </small>
                   </div>
                 </div>
-                <button type="button" className="btn-close" onClick={() => setViewItemsReq(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setViewItemsReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <div className="modal-body p-3">
@@ -563,7 +570,14 @@ const BorrowRequests = () => {
                   <i className="bi bi-printer me-2 text-primary"></i>
                   A4 Equipment Handover Voucher Preview
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setPrintHandoverReq(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setPrintHandoverReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-4">
                 <HandoverPrintDocument
@@ -586,7 +600,14 @@ const BorrowRequests = () => {
                   <i className="bi bi-printer me-2 text-success"></i>
                   A4 Return & Quality Inspection Voucher Preview
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setPrintReturnReq(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setPrintReturnReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-4">
                 <ReturnPrintDocument

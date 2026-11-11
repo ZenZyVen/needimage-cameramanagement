@@ -81,19 +81,22 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
         <div className="modal-content border-0 shadow-lg">
           <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
             <div className="d-flex align-items-center gap-2">
-              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
-                <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-folder-plus'}`}></i>
+              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-folder-plus'}`} style={{ fontSize: '0.95rem' }}></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">
-                  {isEdit ? 'Edit Production Project' : 'Register New Production Project'}
-                </h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
-                  Manage film shoots, documentaries, commercials, and assigned camera kits
-                </p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">
+                {isEdit ? 'Edit Production Project' : 'New Production Project'}
+              </h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+              title="Close modal"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit}>

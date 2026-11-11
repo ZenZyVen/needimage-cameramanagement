@@ -304,12 +304,16 @@ const Users = () => {
                   <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                     <i className="bi bi-person-plus-fill"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Create User Account</h6>
-                    <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>Register new personnel and configure role permissions</p>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Create User Account</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowCreateModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowCreateModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleCreateSubmit}>
@@ -430,12 +434,16 @@ const Users = () => {
                   <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                     <i className="bi bi-pencil-square"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Edit User & Role Notes</h6>
-                    <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>{editingUser.name} • {editingUser.email}</p>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Edit User: {editingUser.name}</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowEditModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowEditModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleEditSubmit}>

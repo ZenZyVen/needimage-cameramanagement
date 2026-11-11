@@ -345,7 +345,14 @@ const HandoverLogs = () => {
                   <i className="bi bi-file-earmark-text text-primary me-2"></i>
                   Handover Log #{selectedLog.id}
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-3">
                 <div className="p-3 border rounded bg-light mb-3">

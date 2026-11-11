@@ -408,12 +408,16 @@ const LowStockAlerts = () => {
                   <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
                     <i className="bi bi-box-arrow-in-down"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Restock {selectedGear.assetTag}</h6>
-                    <small className="text-secondary" style={{ fontSize: '0.72rem' }}>{selectedGear.name}</small>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Restock {selectedGear.assetTag} - {selectedGear.name}</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowRestockModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowRestockModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleRestockSubmit}>

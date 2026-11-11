@@ -399,7 +399,14 @@ const CheckInOut = () => {
                   <i className="bi bi-printer me-2 text-primary"></i>
                   Handover Voucher Ready for Printing
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setPrintHandoverReq(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setPrintHandoverReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-4">
                 <HandoverPrintDocument request={printHandoverReq} staffUser={user} />
@@ -419,7 +426,14 @@ const CheckInOut = () => {
                   <i className="bi bi-printer me-2 text-success"></i>
                   Return Voucher Ready for Printing
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setPrintReturnReq(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setPrintReturnReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-4">
                 <ReturnPrintDocument request={printReturnReq} staffUser={user} />

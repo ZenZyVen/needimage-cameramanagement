@@ -55,6 +55,17 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span>Equipment Vault</span>
         </NavLink>
 
+        {isAdmin && (
+          <NavLink
+            to="/products"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <i className="bi bi-box-seam-fill text-primary"></i>
+            <span>Product Management</span>
+          </NavLink>
+        )}
+
         {(isAdmin || isStockController) && (
           <>
             <NavLink

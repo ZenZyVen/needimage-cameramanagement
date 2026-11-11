@@ -33,7 +33,14 @@ const EquipmentDetailModal = ({ show, onHide, equipment, onShowQR }) => {
                   <span className="d-none d-sm-inline">QR Tag</span>
                 </button>
               )}
-              <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={onHide}
+                aria-label="Close"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
             </div>
           </div>
 

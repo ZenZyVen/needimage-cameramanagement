@@ -141,28 +141,33 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
         <div className="modal-content border-0 shadow-lg">
           <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
             <div className="d-flex align-items-center gap-2">
-              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
-                <i className="bi bi-people-fill"></i>
+              <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                <i className="bi bi-people-fill" style={{ fontSize: '0.95rem' }}></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">
-                  Project Crew Roster & Field Registration
-                </h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
-                  {project.projectCode} • {project.title} ({project.location || 'Location Unspecified'})
-                </p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">
+                Project Crew: {project.title}
+              </h6>
             </div>
             <div className="d-flex align-items-center gap-2">
               <button
                 type="button"
-                className="btn btn-sm btn-outline-light d-flex align-items-center gap-1"
+                className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 py-1 px-2"
                 onClick={handlePrintRoster}
                 title="Print Call Sheet Roster"
+                style={{ fontSize: '0.75rem' }}
               >
-                <i className="bi bi-printer"></i> Print Roster
+                <i className="bi bi-printer"></i>
+                <span className="d-none d-sm-inline">Print Roster</span>
               </button>
-              <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={onHide}
+                aria-label="Close"
+                title="Close modal"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
             </div>
           </div>
 

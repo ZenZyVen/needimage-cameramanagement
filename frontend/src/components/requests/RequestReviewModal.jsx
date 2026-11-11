@@ -39,12 +39,16 @@ const RequestReviewModal = ({ show, onHide, request, onApprove, onReject }) => {
           <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
             <div className="d-flex align-items-center gap-2">
               <span className="badge bg-primary px-2.5 py-1.5 fs-6 fw-bold">{request.requestNumber}</span>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">Requisition Approval & Review</h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>Authorize gear handover or log reason for decline</p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">Requisition Approval & Review</h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <div className="modal-body p-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>

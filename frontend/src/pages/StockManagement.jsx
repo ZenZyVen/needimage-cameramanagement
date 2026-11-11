@@ -7,6 +7,7 @@ import {
   getStockMovements,
   getStockDashboard
 } from '../services/equipmentService';
+import { triggerNotificationRefresh } from '../context/NotificationContext';
 import StatusBadge from '../components/common/StatusBadge';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 
@@ -191,6 +192,7 @@ const StockManagement = () => {
         type: 'success',
         text: `Successfully added ${qty} unit(s) to ${selectedItemForAction.assetTag} (${selectedItemForAction.name}). Stock levels updated!`
       });
+      triggerNotificationRefresh();
       setShowRestockModal(false);
       loadInventory();
       loadDashboardSummary();
@@ -236,6 +238,7 @@ const StockManagement = () => {
         type: 'warning',
         text: `Successfully removed ${qty} unit(s) from ${selectedItemForAction.assetTag}. Inventory records and movement log updated.`
       });
+      triggerNotificationRefresh();
       setShowDeductModal(false);
       loadInventory();
       loadDashboardSummary();
@@ -760,12 +763,16 @@ const StockManagement = () => {
                   <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
                     <i className="bi bi-box-arrow-in-down"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Restock Vault Inventory</h6>
-                    <small className="text-secondary" style={{ fontSize: '0.72rem' }}>Add new physical stock units into the active gear vault</small>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Restock Vault Inventory</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowRestockModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowRestockModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleRestockSubmit}>
@@ -906,12 +913,16 @@ const StockManagement = () => {
                   <div className="p-2 rounded bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
                     <i className="bi bi-box-arrow-up"></i>
                   </div>
-                  <div>
-                    <h6 className="modal-title fw-bold text-white mb-0">Deduct / Write-Off Stock</h6>
-                    <small className="text-secondary" style={{ fontSize: '0.72rem' }}>Remove lost, damaged, or decommissioned assets from vault</small>
-                  </div>
+                  <h6 className="modal-title fw-bold text-white mb-0">Deduct / Write-Off Stock</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeductModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowDeductModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <form onSubmit={handleDeductSubmit}>

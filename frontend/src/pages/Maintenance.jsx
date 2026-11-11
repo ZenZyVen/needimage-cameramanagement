@@ -432,7 +432,14 @@ const Maintenance = () => {
                   <i className="bi bi-tools text-warning fs-5"></i>
                   <h6 className="modal-title fw-bold text-white mb-0">Ticket Details: {viewTicket.ticketNumber}</h6>
                 </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setViewTicket(null)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setViewTicket(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
               <div className="modal-body p-4">
                 <div className="row g-3">

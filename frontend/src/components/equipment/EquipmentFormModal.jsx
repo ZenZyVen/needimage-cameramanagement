@@ -142,16 +142,18 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
               <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 34, height: 34 }}>
                 <i className={`bi ${isEdit ? 'bi-pencil-square' : 'bi-box-seam'}`}></i>
               </div>
-              <div>
-                <h6 className="modal-title fw-bold text-white mb-0">
-                  {isEdit ? `Edit Equipment: ${equipment.assetTag}` : 'Register Equipment in Stock Vault'}
-                </h6>
-                <p className="text-secondary small mb-0" style={{ fontSize: '0.72rem' }}>
-                  {isEdit ? 'Update stock quantity, condition, and equipment details' : 'Add new camera gear, quantities, and asset information to stock'}
-                </p>
-              </div>
+              <h6 className="modal-title fw-bold text-white mb-0">
+                {isEdit ? `Edit Equipment: ${equipment.assetTag}` : 'Register Equipment in Stock Vault'}
+              </h6>
             </div>
-            <button type="button" className="btn-close btn-close-white" onClick={onHide}></button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit}>

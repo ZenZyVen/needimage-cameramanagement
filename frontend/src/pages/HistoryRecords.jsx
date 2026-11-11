@@ -483,7 +483,14 @@ const HistoryRecords = () => {
                   <i className="bi bi-clock-history text-primary me-2"></i>
                   Historical Audit Record #{selectedRecord.id}
                 </h6>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
               <div className="modal-body p-3">
