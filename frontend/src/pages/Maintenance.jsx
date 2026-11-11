@@ -113,10 +113,7 @@ const Maintenance = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Equipment Damage & Maintenance Center</h4>
-          <p className="text-muted small mb-0">
-            Track damaged gear, assign technicians, monitor repair stages, record costs, and view maintenance history.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Maintenance & Repairs</h4>
         </div>
 
         <button

@@ -102,10 +102,7 @@ const CheckInOut = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Equipment Checkout & Check-in</h4>
-          <p className="text-muted small mb-0">
-            Handover gear to crew leads, verify accessories checklists, inspect returns, and log damages.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Checkout & Check-in</h4>
         </div>
       </div>
 

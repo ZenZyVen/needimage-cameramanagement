@@ -249,10 +249,7 @@ const Settings = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Centralized System Settings & Control Panel</h4>
-          <p className="text-muted small mb-0">
-            Control company branding, logo, production categories, borrowing limits, stock thresholds, and audit trails.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Settings & Invoices</h4>
         </div>
 
         <button

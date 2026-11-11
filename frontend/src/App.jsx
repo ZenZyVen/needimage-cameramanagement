@@ -24,6 +24,8 @@ import QRScannerPage from './pages/QRScannerPage';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import LowStockAlerts from './pages/LowStockAlerts';
+import StockMovements from './pages/StockMovements';
 
 // Protected App Layout Wrapper
 const AppLayout = () => {
@@ -92,6 +94,8 @@ function App() {
                 {/* Staff Only Routes (Admin & Stock Controller) */}
                 <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_CONTROLLER']} />}>
                   <Route path="/stock" element={<StockManagement />} />
+                  <Route path="/low-stock" element={<LowStockAlerts />} />
+                  <Route path="/stock-movements" element={<StockMovements />} />
                   <Route path="/checkin-out" element={<CheckInOut />} />
                   <Route path="/maintenance" element={<Maintenance />} />
                 </Route>

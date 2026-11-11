@@ -133,10 +133,7 @@ const Users = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">User & Role Management</h4>
-          <p className="text-muted small mb-0">
-            Control user permissions across Admin, Stock Controller, and Normal User roles.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">User & Role Access</h4>
         </div>
 
         <button

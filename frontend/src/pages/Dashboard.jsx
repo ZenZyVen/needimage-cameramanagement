@@ -29,10 +29,10 @@ ChartJS.register(
 );
 
 const TIMEFRAMES = [
-  { key: 'daily', label: 'Today (Daily)' },
-  { key: 'weekly', label: 'Past 7 Days (Weekly)' },
-  { key: 'monthly', label: 'Past 30 Days (Monthly)' },
-  { key: 'yearly', label: 'This Year (Yearly)' },
+  { key: 'daily', label: 'Today' },
+  { key: 'weekly', label: 'Past 7 Days' },
+  { key: 'monthly', label: 'Past 30 Days' },
+  { key: 'yearly', label: 'This Year' },
   { key: 'all', label: 'All Time' }
 ];
 
@@ -42,7 +42,6 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [feedTab, setFeedTab] = useState('activity'); // 'activity' | 'movements'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +67,6 @@ const Dashboard = () => {
   const charts = data?.charts || {};
   const recentRequests = data?.recentRequests || [];
   const recentActivity = data?.recentActivity || [];
-  const recentStockMovements = data?.recentStockMovements || [];
   const overdueLoans = data?.overdueLoans || [];
   const userStats = data?.userStats || {};
 
@@ -77,7 +75,7 @@ const Dashboard = () => {
     labels: charts.categoryChart?.labels || [],
     datasets: [
       {
-        label: 'Physical Stock Units',
+        label: 'Stock Units',
         data: charts.categoryChart?.counts || [],
         backgroundColor: '#2563eb',
         borderRadius: 4
@@ -104,21 +102,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div>
-      {/* Top Banner / Welcome & Timeframe Filter */}
+    <div className="pb-4">
+      {/* Top Bar: Clean Title & Timeframe Controls */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-          <h4 className="fw-bold text-dark mb-1">
-            Welcome back, {user?.name}
-          </h4>
-          <p className="text-muted small mb-0">
-            {isAdmin && 'Administrator Overview & System Health'}
-            {isStockController && 'Gear Vault Logistics & Intake/Handover Control'}
-            {isUser && 'Cinematography & Production Equipment Dashboard'}
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Dashboard</h4>
         </div>
 
-        {/* Timeframe selector button group */}
+        {/* Timeframe selector & Quick Actions */}
         <div className="d-flex flex-wrap align-items-center gap-2">
           <div className="btn-group btn-group-sm bg-white p-1 rounded border shadow-xs" role="group">
             {TIMEFRAMES.map(tf => (
@@ -126,7 +117,7 @@ const Dashboard = () => {
                 key={tf.key}
                 type="button"
                 className={`btn btn-sm ${timeframe === tf.key ? 'btn-primary text-white' : 'btn-light text-dark'}`}
-                style={{ fontSize: '0.72rem', fontWeight: timeframe === tf.key ? '600' : 'normal' }}
+                style={{ fontSize: '0.74rem', fontWeight: timeframe === tf.key ? '600' : 'normal', padding: '0.25rem 0.65rem' }}
                 onClick={() => setTimeframe(tf.key)}
               >
                 {tf.label}
@@ -136,28 +127,23 @@ const Dashboard = () => {
 
           {/* Quick Action buttons */}
           {isUser && (
-            <Link to="/requests" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+            <Link to="/requests" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-xs">
               <i className="bi bi-plus-lg"></i>
-              <span>New Gear Request</span>
+              <span>New Request</span>
             </Link>
           )}
+
           {(isAdmin || isStockController) && (
-            <div className="d-flex flex-wrap gap-1">
-              <Link to="/stock" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
-                <i className="bi bi-boxes"></i>
-                <span>Stock Management</span>
+            <div className="d-flex align-items-center gap-2">
+              <Link to="/low-stock" className="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 shadow-xs text-dark" title="Low-Stock Critical Alerts">
+                <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+                <span className="d-none d-sm-inline">Low Stock</span>
               </Link>
-              <Link to="/reports" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm">
-                <i className="bi bi-file-earmark-bar-graph"></i>
-                <span>Loan Reports</span>
+              <Link to="/stock-movements" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-xs" title="Stock Movements Log">
+                <i className="bi bi-clock-history text-info"></i>
+                <span className="d-none d-sm-inline">Movements</span>
               </Link>
-              {isAdmin && (
-                <Link to="/activity-log" className="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm">
-                  <i className="bi bi-journal-text"></i>
-                  <span>Activity Log</span>
-                </Link>
-              )}
-              <Link to="/checkin-out?tab=checkout" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm fw-semibold">
+              <Link to="/checkin-out?tab=checkout" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-xs fw-medium">
                 <i className="bi bi-box-arrow-right"></i>
                 <span>Fast Checkout</span>
               </Link>
@@ -175,20 +161,20 @@ const Dashboard = () => {
       {/* OVERDUE ALERT BANNER */}
       {overdueLoans.length > 0 && (isAdmin || isStockController) && (
         <div className="alert alert-danger border-danger-subtle p-3 mb-4 shadow-sm">
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
             <div className="d-flex align-items-center gap-2">
               <i className="bi bi-alarm-fill fs-5 text-danger"></i>
               <div>
                 <strong className="text-danger">
-                  {overdueLoans.length} Equipment Loan(s) Overdue for Return!
+                  {overdueLoans.length} Equipment Loan(s) Overdue for Return
                 </strong>
-                <p className="small text-muted mb-0">
+                <span className="small text-muted ms-2 d-none d-md-inline">
                   Equipment has passed the scheduled return date without check-in inspection.
-                </p>
+                </span>
               </div>
             </div>
-            <Link to="/requests" className="btn btn-sm btn-outline-danger">
-              Review & Inspect
+            <Link to="/requests" className="btn btn-sm btn-outline-danger align-self-start align-self-sm-auto">
+              Review Loans
             </Link>
           </div>
         </div>
@@ -197,7 +183,7 @@ const Dashboard = () => {
       {/* 1. ADMIN & STOCK CONTROLLER METRICS (8 Key Stock Cards) */}
       {(isAdmin || isStockController) && (
         <div className="row g-3 mb-4">
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Equipment Models"
               value={stats.totalEquipment || 0}
@@ -207,7 +193,7 @@ const Dashboard = () => {
               subtitle={`Total Stock: ${stats.totalStockUnits || 0} units`}
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Available in Vault"
               value={stats.availableCount || 0}
@@ -217,7 +203,7 @@ const Dashboard = () => {
               subtitle="Ready for deployment"
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Active on Loan"
               value={stats.borrowedCount || 0}
@@ -227,7 +213,7 @@ const Dashboard = () => {
               subtitle={`${stats.checkedOutRequestsCount || 0} active loan(s)`}
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Pending Approvals"
               value={stats.pendingRequestsCount || 0}
@@ -237,7 +223,7 @@ const Dashboard = () => {
               subtitle={`${stats.approvedRequestsCount || 0} ready for pickup`}
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Under Maintenance"
               value={stats.maintenanceCount || 0}
@@ -247,9 +233,9 @@ const Dashboard = () => {
               subtitle="Active repair tickets"
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
-              title="Damaged / Quarantined"
+              title="Damaged Assets"
               value={stats.damagedCount || 0}
               icon="bi-exclamation-triangle"
               iconBg="#fef2f2"
@@ -257,7 +243,7 @@ const Dashboard = () => {
               subtitle="Requires physical service"
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Overdue Returns"
               value={stats.overdueRequestsCount || overdueLoans.length || 0}
@@ -267,14 +253,14 @@ const Dashboard = () => {
               subtitle="Past scheduled shoot date"
             />
           </div>
-          <div className="col-sm-6 col-xl-3">
+          <div className="col-6 col-md-4 col-xl-3">
             <StatCard
               title="Stock Valuation"
               value={formatCurrency(stats.totalValuation)}
               icon="bi-cash-coin"
               iconBg="#f8fafc"
               iconColor="#0f172a"
-              subtitle="Total replacement value"
+              subtitle="Total inventory value"
             />
           </div>
         </div>
@@ -283,7 +269,7 @@ const Dashboard = () => {
       {/* 2. NORMAL USER METRICS */}
       {isUser && (
         <div className="row g-3 mb-4">
-          <div className="col-sm-4">
+          <div className="col-12 col-sm-4">
             <StatCard
               title="My Active Loans"
               value={userStats.myActiveLoans || 0}
@@ -293,7 +279,7 @@ const Dashboard = () => {
               subtitle="Equipment currently in field with you"
             />
           </div>
-          <div className="col-sm-4">
+          <div className="col-12 col-sm-4">
             <StatCard
               title="My Pending Requests"
               value={userStats.myPendingRequests || 0}
@@ -303,7 +289,7 @@ const Dashboard = () => {
               subtitle="Awaiting vault supervisor approval"
             />
           </div>
-          <div className="col-sm-4">
+          <div className="col-12 col-sm-4">
             <StatCard
               title="Completed Loans"
               value={userStats.myCompletedLoans || 0}
@@ -358,12 +344,12 @@ const Dashboard = () => {
             <div className="card h-100 border-0 shadow-sm">
               <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                 <span className="fw-semibold small text-secondary">
-                  Physical Stock Quantity by Category ({timeframe.toUpperCase()})
+                  Physical Stock Quantity by Category
                 </span>
-                <span className="badge bg-light text-secondary border">17 Production Categories</span>
+                <span className="badge bg-light text-secondary border">Catalog Breakdown</span>
               </div>
               <div className="card-body p-3">
-                <div style={{ height: '270px' }}>
+                <div style={{ height: '260px' }}>
                   <Bar
                     data={categoryBarData}
                     options={{
@@ -392,7 +378,7 @@ const Dashboard = () => {
                 <span className="fw-semibold small text-secondary">
                   Stock Health & Availability
                 </span>
-                <span className="badge bg-light text-secondary border">Live Breakdown</span>
+                <span className="badge bg-light text-secondary border">Live Status</span>
               </div>
               <div className="card-body p-3 d-flex align-items-center justify-content-center">
                 <div style={{ height: '240px', width: '100%' }}>
@@ -416,14 +402,14 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* 4. TABLES ROW: Recent Requests & Activity / Movements Feed */}
+      {/* 4. TABLES ROW: Recent Requests & Recent Check-in/Out Handover Log */}
       <div className="row g-3">
         {/* Recent Requests */}
         <div className="col-lg-7">
           <div className="card h-100 border-0 shadow-sm">
             <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
               <span className="fw-semibold small text-secondary">
-                Recent Borrowing Requisitions ({timeframe.toUpperCase()})
+                Recent Borrowing Requisitions
               </span>
               <Link to="/requests" className="small text-primary text-decoration-none">
                 View All Requests <i className="bi bi-arrow-right"></i>
@@ -470,103 +456,69 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Handover & Movements Activity Feed */}
+        {/* Handover & Check-in Activity Stream */}
         <div className="col-lg-5">
           <div className="card h-100 border-0 shadow-sm">
-            <div className="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
-              <ul className="nav nav-pills">
-                <li className="nav-item">
-                  <button
-                    className={`nav-link py-1 px-2 small ${feedTab === 'activity' ? 'active bg-slate-900 text-white' : 'text-muted'}`}
-                    style={{ fontSize: '0.75rem' }}
-                    onClick={() => setFeedTab('activity')}
-                  >
-                    Check-in / Out Logs
-                  </button>
-                </li>
-                <li className="nav-item">
-                  <button
-                    className={`nav-link py-1 px-2 small ${feedTab === 'movements' ? 'active bg-slate-900 text-white' : 'text-muted'}`}
-                    style={{ fontSize: '0.75rem' }}
-                    onClick={() => setFeedTab('movements')}
-                  >
-                    Stock Movements
-                  </button>
-                </li>
-              </ul>
+            <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+              <span className="fw-semibold small text-secondary">
+                Recent Handover & Return Logs
+              </span>
               {(isAdmin || isStockController) && (
-                <Link to="/equipment" className="small text-primary text-decoration-none" style={{ fontSize: '0.75rem' }}>
-                  Full Vault
+                <Link to="/checkin-out" className="small text-primary text-decoration-none">
+                  Check-in / Out <i className="bi bi-arrow-right"></i>
                 </Link>
               )}
             </div>
 
             <div className="card-body p-0" style={{ maxHeight: '360px', overflowY: 'auto' }}>
-              {feedTab === 'activity' ? (
-                recentActivity.length === 0 ? (
-                  <div className="text-center py-4 text-muted small">
-                    No checkout or return actions logged for this timeframe.
-                  </div>
-                ) : (
-                  <div className="list-group list-group-flush">
-                    {recentActivity.map(act => (
-                      <div key={act.id} className="list-group-item p-3">
-                        <div className="d-flex justify-content-between align-items-center mb-1">
-                          <span
-                            className={`badge ${
-                              act.type === 'CHECK_OUT'
-                                ? 'bg-primary'
-                                : 'bg-success'
-                            }`}
-                            style={{ fontSize: '0.65rem' }}
-                          >
-                            {act.type === 'CHECK_OUT' ? 'HANDOVER' : 'RETURN'}
-                          </span>
-                          <span className="text-muted" style={{ fontSize: '0.72rem' }}>
-                            {formatDateTime(act.actionDate)}
-                          </span>
-                        </div>
-                        <div className="fw-semibold text-dark small">
-                          {act.equipment?.assetTag} - {act.equipment?.name}
-                        </div>
-                        <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
-                          Borrower: <strong>{act.borrowerName || 'Staff'}</strong> • Handled by: {act.handledBy?.name || 'Vault Tech'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-4 text-muted small">
+                  No checkout or return actions logged for this timeframe.
+                </div>
               ) : (
-                recentStockMovements.length === 0 ? (
-                  <div className="text-center py-4 text-muted small">
-                    No stock movements logged for this timeframe.
-                  </div>
-                ) : (
-                  <div className="list-group list-group-flush">
-                    {recentStockMovements.map(m => (
-                      <div key={m.id} className="list-group-item p-3">
-                        <div className="d-flex justify-content-between align-items-center mb-1">
-                          <span className={`badge ${
-                            m.quantityChanged > 0 ? 'bg-success' : m.quantityChanged < 0 ? 'bg-warning text-dark' : 'bg-secondary'
-                          }`} style={{ fontSize: '0.65rem' }}>
-                            {m.type} ({m.quantityChanged > 0 ? `+${m.quantityChanged}` : m.quantityChanged})
-                          </span>
-                          <span className="text-muted" style={{ fontSize: '0.72rem' }}>
-                            {formatDateTime(m.createdAt)}
-                          </span>
-                        </div>
-                        <div className="fw-semibold text-dark small">
-                          {m.assetTag} - {m.equipmentName}
-                        </div>
-                        <div className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                          Avail: {m.previousAvailable} &rarr; <strong>{m.newAvailable}</strong> • By: {m.performedBy || 'System'}
-                        </div>
+                <div className="list-group list-group-flush">
+                  {recentActivity.map(act => (
+                    <div key={act.id} className="list-group-item p-3">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <span
+                          className={`badge ${
+                            act.type === 'CHECK_OUT'
+                              ? 'bg-primary'
+                              : 'bg-success'
+                          }`}
+                          style={{ fontSize: '0.65rem' }}
+                        >
+                          {act.type === 'CHECK_OUT' ? 'HANDOVER' : 'RETURN'}
+                        </span>
+                        <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                          {formatDateTime(act.actionDate)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )
+                      <div className="fw-semibold text-dark small">
+                        {act.equipment?.assetTag} - {act.equipment?.name}
+                      </div>
+                      <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                        Borrower: <strong>{act.borrowerName || 'Staff'}</strong> • Handled by: {act.handledBy?.name || 'Vault Tech'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
+
+            {/* Dedicated Pages Link Footnote */}
+            {(isAdmin || isStockController) && (
+              <div className="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
+                <Link to="/stock-movements" className="small text-secondary text-decoration-none d-flex align-items-center gap-1">
+                  <i className="bi bi-clock-history text-info"></i>
+                  <span>Dedicated Stock Movements Log</span>
+                </Link>
+                <Link to="/low-stock" className="small text-secondary text-decoration-none d-flex align-items-center gap-1">
+                  <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+                  <span>Low-Stock Alerts</span>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

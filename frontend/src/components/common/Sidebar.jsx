@@ -56,14 +56,34 @@ const Sidebar = ({ isOpen, onClose }) => {
         </NavLink>
 
         {(isAdmin || isStockController) && (
-          <NavLink
-            to="/stock"
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            onClick={onClose}
-          >
-            <i className="bi bi-boxes"></i>
-            <span>Stock Management</span>
-          </NavLink>
+          <>
+            <NavLink
+              to="/stock"
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <i className="bi bi-boxes"></i>
+              <span>Stock Management</span>
+            </NavLink>
+
+            <NavLink
+              to="/low-stock"
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+              <span>Low-Stock Alerts</span>
+            </NavLink>
+
+            <NavLink
+              to="/stock-movements"
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <i className="bi bi-clock-history text-info"></i>
+              <span>Stock Movements Log</span>
+            </NavLink>
+          </>
         )}
 
         <NavLink

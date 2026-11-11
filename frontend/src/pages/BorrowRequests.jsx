@@ -122,12 +122,7 @@ const BorrowRequests = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Equipment Borrowing Requests</h4>
-          <p className="text-muted small mb-0">
-            {isStaff
-              ? 'Review, approve, handover, inspect, and track camera & lighting equipment requisitions.'
-              : 'Submit equipment requests for upcoming production shoots.'}
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Borrow Requests</h4>
         </div>
 
         <button

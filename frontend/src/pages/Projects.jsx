@@ -95,20 +95,13 @@ const Projects = () => {
     <div>
       {/* Top Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <div>
-          <div className="d-flex align-items-center gap-2">
-            <h4 className="fw-bold text-dark mb-1">Production Projects</h4>
-            {!isAdmin && (
-              <span className="badge bg-secondary-subtle text-secondary border small">
-                <i className="bi bi-eye me-1"></i> View Only
-              </span>
-            )}
-          </div>
-          <p className="text-muted small mb-0">
-            {isAdmin 
-              ? 'Create, manage, and coordinate studio film productions, commercials, and assigned camera packages.' 
-              : 'Browse active studio production projects and scheduled shoots created by administration.'}
-          </p>
+        <div className="d-flex align-items-center gap-2">
+          <h4 className="fw-bold text-dark mb-0">Production Projects</h4>
+          {!isAdmin && (
+            <span className="badge bg-secondary-subtle text-secondary border small">
+              <i className="bi bi-eye me-1"></i> View Only
+            </span>
+          )}
         </div>
 
         {isAdmin && (

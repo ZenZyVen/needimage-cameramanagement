@@ -32,10 +32,7 @@ const QRScannerPage = () => {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Equipment Asset Tag Printing & QR Center</h4>
-          <p className="text-muted small mb-0">
-            Generate and print adhesive A4 label sheets with QR codes for physical gear cases and camera bodies.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Asset Tag Printing</h4>
         </div>
 
         <button

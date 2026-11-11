@@ -203,10 +203,7 @@ const Profile = () => {
 
   return (
     <div style={{ maxWidth: '820px' }}>
-      <h4 className="fw-bold text-dark mb-1">Inspector & User Profile</h4>
-      <p className="text-muted small mb-4">
-        Manage your contact credentials, profile photo, and official Vault Inspector signature.
-      </p>
+      <h4 className="fw-bold text-dark mb-4">My Profile</h4>
 
       {alertMsg.text && (
         <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-4`} role="alert">

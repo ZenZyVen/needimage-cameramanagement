@@ -245,15 +245,7 @@ const EquipmentList = () => {
       {/* Page Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <div className="d-flex align-items-center gap-2 mb-1">
-            <h4 className="fw-bold text-dark mb-0">Stock & Inventory Management System</h4>
-            <span className="badge bg-slate-900 text-white" style={{ fontSize: '0.72rem' }}>
-              Vault Operations
-            </span>
-          </div>
-          <p className="text-muted small mb-0">
-            Real-time stock quantities, media gear catalog, asset tracking, and automatic stock updates.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Equipment Vault</h4>
         </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2">

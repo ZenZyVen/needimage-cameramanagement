@@ -270,15 +270,7 @@ const StockManagement = () => {
       {/* Top Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <div className="d-flex align-items-center gap-2">
-            <h4 className="fw-bold text-dark mb-0">Stock & Vault Management</h4>
-            <span className="badge bg-primary-subtle text-primary border border-primary-subtle small">
-              Live Inventory Control
-            </span>
-          </div>
-          <p className="text-muted small mb-0 mt-1">
-            Manage equipment quantities, record physical restock shipments, deduct damaged assets, and audit real-time stock movements.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Stock Management</h4>
         </div>
 
         {isAdmin && (

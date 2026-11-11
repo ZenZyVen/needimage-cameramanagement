@@ -175,15 +175,7 @@ const Reports = () => {
       {/* Screen Top Header (Hidden when printed) */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 no-print">
         <div>
-          <div className="d-flex align-items-center gap-2">
-            <h4 className="fw-bold text-dark mb-0">Loan Activity Report</h4>
-            <span className="badge bg-primary-subtle text-primary border border-primary-subtle small">
-              Field Operations
-            </span>
-          </div>
-          <p className="text-muted small mb-0 mt-1">
-            Track all equipment loan records, verify on-set gear allocations, monitor due dates, and print official loan vouchers.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">Loan Activity Report</h4>
         </div>
 
         <div className="d-flex align-items-center gap-2">

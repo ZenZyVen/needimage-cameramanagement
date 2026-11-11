@@ -193,15 +193,7 @@ const ActivityLog = () => {
       {/* Top Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <div className="d-flex align-items-center gap-2">
-            <h4 className="fw-bold text-dark mb-0">System Activity & Audit Log</h4>
-            <span className="badge bg-slate-900 text-white font-monospace small px-2 py-1">
-              Admin Audit Trail
-            </span>
-          </div>
-          <p className="text-muted small mb-0 mt-1">
-            Complete historical record of user activities, project modifications, equipment loans, vault movements, and administrative events.
-          </p>
+          <h4 className="fw-bold text-dark mb-0">System Activity Log</h4>
         </div>
 
         <div className="d-flex align-items-center gap-2">

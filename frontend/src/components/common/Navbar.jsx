@@ -45,26 +45,40 @@ const Navbar = ({ onToggleSidebar }) => {
             <i className="bi bi-list fs-5"></i>
           </button>
 
+          {/* System Branding / Name */}
+          <div className="d-flex align-items-center gap-2">
+            <div
+              className="bg-primary text-white rounded d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs"
+              style={{ width: '30px', height: '30px' }}
+            >
+              <i className="bi bi-boxes" style={{ fontSize: '0.9rem' }}></i>
+            </div>
+            <span className="fw-bold text-dark fs-6" style={{ letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+              Stock & Inventory Management System
+            </span>
+          </div>
+
           {/* Quick Scanner Shortcut */}
           <button
             type="button"
-            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+            className="btn btn-outline-secondary btn-sm d-none d-xl-flex align-items-center gap-2 ms-2"
             onClick={() => setShowScanner(true)}
             title="Scan Equipment Barcode / QR Code"
+            style={{ height: '32px', fontSize: '0.78rem' }}
           >
             <i className="bi bi-qr-code-scan text-primary"></i>
-            <span className="d-none d-md-inline small fw-medium">Quick Barcode & QR Scan</span>
+            <span className="fw-medium">Scan Barcode / QR</span>
           </button>
-
-          {/* Company branding in center/header */}
-          <span className="d-none d-xl-inline text-muted small border-start ps-3">
-            <i className="bi bi-shield-check text-success me-1"></i>
-            {settings.companyName || 'CineVault Media Production Studios'}
-          </span>
         </div>
 
         {/* Right Nav Utilities */}
         <div className="d-flex align-items-center gap-3">
+          {/* Welcome Greeting */}
+          <div className="d-none d-md-flex align-items-center gap-1 text-secondary" style={{ fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
+            <span>Welcome back,</span>
+            <strong className="text-dark">{user?.name || 'Sarah Connor'}</strong>
+          </div>
+
           {/* Notifications */}
           <NotificationDropdown />
 
