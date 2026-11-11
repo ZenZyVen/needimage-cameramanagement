@@ -13,11 +13,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import EquipmentList from './pages/EquipmentList';
+import StockManagement from './pages/StockManagement';
 import Projects from './pages/Projects';
 import BorrowRequests from './pages/BorrowRequests';
 import CheckInOut from './pages/CheckInOut';
 import Maintenance from './pages/Maintenance';
 import Reports from './pages/Reports';
+import ActivityLog from './pages/ActivityLog';
 import QRScannerPage from './pages/QRScannerPage';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
@@ -89,12 +91,14 @@ function App() {
 
                 {/* Staff Only Routes (Admin & Stock Controller) */}
                 <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_CONTROLLER']} />}>
+                  <Route path="/stock" element={<StockManagement />} />
                   <Route path="/checkin-out" element={<CheckInOut />} />
                   <Route path="/maintenance" element={<Maintenance />} />
                 </Route>
 
                 {/* Admin Only Routes */}
                 <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/activity-log" element={<ActivityLog />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>

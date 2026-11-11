@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { getAuditLogs, exportBackup, uploadLogo } from '../services/settingsService';
 import { getCategories, createCategory, deleteCategory } from '../services/equipmentService';
-import { formatDate, formatDateTime } from '../utils/formatters';
+import { getRequests } from '../services/requestService';
+import { formatDate, formatDateTime, formatCurrency } from '../utils/formatters';
 
 const POPULAR_ICONS = [
   { icon: 'bi-camera-reels', label: 'Cameras' },
@@ -48,6 +49,29 @@ const Settings = () => {
   // Logo upload
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
+  // Existing requests for invoice loader
+  const [existingRequests, setExistingRequests] = useState([]);
+
+  // Customizable Invoice preview fields
+  const [customInvoice, setCustomInvoice] = useState({
+    invoiceNumber: 'INV-2026-001',
+    borrowingDate: new Date().toISOString().slice(0, 10),
+    projectName: 'Horizon 2026 Electric Vehicle Commercial',
+    projectCode: 'PRJ-2026-001',
+    projectLocation: 'Pacific Rim Highway Stage 3',
+    borrowerName: 'David Kim',
+    borrowerDepartment: 'Cinematography Unit',
+    borrowerPhone: '+1 (555) 019-7711',
+    borrowerEmail: 'user@cameragear.com',
+    expectedReturnDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    equipmentItems: [
+      { tag: 'CAM-002', name: 'Sony FX6 Full-Frame Cinema Camera', serial: 'SN-FX6-902184', qty: 1, rate: 220, condition: 'EXCELLENT' },
+      { tag: 'LNS-001', name: 'Sony FE 24-70mm f/2.8 GM II Lens', serial: 'SN-LNS-119203', qty: 1, rate: 65, condition: 'EXCELLENT' },
+      { tag: 'BAT-001', name: 'Anton Bauer Titon 150 V-Mount Battery', serial: 'SN-BAT-901842', qty: 2, rate: 25, condition: 'EXCELLENT' },
+      { tag: 'ACC-001', name: 'Tilta Mirage Carbon Fiber Matte Box', serial: 'SN-ACC-771920', qty: 1, rate: 20, condition: 'EXCELLENT' }
+    ]
+  });
+
   useEffect(() => {
     if (settings) {
       setFormData({ ...settings });
@@ -59,8 +83,46 @@ const Settings = () => {
       loadCategories();
     } else if (activeTab === 'audit') {
       loadAuditLogs();
+    } else if (activeTab === 'invoice') {
+      loadExistingRequests();
     }
   }, [activeTab, auditFilter]);
+
+  const loadExistingRequests = async () => {
+    try {
+      const res = await getRequests({ limit: 30 });
+      if (res.data?.success) {
+        setExistingRequests(res.data.data || []);
+      }
+    } catch (e) {
+      console.warn('Error loading requests for invoice preview:', e);
+    }
+  };
+
+  const handleSelectRequestForInvoice = (reqId) => {
+    const req = existingRequests.find(r => r.id === reqId);
+    if (!req) return;
+    setCustomInvoice({
+      invoiceNumber: req.requestNumber || 'INV-2026-X',
+      borrowingDate: req.startDate ? req.startDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      projectName: req.project?.title || 'Production Project',
+      projectCode: req.project?.projectCode || 'PRJ-2026-X',
+      projectLocation: req.destination || req.project?.location || 'Studio Lot',
+      borrowerName: req.user?.name || 'Borrower Lead',
+      borrowerDepartment: req.user?.department || 'Cinematography',
+      borrowerPhone: req.user?.phone || '+1 (555) 019-7711',
+      borrowerEmail: req.user?.email || '',
+      expectedReturnDate: req.endDate ? req.endDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      equipmentItems: (req.items || []).map(i => ({
+        tag: i.equipment?.assetTag || 'CAM-001',
+        name: i.equipment?.name || 'Equipment Unit',
+        serial: i.equipment?.serialNumber || 'SN-VERIFIED',
+        qty: 1,
+        rate: i.equipment?.dailyRate || 100,
+        condition: i.returnedCondition || 'EXCELLENT'
+      }))
+    });
+  };
 
   const loadCategories = async () => {
     try {
@@ -226,6 +288,15 @@ const Settings = () => {
             <li className="nav-item">
               <button
                 type="button"
+                className={`nav-link small py-2 px-3 fw-medium ${activeTab === 'invoice' ? 'active' : 'text-dark'}`}
+                onClick={() => setActiveTab('invoice')}
+              >
+                <i className="bi bi-receipt me-1"></i> Invoice & Custody Customization
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                type="button"
                 className={`nav-link small py-2 px-3 fw-medium ${activeTab === 'categories' ? 'active' : 'text-dark'}`}
                 onClick={() => setActiveTab('categories')}
               >
@@ -380,6 +451,370 @@ const Settings = () => {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Invoice Customization & Loan Voucher */}
+      {activeTab === 'invoice' && (
+        <div className="row g-4">
+          {/* Left Column: Customization Form */}
+          <div className="col-lg-5">
+            <div className="card border-0 shadow-sm mb-4">
+              <div className="card-header bg-white border-bottom p-3">
+                <div className="d-flex align-items-center justify-content-between">
+                  <h6 className="fw-bold text-dark mb-0">
+                    <i className="bi bi-pencil-square text-primary me-2"></i>
+                    Customize Invoice Data
+                  </h6>
+                  {existingRequests.length > 0 && (
+                    <span className="badge bg-light text-secondary border small">
+                      {existingRequests.length} active requests
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="card-body p-3">
+                {/* Loader from active request */}
+                {existingRequests.length > 0 && (
+                  <div className="p-3 bg-light rounded border mb-3">
+                    <label className="form-label small fw-bold text-secondary mb-1">
+                      <i className="bi bi-magic text-primary me-1"></i> Quick Load from Existing Loan Request:
+                    </label>
+                    <select
+                      className="form-select form-select-sm"
+                      onChange={(e) => handleSelectRequestForInvoice(e.target.value)}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>-- Select a live request to load data --</option>
+                      {existingRequests.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {r.requestNumber} • {r.user?.name} ({r.project?.title || 'Shoot'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveBrandingAndRules}>
+                  {/* Template Global Settings */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-secondary">Invoice Header / Document Title</label>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      name="invoiceHeader"
+                      value={formData.invoiceHeader || 'EQUIPMENT BORROWING AGREEMENT & CUSTODY INVOICE'}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="row g-2 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-semibold text-secondary">Studio Tax ID / EIN</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        name="invoiceTaxId"
+                        value={formData.invoiceTaxId || 'EIN-84-9182903'}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small fw-semibold text-secondary">Authorized Signer Title</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        name="invoiceAuthorizedSigner"
+                        value={formData.invoiceAuthorizedSigner || 'Vault Logistics Authority'}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-top pt-3 mb-3">
+                    <h6 className="fw-bold text-secondary small text-uppercase mb-2">
+                      <i className="bi bi-calendar-range text-primary me-1"></i> Dates & Project Details
+                    </h6>
+
+                    <div className="row g-2 mb-2">
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Borrowing Date</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={customInvoice.borrowingDate}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, borrowingDate: e.target.value }))}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Expected Return Date</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={customInvoice.expectedReturnDate}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, expectedReturnDate: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="form-label small text-secondary">Project Name & Code</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        value={customInvoice.projectName}
+                        onChange={(e) => setCustomInvoice(prev => ({ ...prev, projectName: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="form-label small text-secondary">Shoot Location / Set Destination</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        value={customInvoice.projectLocation}
+                        onChange={(e) => setCustomInvoice(prev => ({ ...prev, projectLocation: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-top pt-3 mb-3">
+                    <h6 className="fw-bold text-secondary small text-uppercase mb-2">
+                      <i className="bi bi-person text-primary me-1"></i> Borrower Information
+                    </h6>
+
+                    <div className="row g-2 mb-2">
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Borrower Full Name</label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          value={customInvoice.borrowerName}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, borrowerName: e.target.value }))}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Department / Crew Role</label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          value={customInvoice.borrowerDepartment}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, borrowerDepartment: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row g-2 mb-2">
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Borrower Contact Phone</label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          value={customInvoice.borrowerPhone}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, borrowerPhone: e.target.value }))}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label small text-secondary">Borrower Email</label>
+                        <input
+                          type="email"
+                          className="form-control form-control-sm"
+                          value={customInvoice.borrowerEmail}
+                          onChange={(e) => setCustomInvoice(prev => ({ ...prev, borrowerEmail: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-top pt-3 mb-3">
+                    <h6 className="fw-bold text-secondary small text-uppercase mb-2">
+                      <i className="bi bi-file-earmark-text text-primary me-1"></i> Legal Custody Terms & Return Policy
+                    </h6>
+                    <textarea
+                      className="form-control form-control-sm mb-2"
+                      rows="3"
+                      name="invoiceTerms"
+                      value={formData.invoiceTerms || ''}
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
+
+                  <button type="submit" className="btn btn-primary w-100" disabled={saving}>
+                    <i className="bi bi-check2-circle me-1"></i>
+                    {saving ? 'Saving...' : 'Save Default Invoice Template'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Live Printable Preview */}
+          <div className="col-lg-7">
+            <div className="card border-0 shadow-sm">
+              <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                <div className="d-flex align-items-center gap-2">
+                  <span className="badge bg-success-subtle text-success border border-success-subtle">
+                    Live Printable Preview
+                  </span>
+                  <small className="text-muted">A4 PDF standard format</small>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm px-3 fw-semibold"
+                  onClick={() => window.print()}
+                >
+                  <i className="bi bi-printer"></i> Print Invoice as PDF
+                </button>
+              </div>
+
+              {/* Printable Invoice Sheet Container */}
+              <div className="card-body p-4 bg-white" style={{ minHeight: '600px' }}>
+                {/* Header Section */}
+                <div className="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                  <div>
+                    <h5 className="fw-bold text-dark mb-0">{formData.companyName || settings.companyName || 'CineVault Media Studios'}</h5>
+                    <p className="text-muted small mb-0">{formData.address || settings.address || 'Studio Lot 4B, Media Arts District, CA'}</p>
+                    <p className="text-muted small mb-0">
+                      Tel: {formData.phone || settings.phone || '+1 555-019-2831'} • Email: {formData.email || settings.email || 'vault@cinevault.com'}
+                    </p>
+                    <span className="badge bg-light text-secondary border font-monospace mt-1">
+                      Tax ID / EIN: {formData.invoiceTaxId || 'EIN-84-9182903'}
+                    </span>
+                  </div>
+                  <div className="text-end">
+                    <span className="badge bg-dark font-monospace fs-6 mb-1">
+                      {customInvoice.invoiceNumber || 'INV-2026-001'}
+                    </span>
+                    <div className="small text-muted font-monospace">
+                      <strong>Issue Date:</strong> {formatDate(customInvoice.borrowingDate)}
+                    </div>
+                    <div className="small text-danger fw-bold font-monospace">
+                      <strong>Return Due:</strong> {formatDate(customInvoice.expectedReturnDate)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center my-2">
+                  <h6 className="fw-bold text-dark text-uppercase letter-spacing-1 mb-0">
+                    {formData.invoiceHeader || 'EQUIPMENT BORROWING AGREEMENT & CUSTODY INVOICE'}
+                  </h6>
+                </div>
+
+                {/* Dual Metadata Panels */}
+                <div className="row g-2 p-2 bg-light rounded border mb-3">
+                  <div className="col-6 border-end">
+                    <span className="text-uppercase text-secondary fw-bold" style={{ fontSize: '0.68rem' }}>
+                      <i className="bi bi-person-badge text-primary me-1"></i> Who Borrowed The Equipment:
+                    </span>
+                    <div className="fw-bold text-dark small">{customInvoice.borrowerName}</div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Department: <strong className="text-secondary">{customInvoice.borrowerDepartment}</strong>
+                    </div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Phone: {customInvoice.borrowerPhone}
+                    </div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Email: {customInvoice.borrowerEmail}
+                    </div>
+                  </div>
+
+                  <div className="col-6 ps-3">
+                    <span className="text-uppercase text-secondary fw-bold" style={{ fontSize: '0.68rem' }}>
+                      <i className="bi bi-film text-primary me-1"></i> For Which Project & Where Used:
+                    </span>
+                    <div className="fw-bold text-dark small">{customInvoice.projectName}</div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Project Code: <span className="font-monospace fw-semibold">{customInvoice.projectCode}</span>
+                    </div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Shoot Location: <strong className="text-dark">{customInvoice.projectLocation}</strong>
+                    </div>
+                    <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                      Expected Return: <strong className="text-primary">{formatDate(customInvoice.expectedReturnDate)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Itemized Table */}
+                <div className="mb-3">
+                  <h6 className="fw-bold text-dark small mb-1">Itemized Equipment & Serial Verification Schedule</h6>
+                  <div className="table-responsive border rounded">
+                    <table className="table table-sm align-middle mb-0" style={{ fontSize: '8pt' }}>
+                      <thead className="table-light text-muted">
+                        <tr>
+                          <th>Asset Tag</th>
+                          <th>Equipment Description</th>
+                          <th>Serial #</th>
+                          <th className="text-center">Qty</th>
+                          <th className="text-center">Condition</th>
+                          <th className="text-end">Daily Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customInvoice.equipmentItems.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <span className="badge bg-dark font-monospace" style={{ fontSize: '0.65rem' }}>
+                                {item.tag}
+                              </span>
+                            </td>
+                            <td className="fw-bold text-dark">{item.name}</td>
+                            <td className="font-monospace text-secondary">{item.serial}</td>
+                            <td className="text-center fw-bold">{item.qty}</td>
+                            <td className="text-center">
+                              <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.62rem' }}>
+                                {item.condition}
+                              </span>
+                            </td>
+                            <td className="text-end font-monospace">{formatCurrency(item.rate)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Terms Box */}
+                <div className="p-2 bg-light border rounded mb-3">
+                  <div className="fw-bold text-dark small mb-1" style={{ fontSize: '0.72rem' }}>
+                    CUSTODY DECLARATION & RETURN POLICY
+                  </div>
+                  <p className="text-muted mb-0" style={{ fontSize: '0.68rem', lineHeight: 1.4 }}>
+                    {formData.invoiceTerms ||
+                      'The borrower acknowledges full custody and legal responsibility for all equipment listed herein. All items must be returned in their original flight cases with verified components. Any damaged optical sensors, missing cables, or body damage will be billed according to standard studio repair rates.'}
+                  </p>
+                </div>
+
+                {/* Sign-off Blocks */}
+                <div className="row g-3 pt-2">
+                  <div className="col-6">
+                    <div className="border-bottom pb-3 mb-1 text-center" style={{ minHeight: '40px' }}>
+                      <span className="font-monospace text-muted" style={{ fontSize: '0.7rem' }}>
+                        [ Borrower Signature ]
+                      </span>
+                    </div>
+                    <div className="text-center" style={{ fontSize: '0.72rem' }}>
+                      <strong className="d-block text-dark">{customInvoice.borrowerName}</strong>
+                      <span className="text-muted">Lead Cinematographer / Custody Holder</span>
+                    </div>
+                  </div>
+
+                  <div className="col-6">
+                    <div className="border-bottom pb-3 mb-1 text-center" style={{ minHeight: '40px' }}>
+                      <span className="font-monospace text-muted" style={{ fontSize: '0.7rem' }}>
+                        [ Vault Officer Signature ]
+                      </span>
+                    </div>
+                    <div className="text-center" style={{ fontSize: '0.72rem' }}>
+                      <strong className="d-block text-dark">Sarah Connor</strong>
+                      <span className="text-muted">{formData.invoiceAuthorizedSigner || 'Vault Logistics Authority'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

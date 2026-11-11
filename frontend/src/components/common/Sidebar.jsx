@@ -51,9 +51,20 @@ const Sidebar = ({ isOpen, onClose }) => {
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
-          <i className="bi bi-box-seam-fill"></i>
-          <span>Stock & Vault</span>
+          <i className="bi bi-camera-reels-fill"></i>
+          <span>Equipment Vault</span>
         </NavLink>
+
+        {(isAdmin || isStockController) && (
+          <NavLink
+            to="/stock"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <i className="bi bi-boxes"></i>
+            <span>Stock Management</span>
+          </NavLink>
+        )}
 
         <NavLink
           to="/projects"
@@ -98,15 +109,26 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* Documents & Reports */}
-        <div className="nav-section-title">Reports & Documents</div>
+        <div className="nav-section-title">Operations & Reports</div>
         <NavLink
           to="/reports"
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           onClick={onClose}
         >
           <i className="bi bi-file-earmark-bar-graph-fill"></i>
-          <span>A4 Reports & Audits</span>
+          <span>Loan Activity Report</span>
         </NavLink>
+
+        {isAdmin && (
+          <NavLink
+            to="/activity-log"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <i className="bi bi-journal-text"></i>
+            <span>System Activity Log</span>
+          </NavLink>
+        )}
 
         <NavLink
           to="/qr-tags"
@@ -136,7 +158,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               onClick={onClose}
             >
               <i className="bi bi-gear-fill"></i>
-              <span>System Settings</span>
+              <span>Settings & Invoices</span>
             </NavLink>
           </>
         )}

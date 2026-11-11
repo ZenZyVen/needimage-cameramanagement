@@ -691,9 +691,79 @@ const auditLogs = [
     action: 'INITIALIZE_SYSTEM',
     entity: 'System',
     entityId: 'vault-01',
-    details: { message: 'Stock and Vault Management System initialized.' },
+    details: { message: 'CineVault Studio Equipment System initialized.' },
     ipAddress: '127.0.0.1',
-    createdAt: new Date('2026-11-01')
+    createdAt: new Date('2026-11-01T08:00:00Z')
+  },
+  {
+    id: 'audit-2',
+    userId: 'user-admin-1',
+    action: 'CREATE_PROJECT',
+    entity: 'Project',
+    entityId: 'prj-1',
+    details: { projectCode: 'PRJ-2026-001', title: 'Horizon 2026 Electric Vehicle Commercial', director: 'Alex Rivera' },
+    ipAddress: '127.0.0.1',
+    createdAt: new Date('2026-11-02T09:30:00Z')
+  },
+  {
+    id: 'audit-3',
+    userId: 'user-admin-1',
+    action: 'RESTOCK_EQUIPMENT',
+    entity: 'Equipment',
+    entityId: 'eq-1',
+    details: { assetTag: 'CAM-001', name: 'Sony FX3 Full-Frame Cinema Camera', delta: 4, reason: 'PO-2026-01 Intake' },
+    ipAddress: '127.0.0.1',
+    createdAt: new Date('2026-11-03T11:00:00Z')
+  },
+  {
+    id: 'audit-4',
+    userId: 'user-normal-1',
+    action: 'SUBMIT_REQUEST',
+    entity: 'BorrowRequest',
+    entityId: 'req-1',
+    details: { requestNumber: 'REQ-2026-001', purpose: 'Commercial vehicle shoot - exterior tracking' },
+    ipAddress: '192.168.1.45',
+    createdAt: new Date('2026-11-07T10:15:00Z')
+  },
+  {
+    id: 'audit-5',
+    userId: 'user-admin-1',
+    action: 'APPROVE_REQUEST',
+    entity: 'BorrowRequest',
+    entityId: 'req-1',
+    details: { requestNumber: 'REQ-2026-001', approvedFor: 'David Kim' },
+    ipAddress: '127.0.0.1',
+    createdAt: new Date('2026-11-07T14:30:00Z')
+  },
+  {
+    id: 'audit-6',
+    userId: 'user-stock-1',
+    action: 'CHECK_OUT',
+    entity: 'Equipment',
+    entityId: 'eq-2',
+    details: { assetTag: 'CAM-002', borrower: 'David Kim', requestNumber: 'REQ-2026-001' },
+    ipAddress: '192.168.1.12',
+    createdAt: new Date('2026-11-08T09:15:00Z')
+  },
+  {
+    id: 'audit-7',
+    userId: 'user-stock-1',
+    action: 'REPORT_MAINTENANCE',
+    entity: 'Maintenance',
+    entityId: 'mnt-1',
+    details: { ticketNumber: 'MNT-2026-001', assetTag: 'CAM-004', severity: 'MEDIUM', issue: 'SDI port loose' },
+    ipAddress: '192.168.1.12',
+    createdAt: new Date('2026-11-09T14:00:00Z')
+  },
+  {
+    id: 'audit-8',
+    userId: 'user-admin-1',
+    action: 'UPDATE_SETTINGS',
+    entity: 'SystemSettings',
+    entityId: 'global',
+    details: { updatedKeys: ['invoiceHeader', 'loanTerms', 'maxLoanDurationDays'] },
+    ipAddress: '127.0.0.1',
+    createdAt: new Date('2026-11-10T16:20:00Z')
   }
 ];
 
@@ -713,7 +783,7 @@ const stockMovements = [
     reference: 'PO-2026-01',
     notes: 'Initial vault catalog inventory intake.',
     performedBy: 'Sarah Connor',
-    createdAt: new Date('2026-10-01')
+    createdAt: new Date('2026-10-01T08:00:00Z')
   },
   {
     id: 'mov-2',
@@ -746,6 +816,38 @@ const stockMovements = [
     notes: 'Unit quarantined for SDI port tightening.',
     performedBy: 'Marcus Vance',
     createdAt: new Date('2026-11-06T10:00:00Z')
+  },
+  {
+    id: 'mov-4',
+    equipmentId: 'eq-16',
+    assetTag: 'BAT-001',
+    equipmentName: 'Anton Bauer Titon 150 V-Mount Battery Pack',
+    type: 'RESTOCK',
+    quantityChanged: 4,
+    previousAvailable: 6,
+    newAvailable: 10,
+    previousTotal: 8,
+    newTotal: 12,
+    reference: 'RESTOCK-PO-991',
+    notes: 'Routine seasonal restock of high-capacity flight-safe batteries.',
+    performedBy: 'Sarah Connor',
+    createdAt: new Date('2026-11-09T11:30:00Z')
+  },
+  {
+    id: 'mov-5',
+    equipmentId: 'eq-17',
+    assetTag: 'MEM-001',
+    equipmentName: 'Sony TOUGH 160GB CFexpress Type A Memory Card',
+    type: 'CHECK_OUT',
+    quantityChanged: -2,
+    previousAvailable: 10,
+    newAvailable: 8,
+    previousTotal: 10,
+    newTotal: 10,
+    reference: 'REQ-2026-001',
+    notes: 'Issued to D. Kim alongside FX6 kit.',
+    performedBy: 'Marcus Vance',
+    createdAt: new Date('2026-11-08T09:18:00Z')
   }
 ];
 
@@ -1243,22 +1345,32 @@ const mockStore = {
   },
 
   auditLog: {
-    findMany: async ({ where } = {}) => filterCollection(auditLogs, where),
+    findMany: async ({ where, take = 100, skip = 0, orderBy } = {}) => {
+      let list = filterCollection(auditLogs, where);
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      list = list.slice(skip, skip + take);
+      return list.map(l => ({
+        ...l,
+        user: l.userId ? users.find(u => u.id === l.userId) : null
+      }));
+    },
+    count: async ({ where } = {}) => filterCollection(auditLogs, where).length,
     create: async ({ data }) => {
-      const log = { id: `audit-${Date.now()}`, createdAt: new Date(), ...data };
+      const log = { id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
       auditLogs.unshift(log);
       return log;
     }
   },
 
   stockMovement: {
-    findMany: async ({ where, take = 50, skip = 0 } = {}) => {
+    findMany: async ({ where, take = 50, skip = 0, orderBy } = {}) => {
       let list = filterCollection(stockMovements, where);
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       return list.slice(skip, skip + take);
     },
     count: async ({ where } = {}) => filterCollection(stockMovements, where).length,
     create: async ({ data }) => {
-      const mov = { id: `mov-${Date.now()}`, createdAt: new Date(), ...data };
+      const mov = { id: `mov-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
       stockMovements.unshift(mov);
       return mov;
     }

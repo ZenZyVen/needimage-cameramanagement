@@ -17,10 +17,30 @@
   .btn,
   .no-print,
   .modal-backdrop,
+  .modal-header,
+  .modal-footer,
   .toast-container,
+  .d-print-none,
   nav,
   footer {
     display: none !important;
+  }
+
+  .modal.show {
+    position: static !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .modal-dialog {
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .modal-content {
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .main-content {

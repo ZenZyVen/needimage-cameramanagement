@@ -9,6 +9,7 @@ export const updateEquipment = (id, data) => api.put(`/equipment/${id}`, data);
 export const deleteEquipment = (id, params) => api.delete(`/equipment/${id}`, { params });
 export const restoreEquipment = (id) => api.post(`/equipment/${id}/restore`);
 export const adjustStock = (id, data) => api.post(`/equipment/${id}/adjust-stock`, data);
+export const getStockMovements = (params) => api.get('/equipment/stock-movements', { params });
 
 export const getCategories = () => api.get('/equipment/categories');
 export const createCategory = (data) => api.post('/equipment/categories', data);

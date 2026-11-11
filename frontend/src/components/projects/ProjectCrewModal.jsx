@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { getProjectCrew, addProjectCrewMember, removeProjectCrewMember } from '../../services/projectService';
 import { formatDate } from '../../utils/formatters';
 
@@ -32,6 +33,7 @@ const PROJECT_TYPES = [
 ];
 
 const ProjectCrewModal = ({ show, onHide, project }) => {
+  const { isAdmin } = useAuth();
   const [crewList, setCrewList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -179,9 +181,10 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
               </div>
             )}
 
-            {/* 1. Register Crew Member Form */}
-            <div className="form-section-card">
-              <div className="form-section-title">
+            {/* 1. Register Crew Member Form - Admin Only */}
+            {isAdmin ? (
+              <div className="form-section-card">
+                <div className="form-section-title">
                 <i className="bi bi-person-plus-fill text-primary"></i> Register Crew Member for Shoot
               </div>
 
@@ -316,6 +319,12 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                 </div>
               </form>
             </div>
+          ) : (
+            <div className="alert alert-light border py-2 px-3 small mb-3 text-muted d-flex align-items-center gap-2">
+              <i className="bi bi-info-circle text-primary"></i>
+              <span>Registered shoot crew manifest for this production project.</span>
+            </div>
+          )}
 
             {/* 2. Registered Crew Manifest Table */}
             <div className="form-section-card mb-0">
@@ -348,7 +357,7 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                         <th>Phone / Contact</th>
                         <th>Status</th>
                         <th>Notes</th>
-                        <th className="text-end">Action</th>
+                        {isAdmin && <th className="text-end">Action</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -381,16 +390,18 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                           <td className="small text-muted text-truncate" style={{ maxWidth: '140px' }}>
                             {crew.notes || '—'}
                           </td>
-                          <td className="text-end">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => handleRemoveCrew(crew.id, crew.name)}
-                              title="Remove Crew Member"
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </td>
+                          {isAdmin && (
+                            <td className="text-end">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleRemoveCrew(crew.id, crew.name)}
+                                title="Remove Crew Member"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

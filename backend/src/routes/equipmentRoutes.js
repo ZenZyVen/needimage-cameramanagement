@@ -9,6 +9,7 @@ const { upload } = require('../middlewares/uploadMiddleware');
 router.get('/', authenticate, equipmentController.getAllEquipment);
 router.get('/categories', authenticate, equipmentController.getCategories);
 router.get('/stock-dashboard', authenticate, equipmentController.getStockDashboard);
+router.get('/stock-movements', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.getStockMovements);
 router.get('/lookup/:code', authenticate, equipmentController.lookupEquipment);
 router.get('/:id', authenticate, equipmentController.getEquipmentById);
 

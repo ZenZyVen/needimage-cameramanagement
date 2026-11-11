@@ -25,7 +25,12 @@ let inMemorySettings = {
   autoCreateTicketOnDamagedCheckin: true,
   notifyOnBorrowRequest: true,
   notifyOnOverdue: true,
-  notifyOnLowStock: true
+  notifyOnLowStock: true,
+  invoiceHeader: 'EQUIPMENT LOAN & CUSTODY INVOICE',
+  invoiceTaxId: 'EIN-84-9182903',
+  invoiceTerms: 'The borrower acknowledges full custody and legal responsibility for all equipment listed herein. All items must be returned in their original flight cases with verified components. Any damaged optical sensors, missing cables, or body damage will be billed according to standard studio repair rates.',
+  invoiceDeclaration: 'I confirm receipt and satisfactory visual inspection of the listed items and agree to return them on or before the due date.',
+  invoiceAuthorizedSigner: 'Vault Operations Director'
 };
 
 // 1. Get system settings
@@ -91,27 +96,57 @@ exports.updateSettings = async (req, res, next) => {
   }
 };
 
-// 3. Get system audit logs (Admin only)
+// 3. Get system activity & audit logs (Admin only)
 exports.getAuditLogs = async (req, res, next) => {
   try {
-    const { action, limit = 100 } = req.query;
+    const { action, entity, userId, search, startDate, endDate, limit = 150, page = 1 } = req.query;
     const where = {};
     if (action && action !== 'ALL') where.action = action;
+    if (entity && entity !== 'ALL') where.entity = entity;
+    if (userId && userId !== 'ALL') where.userId = userId;
 
     let logs = [];
     if (prisma.auditLog?.findMany) {
       logs = await prisma.auditLog.findMany({
         where,
         take: parseInt(limit, 10),
+        skip: (parseInt(page, 10) - 1) * parseInt(limit, 10),
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, name: true, email: true, role: true } }
+          user: { select: { id: true, name: true, email: true, role: true, department: true } }
         }
       });
     }
 
+    // In-memory filters for search and date range
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      logs = logs.filter(l =>
+        (l.action && l.action.toLowerCase().includes(q)) ||
+        (l.entity && l.entity.toLowerCase().includes(q)) ||
+        (l.entityId && l.entityId.toLowerCase().includes(q)) ||
+        (l.user && l.user.name && l.user.name.toLowerCase().includes(q)) ||
+        (l.user && l.user.email && l.user.email.toLowerCase().includes(q)) ||
+        (l.details && JSON.stringify(l.details).toLowerCase().includes(q))
+      );
+    }
+
+    if (startDate) {
+      const s = new Date(startDate);
+      logs = logs.filter(l => new Date(l.createdAt) >= s);
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      logs = logs.filter(l => new Date(l.createdAt) <= e);
+    }
+
+    // Sort descending by date
+    logs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     return res.json({
       success: true,
+      total: logs.length,
       count: logs.length,
       data: logs
     });

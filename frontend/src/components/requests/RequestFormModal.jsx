@@ -285,42 +285,123 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                   </span>
                 </div>
 
-                {/* Category Filter Pills & Search */}
-                <div className="row g-2 mb-3">
-                  <div className="col-md-6">
-                    <div className="input-group input-group-sm">
+                {/* Category Filter Navigation Pills & Search */}
+                <div className="mb-3">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <div className="input-group input-group-sm flex-grow-1">
                       <span className="input-group-text bg-white"><i className="bi bi-search text-muted"></i></span>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Search equipment by name, brand, or asset tag..."
+                        placeholder="Search equipment by name, brand, model, or asset tag..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => setSearchTerm('')}
+                        >
+                          <i className="bi bi-x-lg"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ minWidth: '180px' }}>
+                      <select
+                        className="form-select form-select-sm"
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                      >
+                        <option value="ALL">All Categories ({availableGear.length})</option>
+                        {categories.map(cat => {
+                          const catCount = availableGear.filter(g => g.categoryId === cat.id).length;
+                          return (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name} ({catCount})
+                            </option>
+                          );
+                        })}
+                      </select>
                     </div>
                   </div>
 
-                  <div className="col-md-6">
-                    <select
-                      className="form-select form-select-sm"
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                  {/* Horizontal Scrollable Category Pills */}
+                  <div
+                    className="d-flex align-items-center gap-1 overflow-auto pb-1"
+                    style={{ whiteSpace: 'nowrap', scrollbarWidth: 'thin' }}
+                  >
+                    <button
+                      type="button"
+                      className={`btn btn-sm py-1 px-2 rounded-pill text-nowrap d-flex align-items-center gap-1 ${
+                        selectedCategory === 'ALL'
+                          ? 'btn-dark fw-bold text-white shadow-sm'
+                          : 'btn-outline-secondary bg-white text-secondary'
+                      }`}
+                      style={{ fontSize: '0.74rem' }}
+                      onClick={() => setSelectedCategory('ALL')}
                     >
-                      <option value="ALL">All Media Categories</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
+                      <i className="bi bi-grid-fill"></i>
+                      <span>All Categories</span>
+                      <span className={`badge rounded-pill ms-1 ${selectedCategory === 'ALL' ? 'bg-primary text-white' : 'bg-light text-dark border'}`}>
+                        {availableGear.length}
+                      </span>
+                    </button>
+
+                    {categories.map(cat => {
+                      const count = availableGear.filter(g => g.categoryId === cat.id).length;
+                      const isSelected = selectedCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          className={`btn btn-sm py-1 px-2 rounded-pill text-nowrap d-flex align-items-center gap-1 ${
+                            isSelected
+                              ? 'btn-primary fw-bold text-white shadow-sm'
+                              : 'btn-outline-secondary bg-white text-secondary'
+                          }`}
+                          style={{ fontSize: '0.74rem' }}
+                          onClick={() => setSelectedCategory(cat.id)}
+                        >
+                          <i className={`bi ${cat.icon || 'bi-box'}`}></i>
+                          <span>{cat.name}</span>
+                          <span className={`badge rounded-pill ms-1 ${isSelected ? 'bg-white text-primary' : 'bg-light text-dark border'}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
+                </div>
+
+                {/* Filter info banner */}
+                <div className="d-flex align-items-center justify-content-between small text-muted px-1 mb-2">
+                  <span>
+                    Showing <strong className="text-dark">{filteredGear.length}</strong> available item(s) 
+                    {selectedCategory !== 'ALL' && (
+                      <> in <strong className="text-primary">{categories.find(c => c.id === selectedCategory)?.name || 'Selected Category'}</strong></>
+                    )}
+                    {searchTerm && <> matching &quot;{searchTerm}&quot;</>}
+                  </span>
+                  {selectedCategory !== 'ALL' && (
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 text-decoration-none"
+                      style={{ fontSize: '0.75rem' }}
+                      onClick={() => setSelectedCategory('ALL')}
+                    >
+                      Clear category filter
+                    </button>
+                  )}
                 </div>
 
                 {/* Equipment Cards Grid */}
                 <div className="row g-2" style={{ maxHeight: '280px', overflowY: 'auto' }}>
                   {filteredGear.length === 0 ? (
                     <div className="col-12 text-center py-4 text-muted small">
-                      No matching available equipment found in the stock vault.
+                      <i className="bi bi-inbox fs-3 d-block text-secondary mb-1"></i>
+                      No matching available equipment found in this category.
                     </div>
                   ) : (
                     filteredGear.map((gear) => {
@@ -389,6 +470,68 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                     })
                   )}
                 </div>
+
+                {/* Selected Bundle Tray */}
+                {selectedCount > 0 && (
+                  <div className="mt-3 p-3 bg-light border rounded">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="fw-bold text-dark small">
+                        <i className="bi bi-basket-fill text-primary me-1"></i>
+                        Selected Equipment Bundle ({selectedCount} asset types)
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm py-0 px-2"
+                        style={{ fontSize: '0.72rem' }}
+                        onClick={() => setSelectedGear({})}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+
+                    <div className="d-flex flex-wrap gap-2">
+                      {Object.entries(selectedGear).map(([id, qty]) => {
+                        const gear = availableGear.find(g => g.id === id);
+                        if (!gear) return null;
+                        const maxAvail = gear.availableQuantity !== undefined ? gear.availableQuantity : (gear.quantity || 1);
+                        return (
+                          <div
+                            key={id}
+                            className="p-1 px-2 bg-white border rounded shadow-sm d-flex align-items-center gap-2"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            <span className="badge bg-dark font-monospace" style={{ fontSize: '0.62rem' }}>
+                              {gear.assetTag}
+                            </span>
+                            <span className="fw-semibold text-truncate" style={{ maxWidth: '140px' }} title={gear.name}>
+                              {gear.name}
+                            </span>
+                            <div className="d-flex align-items-center gap-1 border-start ps-2">
+                              <span className="text-muted" style={{ fontSize: '0.68rem' }}>x</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max={maxAvail}
+                                className="form-control form-control-sm text-center fw-bold p-0"
+                                style={{ width: '40px', height: '22px' }}
+                                value={qty}
+                                onChange={(e) => handleItemQuantityChange(id, maxAvail, e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm text-danger p-0 ms-1"
+                                onClick={() => handleToggleGear(gear)}
+                                title="Remove item"
+                              >
+                                <i className="bi bi-x-circle-fill"></i>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -96,23 +96,34 @@ const Projects = () => {
       {/* Top Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-1">Production Projects</h4>
+          <div className="d-flex align-items-center gap-2">
+            <h4 className="fw-bold text-dark mb-1">Production Projects</h4>
+            {!isAdmin && (
+              <span className="badge bg-secondary-subtle text-secondary border small">
+                <i className="bi bi-eye me-1"></i> View Only
+              </span>
+            )}
+          </div>
           <p className="text-muted small mb-0">
-            Coordinate film shoots, documentaries, commercials, and assigned equipment bundles.
+            {isAdmin 
+              ? 'Create, manage, and coordinate studio film productions, commercials, and assigned camera packages.' 
+              : 'Browse active studio production projects and scheduled shoots created by administration.'}
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-          onClick={() => {
-            setEditingProject(null);
-            setShowFormModal(true);
-          }}
-        >
-          <i className="bi bi-folder-plus"></i>
-          <span>Create Project</span>
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            className="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm px-3"
+            onClick={() => {
+              setEditingProject(null);
+              setShowFormModal(true);
+            }}
+          >
+            <i className="bi bi-folder-plus"></i>
+            <span>Create Project</span>
+          </button>
+        )}
       </div>
 
       {alertMsg.text && (
@@ -179,18 +190,22 @@ const Projects = () => {
             <i className="bi bi-film fs-1 text-muted d-block mb-2"></i>
             <h6 className="fw-bold text-dark">No production projects found</h6>
             <p className="text-muted small mb-3">
-              Create your first project to organize equipment allocations and shoot dates.
+              {isAdmin
+                ? 'Create your first project to organize equipment allocations and shoot dates.'
+                : 'No projects have been registered by studio administration yet.'}
             </p>
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              onClick={() => {
-                setEditingProject(null);
-                setShowFormModal(true);
-              }}
-            >
-              Create Project
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={() => {
+                  setEditingProject(null);
+                  setShowFormModal(true);
+                }}
+              >
+                Create Project
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -199,13 +214,17 @@ const Projects = () => {
             <div key={p.id} className="col-sm-6 col-lg-4">
               <ProjectCard
                 project={p}
-                canManage={isAdmin || isStaff}
+                canManage={isAdmin}
                 onView={handleViewDetail}
                 onEdit={(proj) => {
+                  if (!isAdmin) return;
                   setEditingProject(proj);
                   setShowFormModal(true);
                 }}
-                onDelete={handleDelete}
+                onDelete={(id) => {
+                  if (!isAdmin) return;
+                  handleDelete(id);
+                }}
                 onCrew={(proj) => {
                   setCrewProject(proj);
                   setShowCrewModal(true);

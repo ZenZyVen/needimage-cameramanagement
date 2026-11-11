@@ -517,11 +517,11 @@ exports.restoreEquipment = async (req, res, next) => {
   }
 };
 
-// 8. Adjust stock quantity
+// 8. Adjust / Restock equipment stock quantity
 exports.adjustStock = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { adjustment, reason, notes } = req.body;
+    const { adjustment, reason, notes, type } = req.body;
     const delta = parseInt(adjustment, 10);
     if (isNaN(delta) || delta === 0) {
       return res.status(400).json({ success: false, message: 'Valid non-zero adjustment amount required.' });
@@ -534,6 +534,15 @@ exports.adjustStock = async (req, res, next) => {
 
     const currentQty = equipment.quantity || 1;
     const currentAvail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : currentQty;
+
+    // Prevent removing more stock than is physically available in the vault
+    if (delta < 0 && Math.abs(delta) > currentAvail) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot remove ${Math.abs(delta)} unit(s). Only ${currentAvail} unit(s) are currently available in the vault (some may be checked out on active loans).`
+      });
+    }
+
     const newQty = Math.max(0, currentQty + delta);
     const newAvail = Math.max(0, currentAvail + delta);
 
@@ -554,29 +563,102 @@ exports.adjustStock = async (req, res, next) => {
       include: { category: true }
     });
 
+    const movementType = type || (delta > 0 ? 'RESTOCK' : 'STOCK_REDUCTION');
+    const performedByName = req.user?.name || 'Administrator';
+
     if (prisma.stockMovement?.create) {
       await prisma.stockMovement.create({
         data: {
           equipmentId: id,
           assetTag: equipment.assetTag,
           equipmentName: equipment.name,
-          type: delta > 0 ? 'STOCK_IN' : 'ADJUSTMENT',
+          type: movementType,
           quantityChanged: delta,
           previousAvailable: currentAvail,
           newAvailable: newAvail,
           previousTotal: currentQty,
           newTotal: newQty,
-          reference: reason || 'MANUAL_ADJUSTMENT',
+          reference: reason || (delta > 0 ? 'RESTOCK_INTAKE' : 'STOCK_DEDUCTION'),
           notes: notes ? notes.trim() : null,
-          performedBy: req.user?.name || 'Staff'
+          performedBy: performedByName
         }
       });
     }
+
+    await logAudit({
+      userId: req.user.id,
+      action: delta > 0 ? 'RESTOCK_EQUIPMENT' : 'REDUCE_STOCK',
+      entity: 'Equipment',
+      entityId: id,
+      details: {
+        assetTag: equipment.assetTag,
+        name: equipment.name,
+        delta,
+        actionType: movementType,
+        previousAvailable: currentAvail,
+        newAvailable: newAvail,
+        previousTotal: currentQty,
+        newTotal: newQty,
+        reason: reason || null,
+        notes: notes || null
+      },
+      req
+    });
 
     return res.json({
       success: true,
       message: `Stock for ${equipment.assetTag} updated: ${newAvail} available of ${newQty} total.`,
       data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8b. Get Stock Movements History
+exports.getStockMovements = async (req, res, next) => {
+  try {
+    const { equipmentId, type, search, startDate, endDate, page = 1, limit = 100 } = req.query;
+    const where = {};
+    if (equipmentId && equipmentId !== 'ALL') where.equipmentId = equipmentId;
+    if (type && type !== 'ALL') where.type = type;
+
+    let movements = [];
+    if (prisma.stockMovement?.findMany) {
+      movements = await prisma.stockMovement.findMany({
+        where,
+        take: parseInt(limit, 10),
+        skip: (parseInt(page, 10) - 1) * parseInt(limit, 10)
+      });
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      movements = movements.filter(m =>
+        (m.equipmentName && m.equipmentName.toLowerCase().includes(q)) ||
+        (m.assetTag && m.assetTag.toLowerCase().includes(q)) ||
+        (m.reference && m.reference.toLowerCase().includes(q)) ||
+        (m.performedBy && m.performedBy.toLowerCase().includes(q)) ||
+        (m.notes && m.notes.toLowerCase().includes(q))
+      );
+    }
+    if (startDate) {
+      const s = new Date(startDate);
+      movements = movements.filter(m => new Date(m.createdAt) >= s);
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      movements = movements.filter(m => new Date(m.createdAt) <= e);
+    }
+
+    // Sort descending by date
+    movements.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return res.json({
+      success: true,
+      total: movements.length,
+      data: movements
     });
   } catch (error) {
     next(error);

@@ -142,12 +142,22 @@ const Dashboard = () => {
             </Link>
           )}
           {(isAdmin || isStockController) && (
-            <div className="d-flex gap-1">
-              <Link to="/equipment" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                <i className="bi bi-box-seam"></i>
-                <span>Stock Vault</span>
+            <div className="d-flex flex-wrap gap-1">
+              <Link to="/stock" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                <i className="bi bi-boxes"></i>
+                <span>Stock Management</span>
               </Link>
-              <Link to="/checkin-out?tab=checkout" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+              <Link to="/reports" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                <i className="bi bi-file-earmark-bar-graph"></i>
+                <span>Loan Reports</span>
+              </Link>
+              {isAdmin && (
+                <Link to="/activity-log" className="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm">
+                  <i className="bi bi-journal-text"></i>
+                  <span>Activity Log</span>
+                </Link>
+              )}
+              <Link to="/checkin-out?tab=checkout" className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm fw-semibold">
                 <i className="bi bi-box-arrow-right"></i>
                 <span>Fast Checkout</span>
               </Link>
