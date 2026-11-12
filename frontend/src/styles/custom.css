@@ -709,3 +709,62 @@ input[type="time"].form-control {
   align-items: center;
   gap: 0.4rem;
 }
+
+/* UI/UX Utility Helpers */
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+.transition-all {
+  transition: all 0.2s ease-in-out !important;
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
+.btn-xs {
+  padding: 0.18rem 0.45rem !important;
+  font-size: 0.7rem !important;
+  border-radius: 6px !important;
+}
+
+.btn-slate {
+  background-color: var(--slate-900);
+  color: #ffffff;
+  border: 1px solid var(--slate-900);
+}
+
+.btn-slate:hover {
+  background-color: var(--slate-800);
+  color: #ffffff;
+  border-color: var(--slate-800);
+}
+
+/* Clean, balanced horizontal scroll container without ugly browser bars */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: var(--slate-100);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}

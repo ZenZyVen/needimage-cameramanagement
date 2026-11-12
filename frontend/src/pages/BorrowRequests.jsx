@@ -18,6 +18,16 @@ import ReturnPrintDocument from '../components/print/ReturnPrintDocument';
 import StatusBadge from '../components/common/StatusBadge';
 import { formatDate } from '../utils/formatters';
 
+const STATUS_TABS = [
+  { key: 'ALL', label: 'All Requests' },
+  { key: 'PENDING', label: 'Pending Review' },
+  { key: 'APPROVED', label: 'Approved (Ready)' },
+  { key: 'CHECKED_OUT', label: 'In Field (Active)' },
+  { key: 'OVERDUE', label: 'Overdue Returns' },
+  { key: 'RETURNED', label: 'Returned' },
+  { key: 'REJECTED', label: 'Rejected' }
+];
+
 const BorrowRequests = () => {
   const { user, isStaff, isUser } = useAuth();
   const [requests, setRequests] = useState([]);
@@ -44,6 +54,9 @@ const BorrowRequests = () => {
 
   // Inspection modal for gear bundle preview
   const [viewItemsReq, setViewItemsReq] = useState(null);
+
+  // Inspection results modal for returned gear
+  const [inspectionResultReq, setInspectionResultReq] = useState(null);
 
   const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
 
@@ -76,8 +89,8 @@ const BorrowRequests = () => {
         let list = res.data.data || [];
         if (statusFilter === 'OVERDUE') {
           const now = new Date();
-          list = list.filter(r => 
-            ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(r.status) && 
+          list = list.filter(r =>
+            ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(r.status) &&
             new Date(r.endDate) < now
           );
         }
@@ -98,30 +111,30 @@ const BorrowRequests = () => {
 
   const handleApprove = async (id, data) => {
     await approveRequest(id, data);
-    setAlertMsg({ type: 'success', text: 'Request approved successfully.' });
+    setAlertMsg({ type: 'success', text: 'Request approved successfully. Ready for handover.' });
     loadRequests();
   };
 
   const handleReject = async (id, data) => {
     await rejectRequest(id, data);
-    setAlertMsg({ type: 'warning', text: 'Request rejected.' });
+    setAlertMsg({ type: 'warning', text: 'Request rejected with specified notes.' });
     loadRequests();
   };
 
   const handleCheckoutSubmit = async (payload) => {
     await checkoutItems(payload);
-    setAlertMsg({ type: 'success', text: 'Equipment checked out successfully! Available stock has been updated.' });
+    setAlertMsg({ type: 'success', text: 'Equipment checked out successfully! Available stock updated.' });
     loadRequests();
   };
 
   const handleCheckinSubmit = async (payload) => {
     await checkinItems(payload);
-    setAlertMsg({ type: 'success', text: 'Equipment returned & inspected. Stock quantities and conditions have been updated.' });
+    setAlertMsg({ type: 'success', text: 'Equipment returned & inspected. Stock quantities and conditions updated.' });
     loadRequests();
   };
 
   const handleCancel = async (id) => {
-    if (window.confirm('Are you sure you want to cancel this pending request?')) {
+    if (window.confirm('Are you sure you want to cancel this pending borrow request?')) {
       try {
         await cancelRequest(id);
         setAlertMsg({ type: 'info', text: 'Request cancelled.' });
@@ -136,6 +149,13 @@ const BorrowRequests = () => {
     return ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(req.status) && new Date(req.endDate) < new Date();
   };
 
+  // KPI calculations
+  const totalCount = requests.length;
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  const inFieldCount = requests.filter(r => ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(r.status)).length;
+  const overdueCount = requests.filter(r => isOverdue(r)).length;
+  const returnedCount = requests.filter(r => r.status === 'RETURNED').length;
+
   // Filter by category
   const displayRequests = requests.filter(req => {
     if (categoryFilter !== 'ALL') {
@@ -146,39 +166,139 @@ const BorrowRequests = () => {
   });
 
   return (
-    <div>
-      {/* Header */}
+    <div className="pb-5">
+      {/* Top Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <div>
-          <h4 className="fw-bold text-dark mb-0">Borrow Requests</h4>
+          <h4 className="fw-bold text-dark mb-0">Borrow Requests & Requisition Vault</h4>
+          <p className="text-muted small mb-0">
+            Manage equipment loan workflows, technical approvals, fast handovers, and return quality inspections.
+          </p>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <i className="bi bi-calendar2-plus"></i>
-          <span>New Borrow Request</span>
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm px-3"
+            onClick={loadRequests}
+            title="Refresh Requisition List"
+          >
+            <i className="bi bi-arrow-clockwise"></i>
+            <span>Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm px-3 fw-semibold"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <i className="bi bi-calendar2-plus"></i>
+            <span>New Borrow Request</span>
+          </button>
+        </div>
       </div>
 
       {alertMsg.text && (
-        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-3 shadow-sm`} role="alert">
-          {alertMsg.text}
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2.5 px-3 small mb-4 shadow-xs`} role="alert">
+          <div className="d-flex align-items-center gap-2">
+            <i className={`bi ${alertMsg.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-octagon-fill'}`}></i>
+            <span>{alertMsg.text}</span>
+          </div>
           <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
         </div>
       )}
 
-      {/* Filter toolbar */}
-      <div className="card mb-4 border-0 shadow-sm">
+      {/* KPI METRIC CARDS */}
+      <div className="row g-3 mb-4">
+        {/* Total */}
+        <div className="col-6 col-md-3 col-lg">
+          <div
+            className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'ALL' ? 'border-primary border' : ''}`}
+            onClick={() => setStatusFilter('ALL')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card-body p-3">
+              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Total Requisitions</span>
+              <div className="fs-4 fw-bold text-dark mt-1">{totalCount}</div>
+              <small className="text-secondary">All historical & active</small>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Review */}
+        <div className="col-6 col-md-3 col-lg">
+          <div
+            className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'PENDING' ? 'border-warning border' : ''}`}
+            onClick={() => setStatusFilter('PENDING')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card-body p-3">
+              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Pending Review</span>
+              <div className="fs-4 fw-bold text-warning mt-1">{pendingCount}</div>
+              <small className="text-secondary">Awaiting staff sign-off</small>
+            </div>
+          </div>
+        </div>
+
+        {/* In Field Active */}
+        <div className="col-6 col-md-3 col-lg">
+          <div
+            className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'CHECKED_OUT' ? 'border-primary border' : ''}`}
+            onClick={() => setStatusFilter('CHECKED_OUT')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card-body p-3">
+              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Active in Field</span>
+              <div className="fs-4 fw-bold text-primary mt-1">{inFieldCount}</div>
+              <small className="text-secondary">On loan on production</small>
+            </div>
+          </div>
+        </div>
+
+        {/* Overdue */}
+        <div className="col-6 col-md-3 col-lg">
+          <div
+            className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'OVERDUE' ? 'border-danger border bg-danger-subtle bg-opacity-10' : ''}`}
+            onClick={() => setStatusFilter('OVERDUE')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card-body p-3">
+              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Overdue Returns</span>
+              <div className={`fs-4 fw-bold mt-1 ${overdueCount > 0 ? 'text-danger' : 'text-muted'}`}>
+                {overdueCount}
+              </div>
+              <small className={overdueCount > 0 ? 'text-danger fw-semibold' : 'text-secondary'}>
+                {overdueCount > 0 ? 'Immediate return required' : 'No overdue loans'}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        {/* Completed */}
+        <div className="col-6 col-md-3 col-lg">
+          <div
+            className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'RETURNED' ? 'border-success border' : ''}`}
+            onClick={() => setStatusFilter('RETURNED')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card-body p-3">
+              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Returned & Closed</span>
+              <div className="fs-4 fw-bold text-success mt-1">{returnedCount}</div>
+              <small className="text-secondary">Inspected in vault</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER & SEARCH TOOLBAR */}
+      <div className="card border-0 shadow-xs mb-4 bg-white">
         <div className="card-body p-3">
           <div className="row g-2 align-items-center">
             {/* Search */}
-            <div className="col-md-5">
+            <div className="col-md-5 col-lg-4">
               <div className="input-group input-group-sm">
-                <span className="input-group-text bg-white border-end-0">
-                  <i className="bi bi-search text-muted"></i>
+                <span className="input-group-text bg-light border-end-0 text-muted">
+                  <i className="bi bi-search"></i>
                 </span>
                 <input
                   type="text"
@@ -200,7 +320,7 @@ const BorrowRequests = () => {
             </div>
 
             {/* Equipment Category Selection Filter */}
-            <div className="col-md-4">
+            <div className="col-md-4 col-lg-4">
               <select
                 className="form-select form-select-sm"
                 value={categoryFilter}
@@ -215,145 +335,188 @@ const BorrowRequests = () => {
               </select>
             </div>
 
-            {/* Status Filter */}
-            <div className="col-md-3">
+            {/* Status Dropdown */}
+            <div className="col-md-3 col-lg-4">
               <select
                 className="form-select form-select-sm"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="ALL">All Request Statuses</option>
-                <option value="PENDING">Pending Review (Awaiting)</option>
-                <option value="APPROVED">Approved (Ready for Pickup)</option>
-                <option value="CHECKED_OUT">In Field / On Loan</option>
-                <option value="OVERDUE">Overdue Returns</option>
-                <option value="RETURNED">Returned & Inspected</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="CANCELLED">Cancelled</option>
+                {STATUS_TABS.map(tab => (
+                  <option key={tab.key} value={tab.key}>
+                    {tab.label}
+                  </option>
+                ))}
               </select>
             </div>
+          </div>
+
+          {/* Quick Status Filter Pills */}
+          <div className="d-flex flex-wrap gap-1.5 mt-3 pt-2 border-top">
+            {STATUS_TABS.map(tab => {
+              const active = statusFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`btn btn-xs py-1 px-2.5 rounded-pill font-sans transition-all ${
+                    active ? 'btn-slate text-white fw-bold shadow-xs' : 'btn-outline-secondary text-secondary'
+                  }`}
+                  style={{
+                    backgroundColor: active ? '#0f172a' : undefined,
+                    borderColor: active ? '#0f172a' : undefined,
+                    fontSize: '0.72rem'
+                  }}
+                  onClick={() => setStatusFilter(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Requests Table */}
+      {/* REQUESTS TABLE */}
       {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="text-muted small mt-2">Loading requests...</p>
+        <div className="text-center py-5 card border-0 shadow-xs">
+          <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
+          <p className="text-muted small mt-2">Loading requisition records...</p>
         </div>
       ) : displayRequests.length === 0 ? (
-        <div className="card text-center py-5 border-0 shadow-sm">
+        <div className="card text-center py-5 border-0 shadow-xs bg-white">
           <div className="card-body">
             <i className="bi bi-calendar-x fs-1 text-muted d-block mb-2"></i>
             <h6 className="fw-bold text-dark">No requests found</h6>
             <p className="text-muted small mb-3">
               {isUser
                 ? 'You have not submitted any equipment requests yet.'
-                : 'No equipment requests match the current filters.'}
+                : 'No equipment requests match your selected filters.'}
             </p>
             <button
               type="button"
-              className="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary px-3 shadow-xs"
               onClick={() => setShowCreateModal(true)}
             >
-              Submit New Request
+              <i className="bi bi-plus-lg me-1"></i> Submit New Request
             </button>
           </div>
         </div>
       ) : (
-        <div className="card border-0 shadow-sm">
+        <div className="card border-0 shadow-xs bg-white">
           <div className="table-responsive">
-            <table className="table table-custom align-middle mb-0">
-              <thead>
+            <table className="table table-hover align-middle mb-0" style={{ minWidth: '920px' }}>
+              <thead className="table-light text-muted small">
                 <tr>
-                  <th style={{ width: '130px' }}>Request #</th>
-                  {isStaff && <th>Borrower</th>}
-                  <th>Production Project</th>
-                  <th style={{ width: '170px' }}>Dates (Start - Return)</th>
-                  <th style={{ minWidth: '180px' }}>Requested Gear Items</th>
-                  <th style={{ width: '130px' }}>Status</th>
-                  <th className="text-end" style={{ width: '160px' }}>Actions</th>
+                  <th style={{ width: '16%' }}>Request & Borrower</th>
+                  <th style={{ width: '22%' }}>Production Project & Purpose</th>
+                  <th style={{ width: '18%' }}>Shoot & Return Timeline</th>
+                  <th style={{ width: '16%' }}>Equipment Bundle</th>
+                  <th style={{ width: '12%' }}>Status</th>
+                  <th className="text-end" style={{ width: '16%' }}>Workflow Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayRequests.map(req => {
                   const overdue = isOverdue(req);
+                  const isReturned = ['RETURNED', 'PARTIALLY_RETURNED'].includes(req.status);
+
                   return (
-                    <tr key={req.id} className={overdue ? 'bg-danger-subtle' : ''}>
+                    <tr key={req.id} className={overdue ? 'table-danger bg-opacity-25' : ''}>
+                      {/* Request # & Borrower */}
                       <td>
-                        <span className="fw-bold text-dark">{req.requestNumber}</span>
-                        <div className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                          {formatDate(req.createdAt)}
+                        <div className="d-flex align-items-center gap-1.5 mb-1">
+                          <span className="badge bg-slate-900 text-white font-monospace" style={{ fontSize: '0.72rem' }}>
+                            {req.requestNumber}
+                          </span>
+                        </div>
+                        <div className="fw-bold text-dark small">{req.user?.name || 'Requisition User'}</div>
+                        <div className="text-muted font-sans" style={{ fontSize: '0.7rem' }}>
+                          {req.user?.department || 'Production'} • {formatDate(req.createdAt)}
                         </div>
                       </td>
 
-                      {isStaff && (
-                        <td>
-                          <div className="fw-semibold text-dark">{req.user?.name}</div>
-                          <div className="small text-muted">{req.user?.department || 'Production'}</div>
-                        </td>
-                      )}
-
+                      {/* Project & Purpose */}
                       <td>
-                        <div className="fw-semibold text-dark text-truncate" style={{ maxWidth: '170px' }}>
+                        <div className="fw-bold text-dark small text-truncate" style={{ maxWidth: '240px' }} title={req.project?.title}>
                           {req.project?.title || 'Standalone Shoot'}
                         </div>
-                        <div className="small text-muted text-truncate" style={{ maxWidth: '170px' }}>
-                          {req.purpose}
+                        <div className="text-muted small text-truncate" style={{ maxWidth: '240px', fontSize: '0.74rem' }} title={req.purpose}>
+                          {req.purpose || 'Production shooting'}
+                        </div>
+                        {req.destination && (
+                          <div className="text-secondary small mt-0.5" style={{ fontSize: '0.68rem' }}>
+                            <i className="bi bi-geo-alt me-1 text-primary"></i>{req.destination}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Shoot & Return Timeline */}
+                      <td>
+                        <div className="small font-sans">
+                          <span className="text-muted">Out:</span> <strong className="text-dark">{formatDate(req.startDate)}</strong>
+                        </div>
+                        <div className={`small font-sans mt-0.5 ${overdue ? 'text-danger fw-bold' : 'text-muted'}`}>
+                          <span>Return:</span> <strong className={overdue ? 'text-danger' : 'text-dark'}>{formatDate(req.endDate)}</strong>
+                          {overdue && (
+                            <span className="badge bg-danger text-white ms-1" style={{ fontSize: '0.65rem' }}>
+                              OVERDUE
+                            </span>
+                          )}
                         </div>
                       </td>
 
-                      <td className="small text-nowrap">
-                        <div><i className="bi bi-calendar-event me-1 text-primary"></i>{formatDate(req.startDate)}</div>
-                        <div className={overdue ? 'text-danger fw-bold' : 'text-muted'}>
-                          <i className="bi bi-calendar-check me-1"></i>{formatDate(req.endDate)}
-                          {overdue && <span className="ms-1 badge bg-danger text-white">Overdue</span>}
-                        </div>
-                      </td>
-
+                      {/* Requested Gear Items */}
                       <td>
                         <button
                           type="button"
-                          className="btn btn-light btn-sm border d-flex align-items-center gap-2 py-1 px-2 text-start shadow-xs w-100"
-                          style={{ fontSize: '0.75rem', maxWidth: '240px' }}
+                          className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-between p-1.5 px-2 text-start w-100 shadow-none border"
+                          style={{ fontSize: '0.74rem' }}
                           onClick={() => setViewItemsReq(req)}
-                          title="Click to view all gear items in this request"
+                          title="Click to preview requested equipment kit"
                         >
-                          <span className="badge bg-primary text-white">
-                            {req.items?.length || 0}
-                          </span>
-                          <span className="text-truncate text-secondary flex-grow-1" style={{ fontSize: '0.74rem' }}>
-                            {req.items?.map(i => i.equipment?.name).filter(Boolean).slice(0, 2).join(', ')}
-                            {(req.items?.length || 0) > 2 ? '...' : ''}
-                          </span>
-                          <i className="bi bi-eye text-muted small ms-auto"></i>
+                          <div className="d-flex align-items-center gap-1.5 text-truncate">
+                            <span className="badge bg-primary text-white font-monospace">
+                              {req.items?.length || 0}
+                            </span>
+                            <span className="text-truncate text-secondary">
+                              {req.items?.[0]?.equipment?.name || 'Gear Kit'}
+                              {(req.items?.length || 0) > 1 ? ` +${req.items.length - 1} more` : ''}
+                            </span>
+                          </div>
+                          <i className="bi bi-box-arrow-up-right text-muted ms-1" style={{ fontSize: '0.7rem' }}></i>
                         </button>
                       </td>
 
+                      {/* Status */}
                       <td>
-                        {overdue ? (
-                          <span className="badge bg-danger text-white px-2 py-1 fw-semibold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', borderRadius: '14px' }}>
-                            <span className="status-dot" style={{ backgroundColor: '#ffffff' }}></span>
-                            Overdue
-                          </span>
-                        ) : (
-                          <StatusBadge status={req.status} />
-                        )}
+                        <div>
+                          {overdue ? (
+                            <span className="badge bg-danger text-white px-2 py-1 fw-semibold d-inline-flex align-items-center" style={{ fontSize: '0.7rem', borderRadius: '14px' }}>
+                              <span className="status-dot" style={{ backgroundColor: '#ffffff' }}></span>
+                              Overdue
+                            </span>
+                          ) : (
+                            <StatusBadge status={req.status} />
+                          )}
+                        </div>
+
                         {req.rejectionReason && (
-                          <div className="small text-danger mt-1 text-truncate" style={{ maxWidth: '150px' }} title={req.rejectionReason}>
+                          <div className="text-danger small mt-1 text-truncate" style={{ maxWidth: '140px', fontSize: '0.68rem' }} title={req.rejectionReason}>
                             Reason: {req.rejectionReason}
                           </div>
                         )}
                       </td>
 
+                      {/* Actions */}
                       <td className="text-end">
-                        <div className="btn-group btn-group-sm">
+                        <div className="d-inline-flex align-items-center gap-1">
                           {/* Staff Review Button for PENDING requests */}
                           {isStaff && req.status === 'PENDING' && (
                             <button
                               type="button"
-                              className="btn btn-primary"
+                              className="btn btn-primary btn-sm px-2.5 fw-semibold shadow-xs"
+                              style={{ fontSize: '0.74rem' }}
                               onClick={() => {
                                 setReviewRequest(req);
                                 setShowReviewModal(true);
@@ -367,8 +530,9 @@ const BorrowRequests = () => {
                           {isStaff && req.status === 'APPROVED' && (
                             <button
                               type="button"
-                              className="btn btn-warning text-dark fw-semibold"
-                              title="Checkout / Handover Gear"
+                              className="btn btn-warning btn-sm text-dark px-2.5 fw-semibold shadow-xs"
+                              style={{ fontSize: '0.74rem' }}
+                              title="Checkout and handover equipment to crew"
                               onClick={() => {
                                 setCheckoutRequest(req);
                                 setShowCheckoutModal(true);
@@ -382,8 +546,9 @@ const BorrowRequests = () => {
                           {isStaff && ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(req.status) && (
                             <button
                               type="button"
-                              className="btn btn-success text-white fw-semibold"
-                              title="Check In / Confirm Return Condition"
+                              className="btn btn-success btn-sm text-white px-2.5 fw-semibold shadow-xs text-nowrap"
+                              style={{ fontSize: '0.74rem' }}
+                              title="Process return intake & inspection"
                               onClick={() => {
                                 setCheckinRequest(req);
                                 setShowCheckinModal(true);
@@ -393,27 +558,42 @@ const BorrowRequests = () => {
                             </button>
                           )}
 
-                          {/* Handover Print Button */}
-                          {['APPROVED', 'CHECKED_OUT', 'PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
+                          {/* View Inspection Report Button for RETURNED requests */}
+                          {isReturned && (
                             <button
                               type="button"
-                              className="btn btn-light border"
-                              title="Print Handover Form"
-                              onClick={() => setPrintHandoverReq(req)}
+                              className="btn btn-outline-success btn-sm px-2 text-nowrap"
+                              style={{ fontSize: '0.72rem' }}
+                              title="View technical return inspection details"
+                              onClick={() => setInspectionResultReq(req)}
                             >
-                              <i className="bi bi-file-earmark-text text-primary"></i>
+                              <i className="bi bi-card-checklist me-1"></i> Inspection
                             </button>
                           )}
 
-                          {/* Return Print Button */}
-                          {['PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
+                          {/* Print Handover Form */}
+                          {['APPROVED', 'CHECKED_OUT', 'PARTIALLY_RETURNED', 'RETURNED'].includes(req.status) && (
                             <button
                               type="button"
-                              className="btn btn-light border"
-                              title="Print Return Voucher"
+                              className="btn btn-light border btn-sm"
+                              style={{ width: '28px', height: '28px', padding: 0 }}
+                              title="Print A4 Handover Agreement"
+                              onClick={() => setPrintHandoverReq(req)}
+                            >
+                              <i className="bi bi-file-earmark-text text-primary" style={{ fontSize: '0.75rem' }}></i>
+                            </button>
+                          )}
+
+                          {/* Print Return Slip */}
+                          {isReturned && (
+                            <button
+                              type="button"
+                              className="btn btn-light border btn-sm"
+                              style={{ width: '28px', height: '28px', padding: 0 }}
+                              title="Print A4 Return Quality Inspection Receipt"
                               onClick={() => setPrintReturnReq(req)}
                             >
-                              <i className="bi bi-receipt text-success"></i>
+                              <i className="bi bi-receipt text-success" style={{ fontSize: '0.75rem' }}></i>
                             </button>
                           )}
 
@@ -421,11 +601,12 @@ const BorrowRequests = () => {
                           {req.status === 'PENDING' && (req.userId === user?.id || isStaff) && (
                             <button
                               type="button"
-                              className="btn btn-light border text-danger"
+                              className="btn btn-light border btn-sm text-danger"
+                              style={{ width: '28px', height: '28px', padding: 0 }}
                               title="Cancel Request"
                               onClick={() => handleCancel(req.id)}
                             >
-                              <i className="bi bi-x-circle"></i>
+                              <i className="bi bi-x-circle" style={{ fontSize: '0.75rem' }}></i>
                             </button>
                           )}
                         </div>
@@ -439,19 +620,21 @@ const BorrowRequests = () => {
         </div>
       )}
 
-      {/* Gear Bundle Preview Modal */}
+      {/* GEAR BUNDLE PREVIEW MODAL */}
       {viewItemsReq && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header py-2 px-3 bg-light border-bottom">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
                 <div className="d-flex align-items-center gap-2">
-                  <i className="bi bi-camera text-primary fs-5"></i>
+                  <div className="p-2 rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                    <i className="bi bi-boxes" style={{ fontSize: '0.9rem' }}></i>
+                  </div>
                   <div>
-                    <h6 className="modal-title fw-bold text-dark mb-0">
-                      Requested Equipment ({viewItemsReq.requestNumber})
+                    <h6 className="modal-title fw-bold text-white mb-0">
+                      Equipment Bundle ({viewItemsReq.requestNumber})
                     </h6>
-                    <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    <small className="text-slate-400" style={{ fontSize: '0.72rem' }}>
                       Project: {viewItemsReq.project?.title || 'Standalone Shoot'} • Requester: {viewItemsReq.user?.name}
                     </small>
                   </div>
@@ -466,10 +649,10 @@ const BorrowRequests = () => {
                 </button>
               </div>
 
-              <div className="modal-body p-3">
+              <div className="modal-body p-3 p-md-4">
                 <div className="list-group">
                   {viewItemsReq.items?.map((item, idx) => (
-                    <div key={item.id || idx} className="list-group-item d-flex align-items-center gap-3 p-3">
+                    <div key={item.id || idx} className="list-group-item d-flex align-items-center gap-3 p-3 border rounded mb-2">
                       {item.equipment?.imageUrl ? (
                         <img
                           src={item.equipment.imageUrl}
@@ -497,7 +680,7 @@ const BorrowRequests = () => {
                         </div>
                         <div className="fw-bold text-dark small">{item.equipment?.name}</div>
                         <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                          Brand: {item.equipment?.brand || '—'} • Model: {item.equipment?.model || '—'}
+                          Brand: {item.equipment?.brand || '—'} • Model: {item.equipment?.model || '—'} {item.equipment?.serialNumber ? `• S/N: ${item.equipment.serialNumber}` : ''}
                         </div>
                       </div>
 
@@ -512,8 +695,122 @@ const BorrowRequests = () => {
                 </div>
               </div>
 
-              <div className="modal-footer py-2 px-3 bg-light border-top">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setViewItemsReq(null)}>
+              <div className="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between align-items-center">
+                <span className="small text-muted">
+                  Total Bundle Items: <strong>{viewItemsReq.items?.length || 0}</strong>
+                </span>
+                <button type="button" className="btn btn-secondary btn-sm px-3" onClick={() => setViewItemsReq(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INSPECTION RESULTS MODAL */}
+      {inspectionResultReq && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-slate-900 text-white" style={{ backgroundColor: '#0f172a' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <div className="p-2 rounded bg-success text-white d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                    <i className="bi bi-card-checklist" style={{ fontSize: '0.9rem' }}></i>
+                  </div>
+                  <div>
+                    <h6 className="modal-title fw-bold text-white mb-0">
+                      Technical Return Inspection Record
+                    </h6>
+                    <small className="text-slate-400" style={{ fontSize: '0.72rem' }}>
+                      Requisition: {inspectionResultReq.requestNumber} • Project: {inspectionResultReq.project?.title || 'Standalone Shoot'}
+                    </small>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setInspectionResultReq(null)}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <div className="modal-body p-3 p-md-4">
+                <div className="p-3 bg-light border rounded mb-3">
+                  <div className="row g-2">
+                    <div className="col-sm-6">
+                      <span className="text-muted small">Returning Custodian:</span>
+                      <div className="fw-semibold text-dark">{inspectionResultReq.user?.name}</div>
+                    </div>
+                    <div className="col-sm-6">
+                      <span className="text-muted small">Return Status:</span>
+                      <div><StatusBadge status={inspectionResultReq.status} /></div>
+                    </div>
+                  </div>
+                </div>
+
+                <h6 className="fw-bold text-dark small text-uppercase mb-2">
+                  Inspected Gear Items ({inspectionResultReq.items?.length || 0})
+                </h6>
+
+                <div className="list-group">
+                  {inspectionResultReq.items?.map((item, idx) => (
+                    <div key={item.id || idx} className="list-group-item p-3 border rounded mb-2">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                          <div className="d-flex align-items-center gap-1.5 mb-1">
+                            <span className="badge bg-slate-900 text-white font-monospace" style={{ fontSize: '0.7rem' }}>
+                              {item.equipment?.assetTag || 'GEAR-TAG'}
+                            </span>
+                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle" style={{ fontSize: '0.68rem' }}>
+                              {item.equipment?.category?.name || 'Equipment'}
+                            </span>
+                          </div>
+                          <div className="fw-bold text-dark small">{item.equipment?.name}</div>
+                          <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                            Model: {item.equipment?.model || 'Standard'} • S/N: {item.equipment?.serialNumber || 'N/A'}
+                          </div>
+                        </div>
+
+                        <div className="text-end">
+                          <span className={`badge ${
+                            item.returnedCondition === 'EXCELLENT' ? 'bg-success' :
+                            item.returnedCondition === 'GOOD' ? 'bg-primary' :
+                            item.returnedCondition === 'FAIR' ? 'bg-warning text-dark' :
+                            'bg-danger text-white'
+                          } px-2 py-1`} style={{ fontSize: '0.7rem' }}>
+                            Condition: {item.returnedCondition || item.equipment?.condition || 'GOOD'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {item.notes && (
+                        <div className="p-2 bg-light border rounded text-secondary small mt-2" style={{ fontSize: '0.74rem' }}>
+                          <i className="bi bi-chat-left-text me-1"></i> Inspector Note: {item.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between align-items-center">
+                <button
+                  type="button"
+                  className="btn btn-outline-success btn-sm d-flex align-items-center gap-1"
+                  onClick={() => {
+                    const req = inspectionResultReq;
+                    setInspectionResultReq(null);
+                    setPrintReturnReq(req);
+                  }}
+                >
+                  <i className="bi bi-printer"></i>
+                  <span>Print Formal A4 Return Voucher</span>
+                </button>
+
+                <button type="button" className="btn btn-secondary btn-sm px-3" onClick={() => setInspectionResultReq(null)}>
                   Close
                 </button>
               </div>

@@ -1,6 +1,60 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 
+// Helper to generate the next sequential project number and code (01, 02, 03, 04, ...)
+async function generateNextProjectSequence() {
+  const allProjects = await prisma.project.findMany({
+    select: { projectCode: true }
+  });
+
+  const existingCodes = new Set();
+  let maxNumber = 0;
+
+  for (const p of allProjects) {
+    if (!p.projectCode) continue;
+    const code = p.projectCode.trim();
+    existingCodes.add(code.toUpperCase());
+
+    // Extract sequence number from formats like PRJ-01, PRJ-2026-003, 01, etc.
+    const match = code.match(/(\d+)$/);
+    if (match) {
+      const parsed = parseInt(match[1], 10);
+      if (!isNaN(parsed) && parsed > maxNumber) {
+        maxNumber = parsed;
+      }
+    }
+  }
+
+  let nextSequence = maxNumber + 1;
+  let candidateNumber = String(nextSequence).padStart(2, '0');
+  let candidateCode = `PRJ-${candidateNumber}`;
+
+  // Collision safety loop: ensure unique code across both number and reference string
+  while (existingCodes.has(candidateCode.toUpperCase()) || existingCodes.has(candidateNumber.toUpperCase())) {
+    nextSequence++;
+    candidateNumber = String(nextSequence).padStart(2, '0');
+    candidateCode = `PRJ-${candidateNumber}`;
+  }
+
+  return {
+    projectNumber: candidateNumber,
+    projectCode: candidateCode
+  };
+}
+
+// 0. Get next available project sequence number & code
+exports.getNextProjectCode = async (req, res, next) => {
+  try {
+    const sequence = await generateNextProjectSequence();
+    return res.json({
+      success: true,
+      data: sequence
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // 1. Get all projects
 exports.getAllProjects = async (req, res, next) => {
   try {
@@ -104,23 +158,20 @@ exports.createProject = async (req, res, next) => {
       });
     }
 
-    // Auto-generate projectCode if not supplied
+    // Auto-generate projectCode starting from 01 sequentially (01, 02, 03, 04, ...)
     let cleanCode = projectCode ? projectCode.trim().toUpperCase() : null;
-    if (!cleanCode) {
-      const count = await prisma.project.count();
-      const year = new Date().getFullYear();
-      cleanCode = `PRJ-${year}-${String(count + 1).padStart(3, '0')}`;
-    }
-
-    const existingCode = await prisma.project.findUnique({
-      where: { projectCode: cleanCode }
-    });
-
-    if (existingCode) {
-      return res.status(409).json({
-        success: false,
-        message: `Project Code "${cleanCode}" is already in use.`
+    if (!cleanCode || cleanCode.startsWith('AUTO') || cleanCode === '') {
+      const seq = await generateNextProjectSequence();
+      cleanCode = seq.projectCode;
+    } else {
+      // If code was supplied, verify it doesn't collide; if it does, allocate next unique sequential code
+      const existingCode = await prisma.project.findUnique({
+        where: { projectCode: cleanCode }
       });
+      if (existingCode) {
+        const seq = await generateNextProjectSequence();
+        cleanCode = seq.projectCode;
+      }
     }
 
     const project = await prisma.project.create({
