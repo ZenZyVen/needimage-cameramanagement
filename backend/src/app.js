@@ -93,6 +93,7 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/requests', borrowRequestRoutes);
 app.use('/api/checkinout', checkInOutRoutes);
+app.use('/api/checkin-out', checkInOutRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
