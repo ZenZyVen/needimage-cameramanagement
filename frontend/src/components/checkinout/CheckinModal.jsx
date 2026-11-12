@@ -11,7 +11,7 @@ const CONDITIONS = [
 
 const COMMON_ACCESSORIES = ['Lens Cap', 'Camera Battery', 'Dual Charger', 'HDMI Cable', 'SD/CF Card', 'Hard Case', 'Power Cord'];
 
-const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit }) => {
+const CheckinModal = ({ show, onHide, request = null, equipment = null, initialItem = null, onSubmit }) => {
   const { user } = useAuth();
   const [borrowerName, setBorrowerName] = useState('');
   const [staffSignature, setStaffSignature] = useState('');
@@ -20,11 +20,13 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const targetEquipment = equipment || initialItem;
+
   // Collect active items needing return
   const rawItems = request
     ? request.items?.filter(i => ['CHECKED_OUT', 'REQUESTED', 'PREPARED'].includes(i.status)).map(i => i.equipment).filter(Boolean) || []
-    : equipment
-    ? [equipment]
+    : targetEquipment
+    ? [targetEquipment]
     : [];
 
   useEffect(() => {
@@ -53,7 +55,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, onSubmit
       });
       setItemInspections(initialInspections);
     }
-  }, [show, request, equipment, user]);
+  }, [show, request, equipment, initialItem, user]);
 
   const toggleItemSelection = (id) => {
     setSelectedItemIds(prev => {
