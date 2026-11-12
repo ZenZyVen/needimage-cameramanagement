@@ -303,7 +303,7 @@ const BorrowRequests = () => {
                 <input
                   type="text"
                   className="form-control border-start-0 ps-0"
-                  placeholder="Search request #, borrower, project..."
+                  placeholder="Search requests..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

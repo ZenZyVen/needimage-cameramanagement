@@ -125,7 +125,7 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
                 <textarea
                   className="form-control"
                   rows="3"
-                  placeholder="Resolution and technical service notes"
+                  placeholder="Resolution notes"
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
                   required

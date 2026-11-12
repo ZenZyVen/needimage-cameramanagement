@@ -353,7 +353,7 @@ const Reports = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Borrower, project..."
+                  placeholder="Filter by borrower or project..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

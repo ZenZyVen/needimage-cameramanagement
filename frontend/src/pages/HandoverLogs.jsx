@@ -181,7 +181,7 @@ const HandoverLogs = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search gear, asset tag, borrower, or vault tech..."
+                  placeholder="Search handover logs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

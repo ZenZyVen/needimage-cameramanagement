@@ -122,7 +122,7 @@ const CategoryModal = ({ show, onHide, categories = [], onCategoriesUpdated }) =
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Category Name"
+                      placeholder="Category name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -167,7 +167,7 @@ const CategoryModal = ({ show, onHide, categories = [], onCategoriesUpdated }) =
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Category Description"
+                      placeholder="Description (optional)"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                     />

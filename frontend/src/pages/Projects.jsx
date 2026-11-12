@@ -138,7 +138,7 @@ const Projects = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search project title, client, director, code..."
+                  placeholder="Search projects..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

@@ -57,7 +57,7 @@ const QRScannerPage = () => {
                 <input
                   type="text"
                   className="form-control border-start-0"
-                  placeholder="Filter equipment by tag, name, or serial number..."
+                  placeholder="Filter equipment..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />

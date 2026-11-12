@@ -226,7 +226,7 @@ const LowStockAlerts = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search gear by asset tag, model, brand, or name..."
+                  placeholder="Search equipment..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -451,7 +451,7 @@ const LowStockAlerts = () => {
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. PO-2026-992, Expedited Delivery"
+                      placeholder="PO / reference number"
                       value={restockReason}
                       onChange={(e) => setRestockReason(e.target.value)}
                     />
@@ -462,7 +462,7 @@ const LowStockAlerts = () => {
                     <textarea
                       className="form-control form-control-sm"
                       rows="2"
-                      placeholder="Supplier info, serial numbers added, etc."
+                      placeholder="Restock notes (optional)"
                       value={restockNotes}
                       onChange={(e) => setRestockNotes(e.target.value)}
                     ></textarea>

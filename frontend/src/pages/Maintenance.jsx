@@ -205,7 +205,7 @@ const Maintenance = () => {
                 <input
                   type="text"
                   className="form-control border-start-0"
-                  placeholder="Search by ticket #, gear tag, technician, or damage issue..."
+                  placeholder="Search tickets..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

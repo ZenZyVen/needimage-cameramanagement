@@ -401,7 +401,7 @@ const Users = () => {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Staff reminder: Who they are and their qualifications"
+                          placeholder="Staff reminder notes (optional)"
                           value={formData.roleNote}
                           onChange={(e) => setFormData({ ...formData, roleNote: e.target.value })}
                         />
@@ -529,7 +529,7 @@ const Users = () => {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Staff reminder: Who they are and their qualifications"
+                          placeholder="Staff reminder notes (optional)"
                           value={editingUser.roleNote || ''}
                           onChange={(e) => setEditingUser({ ...editingUser, roleNote: e.target.value })}
                         />

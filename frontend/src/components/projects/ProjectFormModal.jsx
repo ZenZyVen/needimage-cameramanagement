@@ -249,7 +249,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control form-control-sm"
                       name="title"
-                      placeholder="e.g. Horizon 2026 Electric Vehicle Commercial"
+                      placeholder="Project title"
                       value={formData.title}
                       onChange={handleChange}
                       required
@@ -265,7 +265,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control form-control-sm"
                       name="client"
-                      placeholder="e.g. Apex Automotive Group or Warner Bros"
+                      placeholder="Client / studio name"
                       value={formData.client}
                       onChange={handleChange}
                     />
@@ -285,7 +285,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control form-control-sm"
                       name="director"
-                      placeholder="e.g. Alex Rivera (Director)"
+                      placeholder="Director name"
                       value={formData.director}
                       onChange={handleChange}
                     />
@@ -296,7 +296,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                       type="text"
                       className="form-control form-control-sm"
                       name="location"
-                      placeholder="e.g. Stage 3 or Iceland Field Site"
+                      placeholder="Shooting location"
                       value={formData.location}
                       onChange={handleChange}
                     />
@@ -348,7 +348,7 @@ const ProjectFormModal = ({ show, onHide, onSubmit, project = null }) => {
                   className="form-control form-control-sm"
                   rows="3"
                   name="notes"
-                  placeholder="Special gear requirements, anamorphic sets, power distribution, water-housing..."
+                  placeholder="Production notes (optional)"
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>

@@ -277,7 +277,7 @@ const StockMovements = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search gear name, asset tag, reference, notes, or staff..."
+                  placeholder="Search movements..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

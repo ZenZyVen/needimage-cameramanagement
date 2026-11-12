@@ -831,7 +831,7 @@ const Settings = () => {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Action Cameras, Anamorphic Glass"
+                      placeholder="Category name"
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       required
@@ -843,7 +843,7 @@ const Settings = () => {
                     <textarea
                       className="form-control"
                       rows="2"
-                      placeholder="Category scope and gear description"
+                      placeholder="Description (optional)"
                       value={newCatDesc}
                       onChange={(e) => setNewCatDesc(e.target.value)}
                     ></textarea>

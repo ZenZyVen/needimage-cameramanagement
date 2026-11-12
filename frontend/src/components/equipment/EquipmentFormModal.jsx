@@ -212,7 +212,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     <input
                       type="url"
                       className="form-control form-control-sm"
-                      placeholder="Or enter image URL: https://..."
+                      placeholder="Image URL: https://..."
                       name="imageUrl"
                       value={formData.imageUrl}
                       onChange={handleChange}
@@ -284,7 +284,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     type="text"
                     className="form-control"
                     name="name"
-                    placeholder="Sony FX3 Full-Frame Cinema Camera"
+                    placeholder="Equipment name"
                     value={formData.name}
                     onChange={handleChange}
                     required
@@ -299,7 +299,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     type="text"
                     className="form-control"
                     name="brand"
-                    placeholder="Sony, Canon, RED..."
+                    placeholder="Brand name"
                     value={formData.brand}
                     onChange={handleChange}
                     required
@@ -314,7 +314,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     type="text"
                     className="form-control"
                     name="model"
-                    placeholder="ILME-FX3"
+                    placeholder="Model number"
                     value={formData.model}
                     onChange={handleChange}
                   />
@@ -443,7 +443,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   className="form-control"
                   rows="2"
                   name="notes"
-                  placeholder="Firmware versions, sensor specs, packaging notes..."
+                  placeholder="Notes & specifications (optional)"
                   value={formData.notes}
                   onChange={handleChange}
                 ></textarea>

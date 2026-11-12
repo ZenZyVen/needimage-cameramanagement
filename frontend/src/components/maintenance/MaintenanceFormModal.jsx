@@ -351,7 +351,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control form-control-sm"
                       name="issueTitle"
-                      placeholder="e.g. Front optic element deep scratch or HDMI loose connector"
+                      placeholder="Issue summary"
                       value={formData.issueTitle}
                       onChange={handleChange}
                       required
@@ -366,7 +366,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       className="form-control form-control-sm"
                       rows="3"
                       name="description"
-                      placeholder="Describe what occurred, symptoms, error codes, and inspection observations..."
+                      placeholder="Detailed problem description"
                       value={formData.description}
                       onChange={handleChange}
                       required
@@ -440,7 +440,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control form-control-sm"
                       name="technician"
-                      placeholder="e.g. Alex Wong (Internal Vault Tech)"
+                      placeholder="Technician name"
                       value={formData.technician}
                       onChange={handleChange}
                     />
@@ -451,7 +451,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control form-control-sm"
                       name="vendor"
-                      placeholder="e.g. Sony PRO Service, ARRI Certified"
+                      placeholder="Vendor / service center"
                       value={formData.vendor}
                       onChange={handleChange}
                     />
@@ -488,7 +488,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
                       type="text"
                       className="form-control form-control-sm"
                       name="notes"
-                      placeholder="RMA number, courier tracking, spare parts SKU, or inspection logs"
+                      placeholder="Tracking notes (optional)"
                       value={formData.notes}
                       onChange={handleChange}
                     />

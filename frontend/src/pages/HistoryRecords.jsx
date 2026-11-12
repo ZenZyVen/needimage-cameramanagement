@@ -331,7 +331,7 @@ const HistoryRecords = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search user, action, gear tag, or keyword..."
+                  placeholder="Search records..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

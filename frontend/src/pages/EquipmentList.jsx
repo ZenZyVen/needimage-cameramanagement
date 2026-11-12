@@ -400,7 +400,7 @@ const EquipmentList = () => {
                     <input
                       type="text"
                       className="form-control border-start-0"
-                      placeholder="Search asset tag, gear name, brand, or serial..."
+                      placeholder="Search equipment..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                     />
@@ -912,7 +912,7 @@ const EquipmentList = () => {
                       onChange={(e) => setAdjustmentAmount(parseInt(e.target.value, 10) || 0)}
                       required
                     />
-                    <div className="form-text small">Enter positive number (e.g. 2) to increase inventory, negative (-1) to reduce.</div>
+                    <div className="form-text small">Positive number to add, negative to deduct.</div>
                   </div>
 
                   <div className="mb-3">
@@ -935,7 +935,7 @@ const EquipmentList = () => {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="PO number, audit reference, or explanation..."
+                      placeholder="PO number or reason"
                       value={adjustmentNotes}
                       onChange={(e) => setAdjustmentNotes(e.target.value)}
                     />

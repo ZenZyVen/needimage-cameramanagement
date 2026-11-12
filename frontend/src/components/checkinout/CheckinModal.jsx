@@ -466,7 +466,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, initialI
                                       <input
                                         type="text"
                                         className="form-control form-control-sm"
-                                        placeholder="Type missing items separated by comma..."
+                                        placeholder="Missing accessories (comma-separated)"
                                         value={insp.missingAccessoriesText || ''}
                                         onChange={(e) => updateItemField(item.id, 'missingAccessoriesText', e.target.value)}
                                       />
@@ -512,7 +512,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, initialI
                                       <textarea
                                         className="form-control form-control-sm border-danger"
                                         rows="2"
-                                        placeholder="Describe mechanical / optical defect, cracked glass, erratic motor..."
+                                        placeholder="Describe damage or defect"
                                         value={insp.damageNotes || ''}
                                         onChange={(e) => updateItemField(item.id, 'damageNotes', e.target.value)}
                                         required={insp.damageReported}
@@ -532,7 +532,7 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, initialI
                               <input
                                 type="text"
                                 className="form-control form-control-sm"
-                                placeholder="Vault notes: clean-down status, shelf assignment, or technical comments (optional)..."
+                                placeholder="Inspection notes (optional)"
                                 value={insp.notes || ''}
                                 onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
                               />

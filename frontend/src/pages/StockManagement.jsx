@@ -423,7 +423,7 @@ const StockManagement = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search equipment by tag, name, brand, or model..."
+                    placeholder="Search equipment..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -600,7 +600,7 @@ const StockManagement = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search ledger by gear, tag, reference, or staff..."
+                    placeholder="Search ledger..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                   />
@@ -867,7 +867,7 @@ const StockManagement = () => {
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. PO-2026-991, Delivery Batch #4"
+                      placeholder="PO / reference number"
                       value={restockReason}
                       onChange={(e) => setRestockReason(e.target.value)}
                     />
@@ -878,7 +878,7 @@ const StockManagement = () => {
                     <textarea
                       className="form-control form-control-sm"
                       rows="2"
-                      placeholder="Details regarding condition, packaging, or vendor..."
+                      placeholder="Intake notes (optional)"
                       value={restockNotes}
                       onChange={(e) => setRestockNotes(e.target.value)}
                     ></textarea>
@@ -1027,7 +1027,7 @@ const StockManagement = () => {
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. INC-2026-088, Insurance Claim #901"
+                      placeholder="Incident / ticket reference"
                       value={deductReason}
                       onChange={(e) => setDeductReason(e.target.value)}
                     />
@@ -1038,7 +1038,7 @@ const StockManagement = () => {
                     <textarea
                       className="form-control form-control-sm"
                       rows="2"
-                      placeholder="Explain what occurred, who authorized write-off, or disposal steps..."
+                      placeholder="Write-off reason & authorization"
                       value={deductNotes}
                       onChange={(e) => setDeductNotes(e.target.value)}
                       required

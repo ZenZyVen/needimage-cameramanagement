@@ -386,7 +386,7 @@ const ProductManagement = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search product name, brand, model, tag, or serial..."
+                  placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -643,7 +643,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm"
                           name="name"
-                          placeholder="e.g. Sony FX6 Cinema Camera"
+                          placeholder="Equipment name"
                           value={formData.name}
                           onChange={handleFormChange}
                           required
@@ -658,7 +658,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm font-monospace text-uppercase"
                           name="assetTag"
-                          placeholder="e.g. CAM-001"
+                          placeholder="CAM-001"
                           value={formData.assetTag}
                           onChange={handleFormChange}
                           required
@@ -688,7 +688,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm"
                           name="brand"
-                          placeholder="e.g. Sony, ARRI, RED"
+                          placeholder="Brand name"
                           value={formData.brand}
                           onChange={handleFormChange}
                         />
@@ -700,7 +700,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm"
                           name="model"
-                          placeholder="e.g. ILME-FX6V"
+                          placeholder="Model number"
                           value={formData.model}
                           onChange={handleFormChange}
                         />
@@ -712,7 +712,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm font-monospace"
                           name="serialNumber"
-                          placeholder="e.g. SN-982410-X"
+                          placeholder="Serial number"
                           value={formData.serialNumber}
                           onChange={handleFormChange}
                         />
@@ -724,7 +724,7 @@ const ProductManagement = () => {
                           type="text"
                           className="form-control form-control-sm"
                           name="imageUrl"
-                          placeholder="https://... or leave empty"
+                          placeholder="Image URL (optional)"
                           value={formData.imageUrl}
                           onChange={handleFormChange}
                         />
@@ -851,7 +851,7 @@ const ProductManagement = () => {
                           className="form-control form-control-sm"
                           rows="3"
                           name="notes"
-                          placeholder="Include sensor format, mount type, accessories included, etc."
+                          placeholder="Notes & specifications (optional)"
                           value={formData.notes}
                           onChange={handleFormChange}
                         ></textarea>

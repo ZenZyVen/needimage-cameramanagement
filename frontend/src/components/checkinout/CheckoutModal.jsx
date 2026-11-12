@@ -331,7 +331,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, initial
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. David Kim (Director of Photography)"
+                      placeholder="Borrower full name"
                       value={borrowerName}
                       onChange={(e) => setBorrowerName(e.target.value)}
                       required
@@ -345,7 +345,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, initial
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. D. Kim or Digital Initials"
+                      placeholder="Digital initial or signature"
                       value={borrowerSignature}
                       onChange={(e) => setBorrowerSignature(e.target.value)}
                     />
@@ -358,7 +358,7 @@ const CheckoutModal = ({ show, onHide, request = null, equipment = null, initial
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="e.g. Packed in Pelican 1510 storm case with cable organizers, batteries at 100%..."
+                      placeholder="Dispatch notes (optional)"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                     />

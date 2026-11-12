@@ -203,7 +203,7 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                       type="text"
                       className="form-control"
                       name="name"
-                      placeholder="Crew Member Name"
+                      placeholder="Full name"
                       value={formData.name}
                       onChange={handleChange}
                       required
@@ -260,7 +260,7 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                       type="text"
                       className="form-control"
                       name="callTime"
-                      placeholder="Call Time"
+                      placeholder="06:00 AM"
                       value={formData.callTime}
                       onChange={handleChange}
                     />
@@ -272,7 +272,7 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                       type="text"
                       className="form-control"
                       name="phone"
-                      placeholder="Phone Number"
+                      placeholder="Phone number"
                       value={formData.phone}
                       onChange={handleChange}
                     />
@@ -298,7 +298,7 @@ const ProjectCrewModal = ({ show, onHide, project }) => {
                       type="text"
                       className="form-control"
                       name="notes"
-                      placeholder="Call notes and stage info"
+                      placeholder="Call notes (optional)"
                       value={formData.notes}
                       onChange={handleChange}
                     />

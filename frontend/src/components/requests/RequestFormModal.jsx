@@ -203,7 +203,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       type="text"
                       className="form-control form-control-sm"
                       name="projectName"
-                      placeholder="e.g. Nike Commercial Shoot, Feature Shoot"
+                      placeholder="Shoot name"
                       value={formData.projectName}
                       onChange={handleChange}
                     />
@@ -253,7 +253,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       type="text"
                       className="form-control form-control-sm"
                       name="purpose"
-                      placeholder="Describe shoot requirements and scenes"
+                      placeholder="Shoot purpose & details"
                       value={formData.purpose}
                       onChange={handleChange}
                       required
@@ -265,7 +265,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       type="text"
                       className="form-control form-control-sm"
                       name="destination"
-                      placeholder="Stage A, Location Set, Exterior"
+                      placeholder="Shooting location"
                       value={formData.destination}
                       onChange={handleChange}
                     />
@@ -295,7 +295,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Search equipment by name, brand, model, or asset tag..."
+                        placeholder="Search equipment..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
