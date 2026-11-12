@@ -97,8 +97,8 @@ function App() {
                 <Route path="/qr-tags" element={<QRScannerPage />} />
                 <Route path="/profile" element={<Profile />} />
 
-                {/* Staff Only Routes (Admin & Stock Controller) */}
-                <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_CONTROLLER']} />}>
+                {/* Staff Only Routes (Admin & Stock Management) */}
+                <Route element={<RoleRoute allowedRoles={['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER']} />}>
                   <Route path="/stock" element={<StockManagement />} />
                   <Route path="/low-stock" element={<LowStockAlerts />} />
                   <Route path="/stock-movements" element={<StockMovements />} />

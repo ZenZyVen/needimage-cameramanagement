@@ -103,7 +103,13 @@ exports.getAuditLogs = async (req, res, next) => {
     const where = {};
     if (action && action !== 'ALL') where.action = action;
     if (entity && entity !== 'ALL') where.entity = entity;
-    if (userId && userId !== 'ALL') where.userId = userId;
+
+    // Server-side RBAC: Normal users can strictly ONLY view their own audit and history records
+    if (req.user.role === 'USER') {
+      where.userId = req.user.id;
+    } else if (userId && userId !== 'ALL') {
+      where.userId = userId;
+    }
 
     let logs = [];
     if (prisma.auditLog?.findMany) {

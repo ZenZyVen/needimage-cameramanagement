@@ -1,16 +1,23 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config();
+
 const { PrismaClient } = require('@prisma/client');
 const { mockStore } = require('./mockDb');
 
-let realPrisma;
+let realPrisma = null;
 try {
   realPrisma = new PrismaClient({
     log: []
   });
 } catch (e) {
+  console.warn('Could not instantiate PrismaClient:', e.message);
   realPrisma = null;
 }
 
 let isPostgresConnected = false;
+let connectionPromise = null;
 
 // Check connection to PostgreSQL / Neon
 async function checkDatabaseConnection() {
@@ -20,22 +27,23 @@ async function checkDatabaseConnection() {
   }
 
   try {
-    // Attempt quick query to test connection
+    // Attempt quick query to test connection (10 second timeout for cold starts)
     await Promise.race([
-      realPrisma.$queryRaw`SELECT 1`,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 3500))
+      realPrisma.$queryRaw`SELECT 1 as live_check`,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 10000))
     ]);
     isPostgresConnected = true;
     console.log('✅ Connected to live PostgreSQL (Neon) Database.');
     return { connected: true, usingMock: false };
   } catch (error) {
     isPostgresConnected = false;
-    console.log('ℹ️ Live PostgreSQL not reached (placeholder or offline). Falling back to built-in Demo Store.');
-    console.log('👉 To connect live Neon PostgreSQL: Update DATABASE_URL in backend/.env, then run:');
-    console.log('   cd backend && npx prisma db push && node prisma/seed.js');
+    console.warn(`ℹ️ Live PostgreSQL not reached: ${error.message}. Falling back to built-in Demo Store.`);
     return { connected: false, usingMock: true, error: error.message };
   }
 }
+
+// Eager initial connection check on require
+connectionPromise = checkDatabaseConnection().catch(() => {});
 
 // Smart Proxy: delegates to real Prisma if connected, otherwise to mockStore
 const prisma = new Proxy({}, {
@@ -45,8 +53,17 @@ const prisma = new Proxy({}, {
         if (isPostgresConnected && realPrisma) await realPrisma.$disconnect();
       };
     }
+    if (prop === '$connect') {
+      return async () => {
+        if (realPrisma) await realPrisma.$connect();
+        isPostgresConnected = true;
+      };
+    }
     if (prop === '$queryRaw') {
       return isPostgresConnected && realPrisma ? realPrisma.$queryRaw.bind(realPrisma) : mockStore.$queryRaw;
+    }
+    if (prop === '$executeRawUnsafe') {
+      return isPostgresConnected && realPrisma ? realPrisma.$executeRawUnsafe.bind(realPrisma) : mockStore.$queryRaw;
     }
     if (prop === '$transaction') {
       return isPostgresConnected && realPrisma ? realPrisma.$transaction.bind(realPrisma) : mockStore.$transaction;
@@ -64,4 +81,9 @@ const prisma = new Proxy({}, {
   }
 });
 
-module.exports = { prisma, checkDatabaseConnection, isPostgresConnected: () => isPostgresConnected };
+module.exports = {
+  prisma,
+  checkDatabaseConnection,
+  isPostgresConnected: () => isPostgresConnected,
+  waitForDb: () => connectionPromise
+};

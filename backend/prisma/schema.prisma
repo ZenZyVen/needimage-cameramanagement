@@ -6,12 +6,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
   ADMIN
+  STOCK_MANAGEMENT
   STOCK_CONTROLLER
   USER
 }
@@ -98,6 +100,7 @@ model User {
   email            String          @unique
   password         String
   role             Role            @default(USER)
+  roleNote         String?
   department       String?
   phone            String?
   avatar           String?
@@ -114,7 +117,12 @@ model User {
   maintenances     Maintenance[]   @relation("ReportedMaintenances")
   notifications    Notification[]
   auditLogs        AuditLog[]
+  invoices         Invoice[]       @relation("UserInvoices")
+  issuedInvoices   Invoice[]       @relation("IssuedInvoices")
 
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -128,46 +136,55 @@ model Category {
 
   equipment   Equipment[]
 
+  @@index([name])
   @@map("categories")
 }
 
 model Equipment {
-  id             String          @id @default(uuid())
-  assetTag       String          @unique // e.g., CAM-001
-  name           String
-  brand          String
-  model          String
-  serialNumber   String          @unique
-  categoryId     String
-  quantity       Int             @default(1)
-  availableQuantity Int          @default(1)
-  status         EquipmentStatus @default(AVAILABLE)
-  condition      ConditionStatus @default(EXCELLENT)
-  purchaseDate   DateTime?
-  purchasePrice  Float?
-  dailyRate      Float?
-  location       String?         // Shelf/Locker e.g., "A-01", "Grip Room"
-  imageUrl       String?
-  accessories    Json?           // Array of strings e.g., ["2x Battery", "Charger", "Case"]
-  specifications Json?           // Key-value metadata
-  notes          String?
-  qrCode         String?         // Base64 QR code data URL
-  isDeleted      Boolean         @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                String          @id @default(uuid())
+  assetTag          String          @unique // e.g., CAM-001
+  name              String
+  brand             String
+  model             String
+  serialNumber      String          @unique
+  categoryId        String
+  quantity          Int             @default(1)
+  availableQuantity Int             @default(1)
+  status            EquipmentStatus @default(AVAILABLE)
+  condition         ConditionStatus @default(EXCELLENT)
+  purchaseDate      DateTime?
+  purchasePrice     Float?
+  dailyRate         Float?
+  location          String?         // Shelf/Locker e.g., "A-01", "Grip Room"
+  imageUrl          String?
+  accessories       Json?           // Array of strings e.g., ["2x Battery", "Charger", "Case"]
+  specifications    Json?           // Key-value metadata
+  notes             String?
+  qrCode            String?         // Base64 QR code data URL
+  isDeleted         Boolean         @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  borrowItems    BorrowRequestItem[]
-  checkInsOuts   CheckInOut[]
-  maintenances   Maintenance[]
+  category          Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  borrowItems       BorrowRequestItem[]
+  checkInsOuts      CheckInOut[]
+  maintenances      Maintenance[]
+  stockMovements    StockMovement[]
 
+  @@index([assetTag])
+  @@index([serialNumber])
+  @@index([categoryId])
+  @@index([status])
+  @@index([condition])
+  @@index([isDeleted])
   @@map("equipment")
 }
 
 model Project {
   id             String          @id @default(uuid())
-  projectCode    String          @unique // e.g., PRJ-2026-001
+  projectNumber  String?         // e.g. "01", "02", "03"
+  projectCode    String          @unique // e.g., PRJ-01, PRJ-2026-001
   title          String
   client         String?
   director       String?
@@ -182,8 +199,35 @@ model Project {
 
   createdBy      User            @relation("CreatedProjects", fields: [createdById], references: [id])
   borrowRequests BorrowRequest[]
+  crew           ProjectCrew[]
+  invoices       Invoice[]
 
+  @@index([projectCode])
+  @@index([projectNumber])
+  @@index([status])
+  @@index([createdById])
   @@map("projects")
+}
+
+model ProjectCrew {
+  id           String    @id @default(uuid())
+  projectId    String
+  name         String
+  role         String
+  phone        String?
+  shootDate    String?
+  callTime     String?
+  projectType  String?
+  status       String    @default("CONFIRMED")
+  notes        String?
+  registeredAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_crews")
 }
 
 model BorrowRequest {
@@ -205,11 +249,17 @@ model BorrowRequest {
   updatedAt        DateTime        @updatedAt
 
   user             User            @relation("UserBorrowRequests", fields: [userId], references: [id])
-  project          Project?        @relation(fields: [projectId], references: [id])
+  project          Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   approvedBy       User?           @relation("ApprovedBorrowRequests", fields: [approvedById], references: [id])
   items            BorrowRequestItem[]
   checkInsOuts     CheckInOut[]
+  invoices         Invoice[]
 
+  @@index([requestNumber])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
   @@map("borrow_requests")
 }
 
@@ -217,13 +267,18 @@ model BorrowRequestItem {
   id                String          @id @default(uuid())
   requestId         String
   equipmentId       String
+  quantity          Int             @default(1)
   status            ItemLoanStatus  @default(REQUESTED)
   returnedCondition ConditionStatus?
   notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   request           BorrowRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
   equipment         Equipment       @relation(fields: [equipmentId], references: [id])
 
+  @@index([requestId])
+  @@index([equipmentId])
   @@map("borrow_request_items")
 }
 
@@ -245,10 +300,15 @@ model CheckInOut {
   notes              String?
   createdAt          DateTime        @default(now())
 
-  request            BorrowRequest?  @relation(fields: [requestId], references: [id])
+  request            BorrowRequest?  @relation(fields: [requestId], references: [id], onDelete: SetNull)
   equipment          Equipment       @relation(fields: [equipmentId], references: [id])
   handledBy          User            @relation("HandledCheckInsOuts", fields: [handledById], references: [id])
 
+  @@index([equipmentId])
+  @@index([requestId])
+  @@index([handledById])
+  @@index([type])
+  @@index([actionDate])
   @@map("check_in_outs")
 }
 
@@ -269,12 +329,17 @@ model Maintenance {
   scheduledDate   DateTime?
   completedDate   DateTime?
   resolutionNotes String?
+  notes           String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   equipment       Equipment         @relation(fields: [equipmentId], references: [id])
   reportedBy      User              @relation("ReportedMaintenances", fields: [reportedById], references: [id])
 
+  @@index([ticketNumber])
+  @@index([equipmentId])
+  @@index([reportedById])
+  @@index([status])
   @@map("maintenances")
 }
 
@@ -290,6 +355,9 @@ model Notification {
 
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
   @@map("notifications")
 }
 
@@ -303,27 +371,36 @@ model AuditLog {
   ipAddress String?
   createdAt DateTime @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
 model StockMovement {
-  id              String   @id @default(uuid())
-  equipmentId     String
-  assetTag        String
-  equipmentName   String
-  type            String   // INITIAL_STOCK, CHECK_OUT, CHECK_IN, DAMAGE_REPORT, MAINTENANCE, ADJUSTMENT, RESTORE, ARCHIVE
-  quantityChanged Int
+  id                String     @id @default(uuid())
+  equipmentId       String
+  assetTag          String
+  equipmentName     String
+  type              String     // INITIAL_STOCK, CHECK_OUT, CHECK_IN, DAMAGE_REPORT, MAINTENANCE, ADJUSTMENT, RESTOCK, STOCK_REDUCTION, RESTORE, ARCHIVE
+  quantityChanged   Int
   previousAvailable Int
-  newAvailable    Int
-  previousTotal   Int
-  newTotal        Int
-  reference       String?  // e.g. REQ-2026-001 or MNT-2026-001
-  notes           String?
-  performedBy     String?  // User Name
-  createdAt       DateTime @default(now())
+  newAvailable      Int
+  previousTotal     Int
+  newTotal          Int
+  reference         String?    // e.g. REQ-2026-001 or MNT-2026-001 or RESTOCK_INTAKE
+  notes             String?
+  performedBy       String?    // User Name
+  createdAt         DateTime   @default(now())
 
+  equipment         Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  @@index([equipmentId])
+  @@index([type])
+  @@index([createdAt])
   @@map("stock_movements")
 }
 
@@ -334,4 +411,48 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model Invoice {
+  id                  String         @id @default(uuid())
+  invoiceNumber       String         @unique // e.g., INV-2026-001
+  requestId           String?
+  userId              String?
+  projectId           String?
+  issuedById          String?
+  borrowerName        String?
+  borrowerDepartment  String?
+  borrowerPhone       String?
+  borrowerEmail       String?
+  projectName         String?
+  projectCode         String?
+  projectLocation     String?
+  borrowingDate       DateTime       @default(now())
+  expectedReturnDate  DateTime
+  actualReturnDate    DateTime?
+  totalAmount         Float          @default(0)
+  taxRate             Float          @default(0)
+  taxAmount           Float          @default(0)
+  grandTotal          Float          @default(0)
+  status              String         @default("ISSUED") // ISSUED, PAID, RETURNED, CANCELLED
+  terms               String?
+  declaration         String?
+  authorizedSigner    String?
+  items               Json?          // Array of items with assetTag, name, dailyRate, days, subtotal
+  notes               String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  request             BorrowRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  user                User?          @relation("UserInvoices", fields: [userId], references: [id], onDelete: SetNull)
+  project             Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  issuedBy            User?          @relation("IssuedInvoices", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@index([invoiceNumber])
+  @@index([requestId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("invoices")
 }

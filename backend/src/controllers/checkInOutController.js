@@ -47,9 +47,13 @@ exports.checkoutItems = async (req, res, next) => {
 
     // Transaction to update equipment, request items, and create CheckInOut log
     await prisma.$transaction(async (tx) => {
+      const equipmentMap = new Map();
+      const loadedEquipment = await tx.equipment.findMany({ where: { id: { in: itemIds } } });
+      loadedEquipment.forEach(e => equipmentMap.set(e.id, e));
+
       for (const eqId of itemIds) {
         // Find equipment
-        const eq = await tx.equipment.findUnique({ where: { id: eqId } });
+        const eq = equipmentMap.get(eqId);
         if (!eq) continue;
 
         // Create CheckInOut record
@@ -120,6 +124,9 @@ exports.checkoutItems = async (req, res, next) => {
           data: { status: 'CHECKED_OUT' }
         });
       }
+    }, {
+      maxWait: 15000,
+      timeout: 35000
     });
 
     // Notify Borrower and Staff in Real-Time
@@ -184,6 +191,11 @@ exports.checkinItems = async (req, res, next) => {
     const returnRecords = [];
 
     await prisma.$transaction(async (tx) => {
+      const equipmentMap = new Map();
+      const eqIds = items.map(i => i.equipmentId).filter(Boolean);
+      const loadedEquipment = await tx.equipment.findMany({ where: { id: { in: eqIds } } });
+      loadedEquipment.forEach(e => equipmentMap.set(e.id, e));
+
       for (const item of items) {
         const {
           equipmentId,
@@ -194,7 +206,7 @@ exports.checkinItems = async (req, res, next) => {
           notes
         } = item;
 
-        const eq = await tx.equipment.findUnique({ where: { id: equipmentId } });
+        const eq = equipmentMap.get(equipmentId);
         if (!eq) continue;
 
         // Determine new equipment status
@@ -320,6 +332,9 @@ exports.checkinItems = async (req, res, next) => {
           }
         });
       }
+    }, {
+      maxWait: 15000,
+      timeout: 35000
     });
 
     // Notify Borrower and Staff in Real-Time

@@ -8,9 +8,11 @@ const { upload } = require('../middlewares/uploadMiddleware');
 // Public/Authenticated read of branding & system settings
 router.get('/', authenticate, settingsController.getSettings);
 
+// Authenticated read of audit logs (Normal users scoped to their own; Admin & Staff see system logs)
+router.get('/audit-logs', authenticate, settingsController.getAuditLogs);
+
 // Admin-only management routes
 router.put('/', authenticate, requireRole('ADMIN'), settingsController.updateSettings);
-router.get('/audit-logs', authenticate, requireRole('ADMIN'), settingsController.getAuditLogs);
 router.get('/backup', authenticate, requireRole('ADMIN'), settingsController.exportBackup);
 router.post('/upload-logo', authenticate, requireRole('ADMIN'), upload.single('logo'), settingsController.uploadLogo);
 

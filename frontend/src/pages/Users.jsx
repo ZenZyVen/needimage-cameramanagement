@@ -120,8 +120,9 @@ const Users = () => {
     switch (role) {
       case 'ADMIN':
         return <span className="badge bg-dark">ADMIN</span>;
+      case 'STOCK_MANAGEMENT':
       case 'STOCK_CONTROLLER':
-        return <span className="badge bg-secondary">STOCK CONTROLLER</span>;
+        return <span className="badge bg-secondary">STOCK MANAGEMENT</span>;
       case 'USER':
       default:
         return <span className="badge bg-primary">NORMAL USER</span>;
@@ -189,7 +190,7 @@ const Users = () => {
               >
                 <option value="ALL">All Roles</option>
                 <option value="ADMIN">Admin</option>
-                <option value="STOCK_CONTROLLER">Stock Controller</option>
+                <option value="STOCK_MANAGEMENT">Stock Management</option>
                 <option value="USER">Normal User</option>
               </select>
             </div>
@@ -237,7 +238,7 @@ const Users = () => {
                           onChange={(e) => handleQuickRoleChange(u.id, e.target.value, u.name)}
                         >
                           <option value="USER">Normal User</option>
-                          <option value="STOCK_CONTROLLER">Stock Controller</option>
+                          <option value="STOCK_MANAGEMENT">Stock Management</option>
                           <option value="ADMIN">Admin</option>
                         </select>
                       </div>
@@ -382,7 +383,7 @@ const Users = () => {
                           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                         >
                           <option value="USER">Normal User</option>
-                          <option value="STOCK_CONTROLLER">Stock Controller</option>
+                          <option value="STOCK_MANAGEMENT">Stock Management</option>
                           <option value="ADMIN">Administrator</option>
                         </select>
                       </div>
@@ -510,7 +511,7 @@ const Users = () => {
                           onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                         >
                           <option value="USER">Normal User</option>
-                          <option value="STOCK_CONTROLLER">Stock Controller</option>
+                          <option value="STOCK_MANAGEMENT">Stock Management</option>
                           <option value="ADMIN">Administrator</option>
                         </select>
                       </div>

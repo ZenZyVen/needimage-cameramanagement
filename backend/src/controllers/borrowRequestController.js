@@ -6,7 +6,7 @@ const { notifyTeam } = require('../utils/notify');
 exports.getAllRequests = async (req, res, next) => {
   try {
     const { status, search, userId } = req.query;
-    const isStaff = ['ADMIN', 'STOCK_CONTROLLER'].includes(req.user.role);
+    const isStaff = ['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER'].includes(req.user.role);
 
     const where = {};
 
@@ -85,7 +85,7 @@ exports.getAllRequests = async (req, res, next) => {
 exports.getRequestById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const isStaff = ['ADMIN', 'STOCK_CONTROLLER'].includes(req.user.role);
+    const isStaff = ['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER'].includes(req.user.role);
 
     const request = await prisma.borrowRequest.findUnique({
       where: { id },

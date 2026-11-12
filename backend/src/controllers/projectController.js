@@ -174,8 +174,12 @@ exports.createProject = async (req, res, next) => {
       }
     }
 
+    const match = cleanCode.match(/(\d+)$/);
+    const projNum = match ? match[1].padStart(2, '0') : '01';
+
     const project = await prisma.project.create({
       data: {
+        projectNumber: projNum,
         projectCode: cleanCode,
         title: title.trim(),
         client: client ? client.trim() : null,
@@ -188,7 +192,8 @@ exports.createProject = async (req, res, next) => {
         notes: notes ? notes.trim() : null
       },
       include: {
-        createdBy: { select: { id: true, name: true, email: true } }
+        createdBy: { select: { id: true, name: true, email: true } },
+        crew: true
       }
     });
 
@@ -316,11 +321,21 @@ const parseProjectCrewAndNotes = (notes) => {
 exports.getProjectCrew = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const project = await prisma.project.findUnique({ where: { id } });
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: { crew: { orderBy: { registeredAt: 'asc' } } }
+    });
+
     if (!project) {
       return res.status(404).json({ success: false, message: 'Project not found.' });
     }
-    const { crew, general } = parseProjectCrewAndNotes(project.notes);
+
+    let crew = project.crew || [];
+    const { general, crew: notesCrew } = parseProjectCrewAndNotes(project.notes);
+    if (crew.length === 0 && notesCrew.length > 0) {
+      crew = notesCrew;
+    }
+
     return res.json({
       success: true,
       projectTitle: project.title,
@@ -348,28 +363,27 @@ exports.addProjectCrewMember = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found.' });
     }
 
-    const parsed = parseProjectCrewAndNotes(project.notes);
-    const newMember = {
-      id: `crew-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      name: name.trim(),
-      role: role.trim(),
-      shootDate: shootDate ? shootDate.trim() : new Date().toISOString().substring(0, 10),
-      projectType: projectType ? projectType.trim() : (project.title || 'Production Shoot'),
-      phone: phone ? phone.trim() : '',
-      callTime: callTime ? callTime.trim() : '',
-      notes: notes ? notes.trim() : '',
-      status: status || 'CONFIRMED',
-      registeredAt: new Date().toISOString()
-    };
-
-    parsed.crew.push(newMember);
-
-    await prisma.project.update({
-      where: { id },
+    const newMember = await prisma.projectCrew.create({
       data: {
-        notes: JSON.stringify(parsed)
+        projectId: id,
+        name: name.trim(),
+        role: role.trim(),
+        shootDate: shootDate ? shootDate.trim() : new Date().toISOString().substring(0, 10),
+        projectType: projectType ? projectType.trim() : (project.title || 'Production Shoot'),
+        phone: phone ? phone.trim() : null,
+        callTime: callTime ? callTime.trim() : null,
+        notes: notes ? notes.trim() : null,
+        status: status || 'CONFIRMED'
       }
     });
+
+    // Also sync to notes JSON for dual compatibility
+    const parsed = parseProjectCrewAndNotes(project.notes);
+    parsed.crew.push(newMember);
+    await prisma.project.update({
+      where: { id },
+      data: { notes: JSON.stringify(parsed) }
+    }).catch(() => {});
 
     return res.status(201).json({
       success: true,
@@ -390,20 +404,20 @@ exports.removeProjectCrewMember = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found.' });
     }
 
+    await prisma.projectCrew.deleteMany({
+      where: {
+        id: crewId,
+        projectId: id
+      }
+    }).catch(() => {});
+
+    // Also update notes JSON
     const parsed = parseProjectCrewAndNotes(project.notes);
-    const initialLen = parsed.crew.length;
     parsed.crew = parsed.crew.filter(c => c.id !== crewId);
-
-    if (parsed.crew.length === initialLen) {
-      return res.status(404).json({ success: false, message: 'Crew member not found.' });
-    }
-
     await prisma.project.update({
       where: { id },
-      data: {
-        notes: JSON.stringify(parsed)
-      }
-    });
+      data: { notes: JSON.stringify(parsed) }
+    }).catch(() => {});
 
     return res.json({
       success: true,

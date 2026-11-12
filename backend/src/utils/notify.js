@@ -37,7 +37,7 @@ async function notifyTeam({
     if (notifyStaff) {
       if (prisma.user?.findMany) {
         const staffUsers = await prisma.user.findMany({
-          where: { role: { in: ['ADMIN', 'STOCK_CONTROLLER'] } },
+          where: { role: { in: ['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER'] } },
           select: { id: true }
         });
         staffUsers.forEach(u => recipients.add(u.id));

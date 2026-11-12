@@ -20,6 +20,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
 
 const app = express();
 
@@ -100,6 +101,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Serve frontend build in production or when dist exists
 const possibleDistPaths = [
