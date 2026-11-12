@@ -4,7 +4,7 @@ const { mockStore } = require('./mockDb');
 let realPrisma;
 try {
   realPrisma = new PrismaClient({
-    log: ['error']
+    log: []
   });
 } catch (e) {
   realPrisma = null;
