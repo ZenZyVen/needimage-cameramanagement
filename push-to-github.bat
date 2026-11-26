@@ -2,7 +2,7 @@
 title Push CineVault to GitHub
 echo ========================================================
 echo   Pushing CineVault to GitHub
-echo   Repository: https://github.com/ZenZyVen/-camera-equipment-management.git
+echo   Repository: https://github.com/ZenZyVen/needimage-cameramanagement.git
 echo ========================================================
 echo.
 git push -u origin main
