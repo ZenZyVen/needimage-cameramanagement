@@ -55,14 +55,30 @@ const allowedOrigins = [
   process.env.KOYEB_PUBLIC_DOMAIN ? `https://${process.env.KOYEB_PUBLIC_DOMAIN}` : null
 ]
   .filter(Boolean)
-  .map(origin => origin.trim().replace(/\/+$/, ''));
+  .map(origin => origin.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, ''));
+
+const hasCustomClientUrl = Boolean(
+  process.env.CLIENT_URL &&
+  process.env.CLIENT_URL.split(',').some(u => {
+    const cleaned = u.trim().replace(/^["']|["']$/g, '');
+    return cleaned && !cleaned.includes('localhost') && !cleaned.includes('127.0.0.1');
+  })
+);
+const HOSTING_PLATFORM_ORIGIN_REGEX = /^https:\/\/[a-z0-9-]+\.(onrender\.com|vercel\.app|netlify\.app)$/i;
 
 app.use(cors({
   origin: function (origin, callback) {
+    const normalizedOrigin = origin ? origin.trim().replace(/\/+$/, '') : '';
     // Allow requests with no origin (mobile apps, curl, server-to-server, or same-origin)
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (
+      !origin ||
+      allowedOrigins.includes(normalizedOrigin) ||
+      process.env.NODE_ENV !== 'production' ||
+      (!hasCustomClientUrl && HOSTING_PLATFORM_ORIGIN_REGEX.test(normalizedOrigin))
+    ) {
       return callback(null, true);
     }
+    console.warn(`Blocked CORS request from origin: ${origin}`);
     return callback(new Error('Origin not allowed by CORS policy'), false);
   },
   credentials: true
@@ -114,7 +130,7 @@ app.use('/api/', apiLimiter);
 
 // Health & Database Status Check
 app.get('/api/health', async (req, res) => {
-  const dbStatus = await checkDatabaseConnection();
+  const dbStatus = await checkDatabaseConnection(3500);
   return res.json({
     status: 'ONLINE',
     service: 'Camera Equipment Management API',

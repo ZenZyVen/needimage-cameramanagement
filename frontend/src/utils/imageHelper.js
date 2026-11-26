@@ -4,6 +4,15 @@ export const DEFAULT_EQUIPMENT_IMAGE =
 export const DEFAULT_AVATAR_IMAGE =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
+function resolveUploadOrigin() {
+  const raw = String(import.meta.env.VITE_API_URL || '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(raw)) return '';
+  return raw.replace(/\/api$/i, '');
+}
+
 /**
  * Normalizes user-entered or stored image URLs so relative /uploads paths,
  * data URIs, and external HTTP(S) URLs all resolve cleanly.
@@ -12,6 +21,10 @@ export function normalizeImageUrl(url) {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
+  if (trimmed.startsWith('/uploads')) {
+    const origin = resolveUploadOrigin();
+    return origin ? `${origin}${trimmed}` : trimmed;
+  }
   if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||

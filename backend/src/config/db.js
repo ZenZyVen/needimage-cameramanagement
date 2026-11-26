@@ -20,17 +20,17 @@ let isPostgresConnected = false;
 let connectionPromise = null;
 
 // Check connection to PostgreSQL / Neon
-async function checkDatabaseConnection() {
+async function checkDatabaseConnection(timeoutMs = 10000) {
   if (!realPrisma) {
     isPostgresConnected = false;
     return { connected: false, usingMock: true };
   }
 
   try {
-    // Attempt quick query to test connection (10 second timeout for cold starts)
+    // Attempt quick query to test connection (configurable timeout for cold starts / health checks)
     await Promise.race([
       realPrisma.$queryRaw`SELECT 1 as live_check`,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 10000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), timeoutMs))
     ]);
     isPostgresConnected = true;
     console.log('✅ Connected to live PostgreSQL (Neon) Database.');

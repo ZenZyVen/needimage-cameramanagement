@@ -11,14 +11,14 @@ const PORT = process.env.PORT || 5000;
 async function startServer() {
   console.log('🎬 Starting Camera Equipment Management Backend Server...');
 
-  // Test Neon PostgreSQL connection on startup
-  await checkDatabaseConnection();
-
   const HOST = '0.0.0.0';
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on http://${HOST}:${PORT}`);
     console.log(`📡 API Health Check: http://${HOST}:${PORT}/api/health`);
   });
+
+  // Test Neon PostgreSQL connection asynchronously so Render's port scanner never waits on DB cold starts
+  checkDatabaseConnection(10000).catch(() => {});
 }
 
 startServer();

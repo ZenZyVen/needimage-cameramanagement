@@ -1,7 +1,24 @@
 import axios from 'axios';
 
+export function resolveApiBaseUrl() {
+  const raw = String(import.meta.env.VITE_API_URL || '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\/+$/, '');
+
+  if (!raw) {
+    return '/api';
+  }
+
+  if (/^https?:\/\//i.test(raw) && !raw.toLowerCase().endsWith('/api')) {
+    return `${raw}/api`;
+  }
+
+  return raw;
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
