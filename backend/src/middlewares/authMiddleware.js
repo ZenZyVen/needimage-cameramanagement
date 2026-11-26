@@ -1,6 +1,34 @@
 const { verifyToken } = require('../config/jwt');
 const { prisma } = require('../config/db');
 
+// Lightweight in-memory user cache (60s TTL) to eliminate redundant remote DB roundtrips on every request
+const userCache = new Map();
+const USER_CACHE_TTL_MS = 60 * 1000;
+
+function getCachedUser(userId) {
+  const entry = userCache.get(userId);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > USER_CACHE_TTL_MS) {
+    userCache.delete(userId);
+    return null;
+  }
+  return entry.user;
+}
+
+function setCachedUser(user) {
+  if (user && user.id) {
+    userCache.set(user.id, { user, timestamp: Date.now() });
+  }
+}
+
+function invalidateUserCache(userId) {
+  if (userId) {
+    userCache.delete(userId);
+  } else {
+    userCache.clear();
+  }
+}
+
 async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -21,19 +49,30 @@ async function authenticate(req, res, next) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        department: true,
-        phone: true,
-        avatar: true,
-        isActive: true
+    let user = getCachedUser(decoded.id);
+
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          role: true,
+          department: true,
+          phone: true,
+          avatar: true,
+          profilePhoto: true,
+          signatureUrl: true,
+          isActive: true
+        }
+      });
+
+      if (user) {
+        setCachedUser(user);
       }
-    });
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -52,7 +91,7 @@ async function authenticate(req, res, next) {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth Middleware Error:', error);
+    console.error('Auth Middleware Error:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Internal server error during authentication.'
@@ -60,4 +99,4 @@ async function authenticate(req, res, next) {
   }
 }
 
-module.exports = { authenticate };
+module.exports = { authenticate, invalidateUserCache, setCachedUser };

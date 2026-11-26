@@ -12,7 +12,6 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
-    "camera-equipment-system-management": "file:..",
     "chart.js": "^4.4.7",
     "html2pdf.js": "^0.10.2",
     "html5-qrcode": "^2.3.8",

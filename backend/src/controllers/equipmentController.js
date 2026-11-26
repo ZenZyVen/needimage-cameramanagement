@@ -3,6 +3,57 @@ const { generateQRCode } = require('../utils/qrGenerator');
 const { logAudit } = require('../utils/auditLogger');
 const { notifyTeam } = require('../utils/notify');
 
+async function generateNextEquipmentCodes() {
+  const existing = await prisma.equipment.findMany({
+    select: { assetTag: true, serialNumber: true }
+  });
+
+  const tagSet = new Set(existing.map(e => (e.assetTag || '').toUpperCase()));
+  const serialSet = new Set(existing.map(e => (e.serialNumber || '').toUpperCase()));
+
+  let maxNum = 0;
+  for (const item of existing) {
+    const tagMatch = /^NE(\d+)$/i.exec((item.assetTag || '').trim());
+    if (tagMatch) {
+      maxNum = Math.max(maxNum, parseInt(tagMatch[1], 10));
+    }
+    const snMatch = /^SN-NE(\d+)$/i.exec((item.serialNumber || '').trim());
+    if (snMatch) {
+      maxNum = Math.max(maxNum, parseInt(snMatch[1], 10));
+    }
+  }
+
+  let nextNum = maxNum + 1;
+  let assetTag = '';
+  let serialNumber = '';
+
+  // Guarantee uniqueness against any existing record
+  while (true) {
+    const suffix = String(nextNum).padStart(2, '0');
+    assetTag = `NE${suffix}`;
+    serialNumber = `SN-NE${suffix}`;
+    if (!tagSet.has(assetTag) && !serialSet.has(serialNumber)) {
+      break;
+    }
+    nextNum += 1;
+  }
+
+  return { assetTag, serialNumber };
+}
+
+// 0. Get next auto-generated Asset Tag & Serial Number (NE01, SN-NE01, ...)
+exports.getNextEquipmentCodes = async (req, res, next) => {
+  try {
+    const codes = await generateNextEquipmentCodes();
+    return res.json({
+      success: true,
+      data: codes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // 1. Get all equipment with filters, search, soft-delete filter, and pagination
 exports.getAllEquipment = async (req, res, next) => {
   try {
@@ -39,8 +90,9 @@ exports.getAllEquipment = async (req, res, next) => {
       ];
     }
 
-    const take = parseInt(limit, 10);
-    const skip = (parseInt(page, 10) - 1) * take;
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const take = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (safePage - 1) * take;
 
     const [total, equipment] = await Promise.all([
       prisma.equipment.count({ where }),
@@ -219,15 +271,20 @@ exports.createEquipment = async (req, res, next) => {
       notes
     } = req.body;
 
-    if (!assetTag || !name || !brand || !serialNumber || !categoryId) {
+    if (!name || !categoryId) {
       return res.status(400).json({
         success: false,
-        message: 'Asset Tag, Name, Brand, Serial Number, and Category are required.'
+        message: 'Equipment Name and Category are required.'
       });
     }
 
-    const cleanTag = assetTag.trim().toUpperCase();
-    const cleanSerial = serialNumber.trim();
+    const autoCodes = (!assetTag || !assetTag.trim() || !serialNumber || !serialNumber.trim())
+      ? await generateNextEquipmentCodes()
+      : null;
+
+    const cleanTag = (assetTag && assetTag.trim()) ? assetTag.trim().toUpperCase() : autoCodes.assetTag;
+    const cleanSerial = (serialNumber && serialNumber.trim()) ? serialNumber.trim() : autoCodes.serialNumber;
+    const cleanBrand = (brand && brand.trim()) ? brand.trim() : 'General';
 
     // Check unique constraints
     const existing = await prisma.equipment.findFirst({
@@ -252,7 +309,7 @@ exports.createEquipment = async (req, res, next) => {
       assetTag: cleanTag,
       name: name.trim(),
       serial: cleanSerial,
-      brand: brand.trim(),
+      brand: cleanBrand,
       model: model ? model.trim() : ''
     };
     const qrCode = await generateQRCode(qrPayload);
@@ -267,7 +324,7 @@ exports.createEquipment = async (req, res, next) => {
       data: {
         assetTag: cleanTag,
         name: name.trim(),
-        brand: brand.trim(),
+        brand: cleanBrand,
         model: model ? model.trim() : '',
         serialNumber: cleanSerial,
         categoryId,
@@ -645,11 +702,13 @@ exports.getStockMovements = async (req, res, next) => {
     if (type && type !== 'ALL') where.type = type;
 
     let movements = [];
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeLimit = Math.min(500, Math.max(1, parseInt(limit, 10) || 100));
     if (prisma.stockMovement?.findMany) {
       movements = await prisma.stockMovement.findMany({
         where,
-        take: parseInt(limit, 10),
-        skip: (parseInt(page, 10) - 1) * parseInt(limit, 10)
+        take: safeLimit,
+        skip: (safePage - 1) * safeLimit
       });
     }
 
@@ -703,10 +762,33 @@ exports.getStockDashboard = async (req, res, next) => {
       startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    const allEquipment = await prisma.equipment.findMany({
-      where: { isDeleted: false },
-      include: { category: true }
-    });
+    const [allEquipment, movementsRaw] = await Promise.all([
+      prisma.equipment.findMany({
+        where: { isDeleted: false },
+        select: {
+          id: true,
+          assetTag: true,
+          name: true,
+          brand: true,
+          model: true,
+          quantity: true,
+          availableQuantity: true,
+          status: true,
+          condition: true,
+          purchasePrice: true,
+          dailyRate: true,
+          imageUrl: true,
+          category: { select: { id: true, name: true, icon: true } }
+        }
+      }),
+      prisma.stockMovement?.findMany
+        ? prisma.stockMovement.findMany({
+            where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
+            orderBy: { createdAt: 'desc' },
+            take: 30
+          })
+        : Promise.resolve([])
+    ]);
 
     let totalStock = 0;
     let availableStock = 0;
@@ -748,13 +830,7 @@ exports.getStockDashboard = async (req, res, next) => {
       }
     });
 
-    let movements = [];
-    if (prisma.stockMovement?.findMany) {
-      movements = await prisma.stockMovement.findMany({
-        where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
-        take: 30
-      });
-    }
+    const movements = movementsRaw || [];
 
     // Category stock distribution
     const categoryMap = {};

@@ -17,6 +17,7 @@ const Register = () => {
 
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     department: 'Cinematography',
@@ -29,6 +30,11 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'username') {
+      const cleaned = value.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+      setFormData(prev => ({ ...prev, username: cleaned }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -45,8 +51,13 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password) {
-      setErrorMsg('Name, email, and password are required.');
+    if (!formData.name || !formData.username || !formData.email || !formData.password) {
+      setErrorMsg('Full name, username, email, and password are required.');
+      return;
+    }
+
+    if (formData.username.length < 3) {
+      setErrorMsg('Username must be at least 3 characters.');
       return;
     }
 
@@ -131,24 +142,43 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label small fw-semibold text-secondary">Full Name <span className="required-star">*</span></label>
-              <div className="input-group">
-                <span className="input-group-text bg-white"><i className="bi bi-person text-muted"></i></span>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="name"
-                  placeholder="Full Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
+            <div className="row g-3 mb-3 align-items-end">
+              <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
+                <label className="form-label small fw-semibold text-secondary">Full Name</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white"><i className="bi bi-person text-muted"></i></span>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="name"
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
+                <label className="form-label small fw-semibold text-secondary">Username</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white"><i className="bi bi-at text-muted"></i></span>
+                  <input
+                    type="text"
+                    className="form-control font-monospace"
+                    name="username"
+                    placeholder="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
               </div>
             </div>
 
             <div className="mb-3">
-              <label className="form-label small fw-semibold text-secondary">Work Email Address <span className="required-star">*</span></label>
+              <label className="form-label small fw-semibold text-secondary">Work Email Address</label>
               <div className="input-group">
                 <span className="input-group-text bg-white"><i className="bi bi-envelope text-muted"></i></span>
                 <input
@@ -163,8 +193,8 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="row g-3 mb-3">
-              <div className="col-6">
+            <div className="row g-3 mb-3 align-items-end">
+              <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
                 <label className="form-label small fw-semibold text-secondary">Department</label>
                 <select
                   className="form-select"
@@ -181,7 +211,7 @@ const Register = () => {
                   <option value="DIT & Media">DIT & Media</option>
                 </select>
               </div>
-              <div className="col-6">
+              <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
                 <label className="form-label small fw-semibold text-secondary">Phone Number</label>
                 <input
                   type="text"
@@ -195,7 +225,7 @@ const Register = () => {
             </div>
 
             <div className="mb-4">
-              <label className="form-label small fw-semibold text-secondary">Password (min 6 characters) <span className="required-star">*</span></label>
+              <label className="form-label small fw-semibold text-secondary">Password (min 6 characters)</label>
               <div className="input-group">
                 <span className="input-group-text bg-white"><i className="bi bi-lock text-muted"></i></span>
                 <input

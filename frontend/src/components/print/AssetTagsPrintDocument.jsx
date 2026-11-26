@@ -116,9 +116,9 @@ const AssetTagsPrintDocument = ({ equipmentList = [] }) => {
             return (
               <div key={item.id} className="col-12 col-md-6 col-lg-4">
                 <div
-                  className="asset-tag-label p-3 border rounded bg-white shadow-xs position-relative"
+                  className="asset-tag-label p-3 border rounded bg-white shadow-xs position-relative h-100"
                   style={{
-                    minHeight: '210px',
+                    minHeight: '220px',
                     border: '1.5px solid #334155',
                     borderRadius: '8px',
                     display: 'flex',
@@ -128,19 +128,31 @@ const AssetTagsPrintDocument = ({ equipmentList = [] }) => {
                 >
                   {/* Top Header: Company Logo & Name */}
                   <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
-                    <div className="d-flex align-items-center gap-2">
+                    <div className="d-flex align-items-center gap-2 min-w-0">
                       <img
                         src={logoUrl}
                         alt="Logo"
                         style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                        className="flex-shrink-0"
                       />
-                      <span className="fw-bold text-dark text-truncate" style={{ fontSize: '0.72rem', maxWidth: '140px', letterSpacing: '0.02em' }}>
+                      <span className="fw-bold text-dark text-truncate" style={{ fontSize: '0.72rem', maxWidth: '135px', letterSpacing: '0.02em' }}>
                         {companyName}
                       </span>
                     </div>
-                    <span className="badge bg-slate-900 text-white font-monospace px-2 py-1" style={{ fontSize: '0.7rem' }}>
-                      {item.assetTag}
-                    </span>
+                    <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                      <span className="badge bg-slate-900 text-white font-monospace px-2 py-1" style={{ fontSize: '0.7rem' }}>
+                        {item.assetTag}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-outline-secondary no-print py-0 px-1"
+                        title="Inspect Label"
+                        onClick={() => setSelectedTag(item)}
+                        style={{ fontSize: '0.65rem', height: '22px', minHeight: '22px' }}
+                      >
+                        <i className="bi bi-zoom-in"></i>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Dual Code Section: Barcode + QR Code */}
@@ -169,33 +181,22 @@ const AssetTagsPrintDocument = ({ equipmentList = [] }) => {
 
                   {/* Gear Details Footer */}
                   <div className="border-top pt-2 mt-2">
-                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.78rem' }}>
+                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.78rem', height: '20px' }} title={item.name}>
                       {item.name}
                     </div>
-                    <div className="d-flex justify-content-between align-items-center text-muted" style={{ fontSize: '0.68rem' }}>
-                      <span>{item.brand} {item.model}</span>
-                      <span className="font-monospace">SN: {item.serialNumber || 'N/A'}</span>
+                    <div className="d-flex justify-content-between align-items-center text-muted gap-2" style={{ fontSize: '0.68rem', height: '18px' }}>
+                      <span className="text-truncate" style={{ maxWidth: '48%' }}>{item.brand} {item.model}</span>
+                      <span className="font-monospace text-truncate" style={{ maxWidth: '50%' }}>SN: {item.serialNumber || 'N/A'}</span>
                     </div>
-                    <div className="d-flex justify-content-between align-items-center mt-1">
-                      <span className="badge bg-light text-secondary border px-1" style={{ fontSize: '0.62rem' }}>
+                    <div className="d-flex justify-content-between align-items-center mt-1" style={{ height: '22px' }}>
+                      <span className="badge bg-light text-secondary border px-1.5 text-truncate" style={{ fontSize: '0.62rem', maxWidth: '60%' }}>
                         {item.category?.name || 'Vault Gear'}
                       </span>
-                      <span className="badge bg-light text-dark border px-1" style={{ fontSize: '0.62rem' }}>
+                      <span className="badge bg-light text-dark border px-1.5 flex-shrink-0" style={{ fontSize: '0.62rem' }}>
                         {item.condition || 'GOOD'}
                       </span>
                     </div>
                   </div>
-
-                  {/* Single Tag Download / Preview Button (no-print) */}
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline-secondary position-absolute top-0 end-0 m-1 no-print py-0 px-1"
-                    title="Inspect Label"
-                    onClick={() => setSelectedTag(item)}
-                    style={{ fontSize: '0.65rem' }}
-                  >
-                    <i className="bi bi-zoom-in"></i>
-                  </button>
                 </div>
               </div>
             );

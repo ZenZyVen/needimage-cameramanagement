@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
+  const login = async (username, password) => {
+    const res = await api.post('/auth/login', { username, password });
     if (res.data?.success) {
       const { token: newToken, user: newUser } = res.data;
       localStorage.setItem('cinevault_token', newToken);

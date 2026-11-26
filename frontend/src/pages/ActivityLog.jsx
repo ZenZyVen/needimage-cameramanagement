@@ -221,46 +221,46 @@ const ActivityLog = () => {
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Recorded Events</span>
-              <h3 className="fw-bold text-dark mb-0 mt-1">{filteredLogs.length}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>in current view</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Recorded Events">Total Recorded Events</span>
+              <div className="kpi-value text-dark">{filteredLogs.length}</div>
+              <span className="kpi-sub">in current view</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-primary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Loan & Vault Events</span>
-              <h3 className="fw-bold text-primary mb-0 mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Loan & Vault Events">Loan & Vault Events</span>
+              <div className="kpi-value text-primary">
                 {logs.filter(l => l.action.includes('REQUEST') || l.action.includes('CHECK')).length}
-              </h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>requisitions & handovers</span>
+              </div>
+              <span className="kpi-sub">requisitions & handovers</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-success border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Stock Changes Logged</span>
-              <h3 className="fw-bold text-success mb-0 mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Stock Changes Logged">Stock Changes Logged</span>
+              <div className="kpi-value text-success">
                 {logs.filter(l => l.action.includes('STOCK') || l.action.includes('RESTOCK') || l.action.includes('REDUCE')).length}
-              </h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>inventory adjustments</span>
+              </div>
+              <span className="kpi-sub">inventory adjustments</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-warning border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Project & Setup Actions</span>
-              <h3 className="fw-bold text-warning mb-0 mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Project & Setup Actions">Project & Setup Actions</span>
+              <div className="kpi-value text-warning">
                 {logs.filter(l => l.action.includes('PROJECT') || l.action.includes('SETTING')).length}
-              </h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>administrative modifications</span>
+              </div>
+              <span className="kpi-sub">administrative modifications</span>
             </div>
           </div>
         </div>
@@ -403,11 +403,6 @@ const ActivityLog = () => {
                             <span className="badge bg-light text-secondary border small" style={{ fontSize: '0.68rem' }}>
                               {log.entity}
                             </span>
-                            {log.entityId && (
-                              <span className="font-monospace text-muted small" style={{ fontSize: '0.68rem' }}>
-                                #{log.entityId}
-                              </span>
-                            )}
                           </div>
                         </td>
 
@@ -454,7 +449,7 @@ const ActivityLog = () => {
                   <span className={`badge ${getActionBadgeClass(selectedLog.action)}`}>
                     {selectedLog.action}
                   </span>
-                  <h6 className="modal-title fw-bold text-white mb-0">Event Inspector #{selectedLog.id}</h6>
+                  <h6 className="modal-title fw-bold text-white mb-0">Activity Event Details</h6>
                 </div>
                 <button
                   type="button"
@@ -477,8 +472,8 @@ const ActivityLog = () => {
                     <strong className="text-dark small">{selectedLog.user?.name || 'System'} ({selectedLog.user?.role || 'SYSTEM'})</strong>
                   </div>
                   <div className="col-md-6">
-                    <label className="text-muted small d-block">Target Entity & ID</label>
-                    <strong className="text-dark small">{selectedLog.entity} {selectedLog.entityId ? `(#${selectedLog.entityId})` : ''}</strong>
+                    <label className="text-muted small d-block">Target Module</label>
+                    <strong className="text-dark small">{selectedLog.entity}</strong>
                   </div>
                   <div className="col-md-6">
                     <label className="text-muted small d-block">Origin IP / Host</label>

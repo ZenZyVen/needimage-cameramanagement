@@ -55,6 +55,38 @@ exports.getNextProjectCode = async (req, res, next) => {
   }
 };
 
+// 0b. Get registered system users as crew candidates for production projects
+exports.getCrewCandidates = async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        phone: true,
+        avatar: true,
+        profilePhoto: true
+      }
+    });
+
+    const formatted = users.map(u => ({
+      ...u,
+      roleNote: u.avatar && !u.avatar.startsWith('http') && !u.avatar.startsWith('/') ? u.avatar : ''
+    }));
+
+    return res.json({
+      success: true,
+      data: formatted
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // 1. Get all projects
 exports.getAllProjects = async (req, res, next) => {
   try {
@@ -83,8 +115,11 @@ exports.getAllProjects = async (req, res, next) => {
         createdBy: {
           select: { id: true, name: true, email: true }
         },
+        crew: {
+          orderBy: { registeredAt: 'asc' }
+        },
         _count: {
-          select: { borrowRequests: true }
+          select: { borrowRequests: true, crew: true }
         }
       }
     });
@@ -108,6 +143,9 @@ exports.getProjectById = async (req, res, next) => {
       include: {
         createdBy: {
           select: { id: true, name: true, email: true, department: true }
+        },
+        crew: {
+          orderBy: { registeredAt: 'asc' }
         },
         borrowRequests: {
           orderBy: { createdAt: 'desc' },
@@ -149,7 +187,7 @@ exports.getProjectById = async (req, res, next) => {
 // 3. Create project
 exports.createProject = async (req, res, next) => {
   try {
-    const { title, projectCode, client, director, location, startDate, endDate, status, notes } = req.body;
+    const { title, projectCode, client, director, location, startDate, endDate, status, notes, crewMembers } = req.body;
 
     if (!title || !startDate || !endDate) {
       return res.status(400).json({
@@ -164,7 +202,6 @@ exports.createProject = async (req, res, next) => {
       const seq = await generateNextProjectSequence();
       cleanCode = seq.projectCode;
     } else {
-      // If code was supplied, verify it doesn't collide; if it does, allocate next unique sequential code
       const existingCode = await prisma.project.findUnique({
         where: { projectCode: cleanCode }
       });
@@ -176,6 +213,10 @@ exports.createProject = async (req, res, next) => {
 
     const match = cleanCode.match(/(\d+)$/);
     const projNum = match ? match[1].padStart(2, '0') : '01';
+
+    const validCrew = Array.isArray(crewMembers)
+      ? crewMembers.filter(c => c && c.name && c.name.trim() && c.role && c.role.trim())
+      : [];
 
     const project = await prisma.project.create({
       data: {
@@ -189,7 +230,23 @@ exports.createProject = async (req, res, next) => {
         endDate: new Date(endDate),
         status: status || 'PLANNING',
         createdById: req.user.id,
-        notes: notes ? notes.trim() : null
+        notes: notes ? notes.trim() : null,
+        ...(validCrew.length > 0
+          ? {
+              crew: {
+                create: validCrew.map(c => ({
+                  name: c.name.trim(),
+                  role: c.role.trim(),
+                  phone: c.phone ? c.phone.trim() : null,
+                  shootDate: c.shootDate || String(startDate).substring(0, 10),
+                  callTime: c.callTime || '07:00 AM',
+                  projectType: c.projectType || title.trim(),
+                  status: c.status || 'CONFIRMED',
+                  notes: c.notes ? c.notes.trim() : null
+                }))
+              }
+            }
+          : {})
       },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
@@ -202,7 +259,7 @@ exports.createProject = async (req, res, next) => {
       action: 'CREATE_PROJECT',
       entity: 'Project',
       entityId: project.id,
-      details: { projectCode: project.projectCode, title: project.title },
+      details: { projectCode: project.projectCode, title: project.title, crewCount: validCrew.length },
       req
     });
 
@@ -220,11 +277,31 @@ exports.createProject = async (req, res, next) => {
 exports.updateProject = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, client, director, location, startDate, endDate, status, notes } = req.body;
+    const { title, client, director, location, startDate, endDate, status, notes, crewMembers } = req.body;
 
     const existing = await prisma.project.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    if (Array.isArray(crewMembers)) {
+      const validCrew = crewMembers.filter(c => c && c.name && c.name.trim() && c.role && c.role.trim());
+      await prisma.projectCrew.deleteMany({ where: { projectId: id } }).catch(() => {});
+      for (const c of validCrew) {
+        await prisma.projectCrew.create({
+          data: {
+            projectId: id,
+            name: c.name.trim(),
+            role: c.role.trim(),
+            phone: c.phone ? c.phone.trim() : null,
+            shootDate: c.shootDate || (startDate ? String(startDate).substring(0, 10) : new Date().toISOString().substring(0, 10)),
+            callTime: c.callTime || '07:00 AM',
+            projectType: c.projectType || (title ? title.trim() : existing.title),
+            status: c.status || 'CONFIRMED',
+            notes: c.notes ? c.notes.trim() : null
+          }
+        }).catch(() => {});
+      }
     }
 
     const updated = await prisma.project.update({
@@ -238,6 +315,10 @@ exports.updateProject = async (req, res, next) => {
         endDate: endDate ? new Date(endDate) : undefined,
         status: status || undefined,
         notes: notes !== undefined ? (notes ? notes.trim() : null) : undefined
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true } },
+        crew: { orderBy: { registeredAt: 'asc' } }
       }
     });
 

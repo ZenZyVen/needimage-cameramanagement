@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -10,7 +10,25 @@ const Navbar = ({ onToggleSidebar }) => {
   const { settings } = useSettings();
   const [showScanner, setShowScanner] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -34,11 +52,11 @@ const Navbar = ({ onToggleSidebar }) => {
   return (
     <>
       <header className="top-navbar no-print">
-        <div className="d-flex align-items-center gap-3">
+        <div className="d-flex align-items-center gap-2 gap-sm-3 min-w-0">
           {/* Mobile hamburger */}
           <button
             type="button"
-            className="btn btn-sm btn-light border d-lg-none"
+            className="btn btn-sm btn-light border d-lg-none flex-shrink-0"
             onClick={onToggleSidebar}
             aria-label="Toggle Navigation"
           >
@@ -46,14 +64,14 @@ const Navbar = ({ onToggleSidebar }) => {
           </button>
 
           {/* System Branding / Name */}
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 min-w-0">
             <div
               className="bg-primary text-white rounded d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs"
               style={{ width: '30px', height: '30px' }}
             >
               <i className="bi bi-boxes" style={{ fontSize: '0.9rem' }}></i>
             </div>
-            <span className="fw-bold text-dark fs-6" style={{ letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+            <span className="fw-bold text-dark fs-6 text-truncate" style={{ letterSpacing: '-0.02em' }}>
               Stock & Inventory Management System
             </span>
           </div>
@@ -83,7 +101,7 @@ const Navbar = ({ onToggleSidebar }) => {
           <NotificationDropdown />
 
           {/* User Profile Menu */}
-          <div className="position-relative">
+          <div className="position-relative" ref={userMenuRef}>
             <button
               type="button"
               className="btn btn-light border d-flex align-items-center gap-2 px-2 py-1"
@@ -93,8 +111,10 @@ const Navbar = ({ onToggleSidebar }) => {
               <img
                 src={userPhoto}
                 alt={user?.name || 'User'}
+                referrerPolicy="no-referrer"
                 className="rounded-circle border"
                 style={{ width: '28px', height: '28px', objectFit: 'cover' }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'; }}
               />
               <div className="text-start d-none d-sm-block">
                 <div className="fw-semibold text-dark small" style={{ fontSize: '0.82rem', lineHeight: '1.2' }}>
@@ -109,7 +129,6 @@ const Navbar = ({ onToggleSidebar }) => {
               <div
                 className="card position-absolute end-0 mt-2 shadow-lg py-1"
                 style={{ width: '240px', zIndex: 1060, border: '1px solid #e2e8f0', borderRadius: '10px' }}
-                onMouseLeave={() => setUserMenuOpen(false)}
               >
                 <div className="px-3 py-2 border-bottom">
                   <div className="fw-bold small text-dark">{user?.name}</div>

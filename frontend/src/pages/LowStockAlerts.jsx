@@ -177,40 +177,40 @@ const LowStockAlerts = () => {
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-danger border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Critical (Out of Stock)</span>
-              <h3 className="fw-bold text-danger mb-0 mt-1">{outOfStockCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>0 available in vault</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Critical (Out of Stock)">Critical (Out of Stock)</span>
+              <div className="kpi-value text-danger">{outOfStockCount}</div>
+              <span className="kpi-sub">0 available in vault</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-warning border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Low Stock Warning</span>
-              <h3 className="fw-bold text-warning mb-0 mt-1">{lowStockCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>1 to 2 units remaining</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Low Stock Warning">Low Stock Warning</span>
+              <div className="kpi-value text-warning">{lowStockCount}</div>
+              <span className="kpi-sub">1 to 2 units remaining</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-primary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Attention Needed</span>
-              <h3 className="fw-bold text-primary mb-0 mt-1">{items.length}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>catalog items flagged</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Attention Needed">Total Attention Needed</span>
+              <div className="kpi-value text-primary">{items.length}</div>
+              <span className="kpi-sub">catalog items flagged</span>
             </div>
           </div>
         </div>
 
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100 border-start border-secondary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Asset Valuation of Flagged Gear</span>
-              <h4 className="fw-bold text-dark mb-0 mt-1">{formatCurrency(totalValuationAtRisk)}</h4>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>replacement value</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Flagged Asset Valuation">Flagged Asset Valuation</span>
+              <div className="kpi-value text-dark">{formatCurrency(totalValuationAtRisk)}</div>
+              <span className="kpi-sub">replacement value</span>
             </div>
           </div>
         </div>
@@ -328,8 +328,10 @@ const LowStockAlerts = () => {
                             <img
                               src={gear.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&auto=format&fit=crop&q=80'}
                               alt=""
+                              referrerPolicy="no-referrer"
                               className="rounded border"
                               style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&auto=format&fit=crop&q=80'; }}
                             />
                             <div>
                               <div className="fw-bold text-dark small text-truncate" style={{ maxWidth: '240px' }} title={gear.name}>
@@ -434,7 +436,7 @@ const LowStockAlerts = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Units to Add <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Units to Add</label>
                     <input
                       type="number"
                       min="1"

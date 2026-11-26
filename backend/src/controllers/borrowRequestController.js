@@ -259,7 +259,10 @@ exports.approveRequest = async (req, res, next) => {
 
     const request = await prisma.borrowRequest.findUnique({
       where: { id },
-      include: { items: true, user: true }
+      include: {
+        items: true,
+        user: { select: { id: true, name: true, email: true, department: true, phone: true } }
+      }
     });
 
     if (!request) {
@@ -283,7 +286,7 @@ exports.approveRequest = async (req, res, next) => {
       },
       include: {
         items: { include: { equipment: true } },
-        user: true
+        user: { select: { id: true, name: true, email: true, department: true, phone: true } }
       }
     });
 
@@ -332,7 +335,9 @@ exports.rejectRequest = async (req, res, next) => {
 
     const request = await prisma.borrowRequest.findUnique({
       where: { id },
-      include: { user: true }
+      include: {
+        user: { select: { id: true, name: true, email: true, department: true, phone: true } }
+      }
     });
 
     if (!request) {

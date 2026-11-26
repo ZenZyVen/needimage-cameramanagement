@@ -211,7 +211,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
 
                   <div className="col-md-2">
                     <label className="form-label small fw-semibold text-secondary">
-                      Required From <span className="required-star">*</span>
+                      Required From
                     </label>
                     <input
                       type="date"
@@ -225,7 +225,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
 
                   <div className="col-md-2">
                     <label className="form-label small fw-semibold text-secondary">
-                      Return By <span className="required-star">*</span>
+                      Return By
                     </label>
                     <input
                       type="date"
@@ -247,7 +247,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                 <div className="row g-3">
                   <div className="col-md-7">
                     <label className="form-label small fw-semibold text-secondary">
-                      Shoot Purpose & Scope <span className="required-star">*</span>
+                      Shoot Purpose & Scope
                     </label>
                     <input
                       type="text"
@@ -420,8 +420,10 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                             <img
                               src={gear.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'}
                               alt=""
+                              referrerPolicy="no-referrer"
                               className="rounded border"
                               style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
                             />
 
                             <div className="flex-grow-1 overflow-hidden">

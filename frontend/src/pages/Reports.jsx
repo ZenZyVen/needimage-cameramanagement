@@ -201,54 +201,54 @@ const Reports = () => {
 
       {/* Metric Summary Cards */}
       <div className="row g-3 mb-4">
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Loans</span>
-              <h3 className="fw-bold text-dark mb-0 mt-1">{totalLoans}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>requisitions</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Loans">Total Loans</span>
+              <div className="kpi-value text-dark">{totalLoans}</div>
+              <span className="kpi-sub">requisitions</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-primary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Active In Field</span>
-              <h3 className="fw-bold text-primary mb-0 mt-1">{activeLoans}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>currently on loan</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Active In Field">Active In Field</span>
+              <div className="kpi-value text-primary">{activeLoans}</div>
+              <span className="kpi-sub">currently on loan</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-success border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Completed Returns</span>
-              <h3 className="fw-bold text-success mb-0 mt-1">{completedReturns}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>returned to vault</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Completed Returns">Completed Returns</span>
+              <div className="kpi-value text-success">{completedReturns}</div>
+              <span className="kpi-sub">returned to vault</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-3">
+        <div className="col-6 col-md-6 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-danger border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Overdue Loans</span>
-              <h3 className={`fw-bold mb-0 mt-1 ${overdueLoans > 0 ? 'text-danger' : 'text-muted'}`}>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Overdue Loans">Overdue Loans</span>
+              <div className={`kpi-value ${overdueLoans > 0 ? 'text-danger' : 'text-muted'}`}>
                 {overdueLoans}
-              </h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>past expected return date</span>
+              </div>
+              <span className="kpi-sub">past expected return</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-3">
+        <div className="col-12 col-md-6 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-secondary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Gear Items</span>
-              <h3 className="fw-bold text-dark mb-0 mt-1">{totalUnitsLoaned}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>units dispatched</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Gear Items">Total Gear Items</span>
+              <div className="kpi-value text-dark">{totalUnitsLoaned}</div>
+              <span className="kpi-sub">units dispatched</span>
             </div>
           </div>
         </div>

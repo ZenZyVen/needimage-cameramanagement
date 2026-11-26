@@ -17,12 +17,109 @@ exports.getDashboardStats = async (req, res, next) => {
       startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    // 1. Equipment Inventory & Stock Totals
-    const equipmentList = await prisma.equipment.findMany({
-      where: { isDeleted: false },
-      include: { category: true }
-    });
+    const userScopeFilter = user.role === 'USER' ? { userId: user.id } : {};
+    const isTimeFiltered = timeframe !== 'all';
 
+    // Run all database queries in parallel in a single roundtrip batch (excluding heavy qrCode blobs)
+    const [
+      equipmentList,
+      allRequestsMeta,
+      recentRequestsRaw,
+      recentActivityRaw,
+      recentStockMovementsRaw,
+      overdueLoans,
+      myActiveBorrowList
+    ] = await Promise.all([
+      prisma.equipment.findMany({
+        where: { isDeleted: false },
+        select: {
+          id: true,
+          assetTag: true,
+          name: true,
+          brand: true,
+          model: true,
+          quantity: true,
+          availableQuantity: true,
+          status: true,
+          condition: true,
+          purchasePrice: true,
+          dailyRate: true,
+          imageUrl: true,
+          category: { select: { id: true, name: true, icon: true } }
+        }
+      }),
+      prisma.borrowRequest.findMany({
+        where: userScopeFilter,
+        select: {
+          id: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          createdAt: true
+        }
+      }),
+      prisma.borrowRequest.findMany({
+        where: userScopeFilter,
+        take: 15,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true, department: true } },
+          project: { select: { id: true, title: true, projectCode: true } },
+          items: { include: { equipment: { select: { id: true, assetTag: true, name: true } } } }
+        }
+      }),
+      prisma.checkInOut.findMany({
+        where: user.role === 'USER' ? { request: { userId: user.id } } : {},
+        take: 15,
+        orderBy: { actionDate: 'desc' },
+        include: {
+          handledBy: { select: { id: true, name: true } },
+          equipment: { select: { id: true, assetTag: true, name: true } }
+        }
+      }),
+      user.role !== 'USER' && prisma.stockMovement?.findMany
+        ? prisma.stockMovement.findMany({
+            take: 15,
+            orderBy: { createdAt: 'desc' }
+          })
+        : Promise.resolve([]),
+      prisma.borrowRequest.findMany({
+        where: {
+          status: 'CHECKED_OUT',
+          endDate: { lt: now },
+          ...userScopeFilter
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true } },
+          items: {
+            include: {
+              equipment: {
+                select: { id: true, assetTag: true, name: true, brand: true, model: true, status: true }
+              }
+            }
+          },
+          project: true
+        }
+      }),
+      user.role === 'USER'
+        ? prisma.borrowRequest.findMany({
+            where: { userId: user.id, status: { in: ['CHECKED_OUT', 'PARTIALLY_RETURNED'] } },
+            include: {
+              items: {
+                include: {
+                  equipment: {
+                    select: { id: true, assetTag: true, name: true, brand: true, model: true, imageUrl: true }
+                  }
+                }
+              },
+              project: true
+            },
+            orderBy: { endDate: 'asc' }
+          })
+        : Promise.resolve([])
+    ]);
+
+    // 1. Equipment Inventory & Stock Totals
     const totalEquipment = equipmentList.length;
     let totalStockUnits = 0;
     let availableUnits = 0;
@@ -31,6 +128,7 @@ exports.getDashboardStats = async (req, res, next) => {
     let maintenanceUnits = 0;
     let outOfStockCount = 0;
     let totalValuation = 0;
+    const lowStockAlerts = [];
 
     equipmentList.forEach(eq => {
       const qty = eq.quantity || 1;
@@ -48,26 +146,43 @@ exports.getDashboardStats = async (req, res, next) => {
       } else if (eq.status === 'UNDER_MAINTENANCE') {
         maintenanceUnits += Math.max(1, qty - avail);
       }
+
+      if (avail <= 2) {
+        lowStockAlerts.push({
+          id: eq.id,
+          assetTag: eq.assetTag,
+          name: eq.name,
+          category: eq.category?.name || 'General',
+          quantity: qty,
+          availableQuantity: avail,
+          status: eq.status,
+          imageUrl: eq.imageUrl
+        });
+      }
     });
 
-    // 2. Requests Stats
-    const requestDateFilter = timeframe !== 'all' ? { createdAt: { gte: startDate } } : {};
-    const [
-      pendingRequestsCount,
-      approvedRequestsCount,
-      checkedOutRequestsCount,
-      overdueRequestsCount
-    ] = await Promise.all([
-      prisma.borrowRequest.count({ where: { status: 'PENDING', ...requestDateFilter } }),
-      prisma.borrowRequest.count({ where: { status: 'APPROVED', ...requestDateFilter } }),
-      prisma.borrowRequest.count({ where: { status: 'CHECKED_OUT' } }),
-      prisma.borrowRequest.count({
-        where: {
-          status: 'CHECKED_OUT',
-          endDate: { lt: now }
-        }
-      })
-    ]);
+    // 2. Requests Stats (Both Global Active Counts & Timeframe-Scoped Counts)
+    const inPeriod = (dateVal) => !isTimeFiltered || (dateVal && new Date(dateVal) >= startDate);
+
+    const pendingRequestsCount = allRequestsMeta.filter(r => r.status === 'PENDING').length;
+    const approvedRequestsCount = allRequestsMeta.filter(r => r.status === 'APPROVED').length;
+    const checkedOutRequestsCount = allRequestsMeta.filter(r => r.status === 'CHECKED_OUT').length;
+    const overdueRequestsCount = overdueLoans.length;
+
+    // Filter recent feeds by timeframe (matching createdAt or startDate/actionDate)
+    const recentRequestsInPeriod = recentRequestsRaw.filter(
+      r => inPeriod(r.createdAt) || inPeriod(r.startDate)
+    );
+    const recentActivityInPeriod = recentActivityRaw.filter(
+      a => inPeriod(a.actionDate || a.createdAt)
+    );
+    const recentMovementsInPeriod = recentStockMovementsRaw.filter(
+      m => inPeriod(m.createdAt)
+    );
+
+    const recentRequests = (recentRequestsInPeriod.length > 0 ? recentRequestsInPeriod : recentRequestsRaw).slice(0, 6);
+    const recentActivity = (recentActivityInPeriod.length > 0 ? recentActivityInPeriod : recentActivityRaw).slice(0, 6);
+    const recentStockMovements = (recentMovementsInPeriod.length > 0 ? recentMovementsInPeriod : recentStockMovementsRaw).slice(0, 6);
 
     // 3. Equipment By Category (for Chart)
     const categoryCounts = {};
@@ -90,32 +205,9 @@ exports.getDashboardStats = async (req, res, next) => {
     // 5. User Specific Stats
     let userStats = null;
     if (user.role === 'USER') {
-      const [
-        myActiveLoans,
-        myPendingRequests,
-        myCompletedLoans
-      ] = await Promise.all([
-        prisma.borrowRequest.count({
-          where: { userId: user.id, status: { in: ['CHECKED_OUT', 'PARTIALLY_RETURNED'] } }
-        }),
-        prisma.borrowRequest.count({
-          where: { userId: user.id, status: 'PENDING' }
-        }),
-        prisma.borrowRequest.count({
-          where: { userId: user.id, status: 'RETURNED' }
-        })
-      ]);
-
-      const myActiveBorrowList = await prisma.borrowRequest.findMany({
-        where: { userId: user.id, status: { in: ['CHECKED_OUT', 'PARTIALLY_RETURNED'] } },
-        include: {
-          items: {
-            include: { equipment: true }
-          },
-          project: true
-        },
-        orderBy: { endDate: 'asc' }
-      });
+      const myActiveLoans = allRequestsMeta.filter(r => ['CHECKED_OUT', 'PARTIALLY_RETURNED'].includes(r.status)).length;
+      const myPendingRequests = allRequestsMeta.filter(r => r.status === 'PENDING').length;
+      const myCompletedLoans = allRequestsMeta.filter(r => r.status === 'RETURNED').length;
 
       userStats = {
         myActiveLoans,
@@ -124,52 +216,6 @@ exports.getDashboardStats = async (req, res, next) => {
         myActiveBorrowList
       };
     }
-
-    // 6. Recent Requests
-    const recentRequests = await prisma.borrowRequest.findMany({
-      where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
-      take: 6,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: { select: { id: true, name: true, email: true, department: true } },
-        project: { select: { id: true, title: true } },
-        items: { include: { equipment: { select: { assetTag: true, name: true } } } }
-      }
-    });
-
-    // 7. Recent CheckInOuts & Activities
-    const recentActivity = await prisma.checkInOut.findMany({
-      where: timeframe !== 'all' ? { actionDate: { gte: startDate } } : {},
-      take: 6,
-      orderBy: { actionDate: 'desc' },
-      include: {
-        handledBy: { select: { id: true, name: true } },
-        equipment: { select: { id: true, assetTag: true, name: true } }
-      }
-    });
-
-    // 8. Recent Stock Movements
-    let recentStockMovements = [];
-    if (prisma.stockMovement?.findMany) {
-      recentStockMovements = await prisma.stockMovement.findMany({
-        where: timeframe !== 'all' ? { createdAt: { gte: startDate } } : {},
-        take: 6,
-        orderBy: { createdAt: 'desc' }
-      });
-    }
-
-    // 9. Overdue List
-    const overdueLoans = await prisma.borrowRequest.findMany({
-      where: {
-        status: 'CHECKED_OUT',
-        endDate: { lt: now }
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true } },
-        items: { include: { equipment: true } },
-        project: true
-      }
-    });
 
     return res.json({
       success: true,
@@ -182,16 +228,21 @@ exports.getDashboardStats = async (req, res, next) => {
         maintenanceCount: maintenanceUnits,
         damagedCount: damagedUnits,
         outOfStockCount,
+        lowStockCount: lowStockAlerts.length,
         totalValuation,
         pendingRequestsCount,
         approvedRequestsCount,
         checkedOutRequestsCount,
-        overdueRequestsCount
+        overdueRequestsCount,
+        requestsInTimeframe: recentRequestsInPeriod.length,
+        handoversInTimeframe: recentActivityInPeriod.length,
+        movementsInTimeframe: recentMovementsInPeriod.length
       },
       charts: {
         categoryChart: categoryChartData,
         statusChart: statusChartData
       },
+      lowStockAlerts: lowStockAlerts.slice(0, 6),
       recentRequests,
       recentActivity,
       recentStockMovements,

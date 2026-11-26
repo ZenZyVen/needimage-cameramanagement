@@ -7,6 +7,7 @@ const { upload } = require('../middlewares/uploadMiddleware');
 
 // Public/Authenticated read routes
 router.get('/', authenticate, equipmentController.getAllEquipment);
+router.get('/next-codes', authenticate, equipmentController.getNextEquipmentCodes);
 router.get('/categories', authenticate, equipmentController.getCategories);
 router.get('/stock-dashboard', authenticate, equipmentController.getStockDashboard);
 router.get('/stock-movements', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.getStockMovements);

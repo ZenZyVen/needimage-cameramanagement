@@ -5,8 +5,8 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/roleMiddleware');
 const { upload } = require('../middlewares/uploadMiddleware');
 
-// Public/Authenticated read of branding & system settings
-router.get('/', authenticate, settingsController.getSettings);
+// Public read of branding & system settings (used by Login, Sidebar, and Print headers)
+router.get('/', settingsController.getSettings);
 
 // Authenticated read of audit logs (Normal users scoped to their own; Admin & Staff see system logs)
 router.get('/audit-logs', authenticate, settingsController.getAuditLogs);

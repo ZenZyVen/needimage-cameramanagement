@@ -18,15 +18,30 @@ const storage = multer.diskStorage({
   }
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|webp|svg|gif/;
-  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-  const mime = file.mimetype;
+const ALLOWED_EXTENSIONS = /^\.(jpeg|jpg|png|webp|gif|svg)$/i;
+const ALLOWED_MIMES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml'
+]);
 
-  if (allowedTypes.test(ext) && (mime.startsWith('image/') || mime === 'application/octet-stream')) {
+const fileFilter = (req, file, cb) => {
+  const originalName = path.basename(file.originalname || '');
+  const ext = path.extname(originalName).toLowerCase();
+  const mime = (file.mimetype || '').toLowerCase();
+
+  // Block dangerous double extensions (e.g. payload.html.png or script.php.jpg)
+  if (/\.(php|html|htm|js|exe|sh|bat|cmd|jsp|asp|aspx)\./i.test(originalName)) {
+    return cb(new Error('Invalid file name: disguised executable extensions are not allowed.'), false);
+  }
+
+  if (ALLOWED_EXTENSIONS.test(ext) && ALLOWED_MIMES.has(mime)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files (JPEG, PNG, WEBP, SVG) are allowed!'), false);
+    cb(new Error('Only valid image files (JPEG, PNG, WEBP, GIF, SVG) are allowed!'), false);
   }
 };
 

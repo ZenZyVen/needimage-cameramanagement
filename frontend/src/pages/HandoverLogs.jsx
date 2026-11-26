@@ -134,37 +134,37 @@ const HandoverLogs = () => {
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Total Operations</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{logs.length}</div>
-              <small className="text-secondary">Logged transactions</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Operations">Total Operations</span>
+              <div className="kpi-value text-dark">{logs.length}</div>
+              <span className="kpi-sub">Logged transactions</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Handovers / Checkouts</span>
-              <div className="fs-4 fw-bold text-primary mt-1">{checkoutsCount}</div>
-              <small className="text-secondary">Equipment issued to crew</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Handovers / Checkouts">Handovers / Checkouts</span>
+              <div className="kpi-value text-primary">{checkoutsCount}</div>
+              <span className="kpi-sub">Equipment issued to crew</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Return Inspections</span>
-              <div className="fs-4 fw-bold text-success mt-1">{returnsCount}</div>
-              <small className="text-secondary">Vault check-ins verified</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Return Inspections">Return Inspections</span>
+              <div className="kpi-value text-success">{returnsCount}</div>
+              <span className="kpi-sub">Vault check-ins verified</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Current Filter Count</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{filteredLogs.length}</div>
-              <small className="text-secondary">Matching active search</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Current Filter Count">Current Filter Count</span>
+              <div className="kpi-value text-dark">{filteredLogs.length}</div>
+              <span className="kpi-sub">Matching active search</span>
             </div>
           </div>
         </div>
@@ -343,7 +343,7 @@ const HandoverLogs = () => {
               <div className="modal-header py-2 px-3 bg-light border-bottom">
                 <h6 className="modal-title fw-bold text-dark mb-0">
                   <i className="bi bi-file-earmark-text text-primary me-2"></i>
-                  Handover Log #{selectedLog.id}
+                  Handover & Return Log Details
                 </h6>
                 <button
                   type="button"

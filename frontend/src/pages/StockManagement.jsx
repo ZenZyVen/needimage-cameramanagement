@@ -321,62 +321,62 @@ const StockManagement = () => {
 
       {/* KPI Metric Summary Cards */}
       <div className="row g-3 mb-4">
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Equipment</span>
-              <h4 className="fw-bold text-dark mb-0 mt-1">{summary?.totalEquipmentCount || equipmentList.length}</h4>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>catalog items</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Equipment">Total Equipment</span>
+              <div className="kpi-value text-dark">{summary?.totalEquipmentCount || equipmentList.length}</div>
+              <span className="kpi-sub">catalog items</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100 border-start border-primary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Stock Units</span>
-              <h4 className="fw-bold text-primary mb-0 mt-1">{summary?.totalStockUnits || 0}</h4>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>physical units</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Stock Units">Total Stock Units</span>
+              <div className="kpi-value text-primary">{summary?.totalStockUnits || 0}</div>
+              <span className="kpi-sub">physical units</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100 border-start border-success border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Available In Vault</span>
-              <h4 className="fw-bold text-success mb-0 mt-1">{summary?.availableStockUnits || 0}</h4>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>ready for loan</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Available In Vault">Available In Vault</span>
+              <div className="kpi-value text-success">{summary?.availableStockUnits || 0}</div>
+              <span className="kpi-sub">ready for loan</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100 border-start border-info border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Checked Out On Set</span>
-              <h4 className="fw-bold text-info mb-0 mt-1">{summary?.borrowedStockUnits || 0}</h4>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>active in field</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Checked Out On Set">Checked Out On Set</span>
+              <div className="kpi-value text-info">{summary?.borrowedStockUnits || 0}</div>
+              <span className="kpi-sub">active in field</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100 border-start border-warning border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">In Maintenance</span>
-              <h4 className="fw-bold text-warning mb-0 mt-1">{summary?.maintenanceStockUnits || 0}</h4>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>quarantined units</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="In Maintenance">In Maintenance</span>
+              <div className="kpi-value text-warning">{summary?.maintenanceStockUnits || 0}</div>
+              <span className="kpi-sub">quarantined units</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-lg-2">
+        <div className="col-6 col-md-4 col-xl-2">
           <div className="card border-0 shadow-sm h-100 border-start border-secondary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Vault Value</span>
-              <h5 className="fw-bold text-dark mb-0 mt-1">{formatCurrency(summary?.totalValuation || 0)}</h5>
-              <span className="text-muted" style={{ fontSize: '0.7rem' }}>asset valuation</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Vault Value">Total Vault Value</span>
+              <div className="kpi-value text-dark">{formatCurrency(summary?.totalValuation || 0)}</div>
+              <span className="kpi-sub">asset valuation</span>
             </div>
           </div>
         </div>
@@ -509,8 +509,10 @@ const StockManagement = () => {
                               <img
                                 src={eq.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&auto=format&fit=crop&q=80'}
                                 alt=""
+                                referrerPolicy="no-referrer"
                                 className="rounded border"
                                 style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&auto=format&fit=crop&q=80'; }}
                               />
                               <div>
                                 <div className="fw-bold text-dark small">{eq.name}</div>
@@ -850,7 +852,7 @@ const StockManagement = () => {
                   )}
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Quantity to Add <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Quantity to Add</label>
                     <input
                       type="number"
                       min="1"
@@ -996,7 +998,7 @@ const StockManagement = () => {
                   )}
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Reason / Classification <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Reason / Classification</label>
                     <select
                       className="form-select form-select-sm"
                       value={deductType}
@@ -1009,7 +1011,7 @@ const StockManagement = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Quantity to Deduct <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Quantity to Deduct</label>
                     <input
                       type="number"
                       min="1"

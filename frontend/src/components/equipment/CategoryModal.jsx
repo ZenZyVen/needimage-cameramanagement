@@ -117,7 +117,7 @@ const CategoryModal = ({ show, onHide, categories = [], onCategoriesUpdated }) =
                 <div className="row g-3">
                   <div className="col-md-5">
                     <label className="form-label">
-                      Category Name <span className="required-star">*</span>
+                      Category Name
                     </label>
                     <input
                       type="text"

@@ -5,10 +5,13 @@ import {
   createEquipment,
   updateEquipment,
   deleteEquipment,
-  getCategories
+  getCategories,
+  uploadEquipmentImage,
+  getNextEquipmentCodes
 } from '../services/equipmentService';
 import { triggerNotificationRefresh } from '../context/NotificationContext';
 import { formatCurrency } from '../utils/formatters';
+import { normalizeImageUrl, handleImgError } from '../utils/imageHelper';
 import StatusBadge from '../components/common/StatusBadge';
 
 const CONDITIONS = ['EXCELLENT', 'GOOD', 'FAIR', 'MAINTENANCE', 'DAMAGED'];
@@ -36,6 +39,8 @@ const ProductManagement = () => {
   // Notifications
   const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -87,11 +92,11 @@ const ProductManagement = () => {
 
   // Open Create Modal
   const openCreateModal = () => {
-    const nextTag = `CV-${Math.floor(1000 + Math.random() * 9000)}`;
+    setPreviewError(false);
     setEditingProduct(null);
     setFormData({
       name: '',
-      assetTag: nextTag,
+      assetTag: '',
       categoryId: categories[0]?.id || '',
       brand: '',
       model: '',
@@ -106,6 +111,17 @@ const ProductManagement = () => {
       notes: ''
     });
     setShowProductModal(true);
+    getNextEquipmentCodes()
+      .then((res) => {
+        if (res.data?.success && res.data.data) {
+          setFormData(prev => ({
+            ...prev,
+            assetTag: prev.assetTag || res.data.data.assetTag,
+            serialNumber: prev.serialNumber || res.data.data.serialNumber
+          }));
+        }
+      })
+      .catch(() => {});
   };
 
   // Open Edit Modal
@@ -142,14 +158,17 @@ const ProductManagement = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'imageUrl') {
+      setPreviewError(false);
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   // Submit Create or Edit Product
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.assetTag.trim() || !formData.categoryId) {
-      setAlertMsg({ type: 'warning', text: 'Product name, asset tag, and category are required.' });
+    if (!formData.name.trim() || !formData.categoryId) {
+      setAlertMsg({ type: 'warning', text: 'Product name and category are required.' });
       return;
     }
 
@@ -159,16 +178,16 @@ const ProductManagement = () => {
         name: formData.name.trim(),
         assetTag: formData.assetTag.trim().toUpperCase(),
         categoryId: formData.categoryId,
-        brand: formData.brand.trim() || undefined,
+        brand: formData.brand.trim() || 'General',
         model: formData.model.trim() || undefined,
-        serialNumber: formData.serialNumber.trim() || undefined,
+        serialNumber: formData.serialNumber.trim(),
         purchasePrice: formData.purchasePrice !== '' ? parseFloat(formData.purchasePrice) : null,
         dailyRate: formData.dailyRate !== '' ? parseFloat(formData.dailyRate) : null,
         quantity: parseInt(formData.quantity, 10) || 1,
         availableQuantity: parseInt(formData.availableQuantity, 10) || parseInt(formData.quantity, 10) || 1,
         condition: formData.condition,
         status: formData.status,
-        imageUrl: formData.imageUrl.trim() || null,
+        imageUrl: normalizeImageUrl(formData.imageUrl) || null,
         notes: formData.notes.trim() || null
       };
 
@@ -339,37 +358,37 @@ const ProductManagement = () => {
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Total Catalog Products</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{products.length}</div>
-              <small className="text-secondary">{categories.length} production categories</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Catalog Products">Total Catalog Products</span>
+              <div className="kpi-value text-dark">{products.length}</div>
+              <span className="kpi-sub">{categories.length} production categories</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Inventory Units</span>
-              <div className="fs-4 fw-bold text-primary mt-1">{totalUnits}</div>
-              <small className="text-secondary">{totalAvailable} units currently ready in vault</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Inventory Units">Inventory Units</span>
+              <div className="kpi-value text-primary">{totalUnits}</div>
+              <span className="kpi-sub">{totalAvailable} units ready in vault</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Total Asset Valuation</span>
-              <div className="fs-4 fw-bold text-success mt-1">{formatCurrency(totalValuation)}</div>
-              <small className="text-secondary">Combined gear replacement value</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Asset Valuation">Total Asset Valuation</span>
+              <div className="kpi-value text-success">{formatCurrency(totalValuation)}</div>
+              <span className="kpi-sub">Combined replacement value</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Filtered Count</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{filteredProducts.length}</div>
-              <small className="text-secondary">Matching active filters</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Filtered Count">Filtered Count</span>
+              <div className="kpi-value text-dark">{filteredProducts.length}</div>
+              <span className="kpi-sub">Matching active filters</span>
             </div>
           </div>
         </div>
@@ -486,10 +505,12 @@ const ProductManagement = () => {
                         <td>
                           {product.imageUrl ? (
                             <img
-                              src={product.imageUrl}
+                              src={normalizeImageUrl(product.imageUrl)}
                               alt={product.name}
+                              referrerPolicy="no-referrer"
                               className="rounded border"
                               style={{ width: '46px', height: '46px', objectFit: 'cover' }}
+                              onError={handleImgError()}
                             />
                           ) : (
                             <div
@@ -634,10 +655,10 @@ const ProductManagement = () => {
                     <h6 className="fw-bold text-secondary small text-uppercase mb-3">
                       <i className="bi bi-tag-fill text-primary me-1"></i> 1. Product Identity
                     </h6>
-                    <div className="row g-3">
-                      <div className="col-md-7">
+                    <div className="row g-3 align-items-end">
+                      <div className="col-md-7 d-flex flex-column justify-content-end">
                         <label className="form-label small fw-semibold text-secondary">
-                          Product / Equipment Name <span className="text-danger">*</span>
+                          Product / Equipment Name
                         </label>
                         <input
                           type="text"
@@ -650,24 +671,23 @@ const ProductManagement = () => {
                         />
                       </div>
 
-                      <div className="col-md-5">
+                      <div className="col-md-5 d-flex flex-column justify-content-end">
                         <label className="form-label small fw-semibold text-secondary">
-                          Asset Barcode / Tag <span className="text-danger">*</span>
+                          Asset Barcode / Tag
                         </label>
                         <input
                           type="text"
                           className="form-control form-control-sm font-monospace text-uppercase"
                           name="assetTag"
-                          placeholder="CAM-001"
+                          placeholder="NE01"
                           value={formData.assetTag}
                           onChange={handleFormChange}
-                          required
                         />
                       </div>
 
-                      <div className="col-md-4">
+                      <div className="col-md-4 d-flex flex-column justify-content-end">
                         <label className="form-label small fw-semibold text-secondary">
-                          Category <span className="text-danger">*</span>
+                          Category
                         </label>
                         <select
                           className="form-select form-select-sm"
@@ -718,16 +738,85 @@ const ProductManagement = () => {
                         />
                       </div>
 
-                      <div className="col-md-6">
-                        <label className="form-label small fw-semibold text-secondary">Image URL</label>
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
-                          name="imageUrl"
-                          placeholder="Image URL (optional)"
-                          value={formData.imageUrl}
-                          onChange={handleFormChange}
-                        />
+                      <div className="col-12">
+                        <div className="p-2 border rounded bg-light d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+                          <div
+                            className="border rounded bg-white p-1 d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0"
+                            style={{ width: '76px', height: '76px' }}
+                          >
+                            {formData.imageUrl && !previewError ? (
+                              <img
+                                src={normalizeImageUrl(formData.imageUrl)}
+                                alt="Preview"
+                                referrerPolicy="no-referrer"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                onError={() => setPreviewError(true)}
+                              />
+                            ) : (
+                              <div className="text-center">
+                                <i className={`bi ${previewError ? 'bi-image-alt text-warning' : 'bi-camera text-muted'} fs-4 d-block`}></i>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-grow-1">
+                            <label className="form-label small fw-semibold text-secondary mb-1">
+                              Product Photo (Upload or Paste URL)
+                            </label>
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              <label className="btn btn-xs btn-outline-primary mb-0 cursor-pointer">
+                                <i className="bi bi-upload me-1"></i>
+                                {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="d-none"
+                                  disabled={uploadingImage}
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      setUploadingImage(true);
+                                      setPreviewError(false);
+                                      const res = await uploadEquipmentImage(file);
+                                      if (res.data?.success) {
+                                        setFormData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
+                                      }
+                                    } catch (err) {
+                                      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to upload photo.' });
+                                    } finally {
+                                      setUploadingImage(false);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {formData.imageUrl && (
+                                <button
+                                  type="button"
+                                  className="btn btn-xs btn-outline-secondary"
+                                  onClick={() => {
+                                    setPreviewError(false);
+                                    setFormData(prev => ({ ...prev, imageUrl: '' }));
+                                  }}
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              name="imageUrl"
+                              placeholder="Paste image URL (https://...) or upload above"
+                              value={formData.imageUrl}
+                              onChange={handleFormChange}
+                            />
+                            {previewError && formData.imageUrl && (
+                              <div className="text-danger mt-1" style={{ fontSize: '0.72rem' }}>
+                                Could not load image from this URL. Make sure it is a direct image link.
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -737,10 +826,10 @@ const ProductManagement = () => {
                     <h6 className="fw-bold text-dark small text-uppercase mb-3">
                       <i className="bi bi-cash-coin text-success me-1"></i> 2. Pricing & Valuation
                     </h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
+                    <div className="row g-3 align-items-end">
+                      <div className="col-md-6 d-flex flex-column justify-content-end">
                         <label className="form-label small fw-semibold text-secondary">
-                          Unit Purchase Price / Replacement Cost ($) <span className="text-danger">*</span>
+                          Unit Purchase Price / Replacement Cost ($)
                         </label>
                         <div className="input-group input-group-sm">
                           <span className="input-group-text">$</span>
@@ -786,10 +875,10 @@ const ProductManagement = () => {
                     <h6 className="fw-bold text-secondary small text-uppercase mb-3">
                       <i className="bi bi-boxes text-primary me-1"></i> 3. Stock Quantities & Condition
                     </h6>
-                    <div className="row g-3">
-                      <div className="col-md-3">
-                        <label className="form-label small fw-semibold text-secondary">
-                          Total Quantity <span className="text-danger">*</span>
+                    <div className="row g-3 align-items-end">
+                      <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                        <label className="form-label small fw-semibold text-secondary text-nowrap">
+                          Total Qty
                         </label>
                         <input
                           type="number"
@@ -802,9 +891,9 @@ const ProductManagement = () => {
                         />
                       </div>
 
-                      <div className="col-md-3">
-                        <label className="form-label small fw-semibold text-secondary">
-                          Available Units in Vault
+                      <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                        <label className="form-label small fw-semibold text-secondary text-nowrap">
+                          Available Units
                         </label>
                         <input
                           type="number"
@@ -817,8 +906,8 @@ const ProductManagement = () => {
                         />
                       </div>
 
-                      <div className="col-md-3">
-                        <label className="form-label small fw-semibold text-secondary">Physical Condition</label>
+                      <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                        <label className="form-label small fw-semibold text-secondary text-nowrap">Condition</label>
                         <select
                           className="form-select form-select-sm"
                           name="condition"
@@ -831,8 +920,8 @@ const ProductManagement = () => {
                         </select>
                       </div>
 
-                      <div className="col-md-3">
-                        <label className="form-label small fw-semibold text-secondary">Vault Status</label>
+                      <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                        <label className="form-label small fw-semibold text-secondary text-nowrap">Vault Status</label>
                         <select
                           className="form-select form-select-sm"
                           name="status"
@@ -901,7 +990,7 @@ const ProductManagement = () => {
                 <div className="modal-body p-4">
                   <div className="mb-3">
                     <label className="form-label small fw-semibold text-secondary">
-                      Unit Purchase Price / Replacement Value ($) <span className="text-danger">*</span>
+                      Unit Purchase Price / Replacement Value ($)
                     </label>
                     <div className="input-group">
                       <span className="input-group-text">$</span>

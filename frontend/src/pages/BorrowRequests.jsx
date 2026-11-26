@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getRequests,
@@ -30,12 +31,20 @@ const STATUS_TABS = [
 
 const BorrowRequests = () => {
   const { user, isStaff, isUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [requests, setRequests] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const qStatus = searchParams.get('status');
+    if (qStatus) {
+      setStatusFilter(qStatus);
+    }
+  }, [searchParams]);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -211,80 +220,75 @@ const BorrowRequests = () => {
       {/* KPI METRIC CARDS */}
       <div className="row g-3 mb-4">
         {/* Total */}
-        <div className="col-6 col-md-3 col-lg">
+        <div className="col-6 col-md-4 col-lg">
           <div
             className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'ALL' ? 'border-primary border' : ''}`}
             onClick={() => setStatusFilter('ALL')}
-            style={{ cursor: 'pointer' }}
           >
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Total Requisitions</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{totalCount}</div>
-              <small className="text-secondary">All historical & active</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Requisitions">Total Requisitions</span>
+              <div className="kpi-value text-dark">{totalCount}</div>
+              <span className="kpi-sub">All historical & active</span>
             </div>
           </div>
         </div>
 
         {/* Pending Review */}
-        <div className="col-6 col-md-3 col-lg">
+        <div className="col-6 col-md-4 col-lg">
           <div
             className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'PENDING' ? 'border-warning border' : ''}`}
             onClick={() => setStatusFilter('PENDING')}
-            style={{ cursor: 'pointer' }}
           >
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Pending Review</span>
-              <div className="fs-4 fw-bold text-warning mt-1">{pendingCount}</div>
-              <small className="text-secondary">Awaiting staff sign-off</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Pending Review">Pending Review</span>
+              <div className="kpi-value text-warning">{pendingCount}</div>
+              <span className="kpi-sub">Awaiting staff sign-off</span>
             </div>
           </div>
         </div>
 
         {/* In Field Active */}
-        <div className="col-6 col-md-3 col-lg">
+        <div className="col-6 col-md-4 col-lg">
           <div
             className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'CHECKED_OUT' ? 'border-primary border' : ''}`}
             onClick={() => setStatusFilter('CHECKED_OUT')}
-            style={{ cursor: 'pointer' }}
           >
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Active in Field</span>
-              <div className="fs-4 fw-bold text-primary mt-1">{inFieldCount}</div>
-              <small className="text-secondary">On loan on production</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Active in Field">Active in Field</span>
+              <div className="kpi-value text-primary">{inFieldCount}</div>
+              <span className="kpi-sub">On loan on production</span>
             </div>
           </div>
         </div>
 
         {/* Overdue */}
-        <div className="col-6 col-md-3 col-lg">
+        <div className="col-6 col-md-6 col-lg">
           <div
             className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'OVERDUE' ? 'border-danger border bg-danger-subtle bg-opacity-10' : ''}`}
             onClick={() => setStatusFilter('OVERDUE')}
-            style={{ cursor: 'pointer' }}
           >
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Overdue Returns</span>
-              <div className={`fs-4 fw-bold mt-1 ${overdueCount > 0 ? 'text-danger' : 'text-muted'}`}>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Overdue Returns">Overdue Returns</span>
+              <div className={`kpi-value ${overdueCount > 0 ? 'text-danger' : 'text-muted'}`}>
                 {overdueCount}
               </div>
-              <small className={overdueCount > 0 ? 'text-danger fw-semibold' : 'text-secondary'}>
+              <span className={`kpi-sub ${overdueCount > 0 ? 'text-danger fw-semibold' : ''}`}>
                 {overdueCount > 0 ? 'Immediate return required' : 'No overdue loans'}
-              </small>
+              </span>
             </div>
           </div>
         </div>
 
         {/* Completed */}
-        <div className="col-6 col-md-3 col-lg">
+        <div className="col-12 col-md-6 col-lg">
           <div
             className={`card border-0 shadow-xs h-100 cursor-pointer transition-all ${statusFilter === 'RETURNED' ? 'border-success border' : ''}`}
             onClick={() => setStatusFilter('RETURNED')}
-            style={{ cursor: 'pointer' }}
           >
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.68rem' }}>Returned & Closed</span>
-              <div className="fs-4 fw-bold text-success mt-1">{returnedCount}</div>
-              <small className="text-secondary">Inspected in vault</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Returned & Closed">Returned & Closed</span>
+              <div className="kpi-value text-success">{returnedCount}</div>
+              <span className="kpi-sub">Inspected in vault</span>
             </div>
           </div>
         </div>
@@ -657,8 +661,10 @@ const BorrowRequests = () => {
                         <img
                           src={item.equipment.imageUrl}
                           alt={item.equipment.name}
+                          referrerPolicy="no-referrer"
                           className="rounded border flex-shrink-0"
                           style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
                         />
                       ) : (
                         <div

@@ -149,8 +149,10 @@ const QRScannerModal = ({ show, onHide, onScanSuccess }) => {
                     <img
                       src={scannedItem.imageUrl}
                       alt={scannedItem.name}
+                      referrerPolicy="no-referrer"
                       className="rounded border object-fit-cover flex-shrink-0"
                       style={{ width: '64px', height: '64px' }}
+                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
                     />
                   ) : (
                     <div className="bg-light rounded border d-flex align-items-center justify-content-center text-muted flex-shrink-0" style={{ width: '64px', height: '64px' }}>

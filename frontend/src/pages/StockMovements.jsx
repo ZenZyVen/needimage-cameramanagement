@@ -216,52 +216,52 @@ const StockMovements = () => {
 
       {/* Metric Cards */}
       <div className="row g-3 mb-4">
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Total Movements</span>
-              <h3 className="fw-bold text-dark mb-0 mt-1">{totalCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>logged transactions</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Movements">Total Movements</span>
+              <div className="kpi-value text-dark">{totalCount}</div>
+              <span className="kpi-sub">logged transactions</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-success border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Restock Intakes</span>
-              <h3 className="fw-bold text-success mb-0 mt-1">{restockCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>stock additions</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Restock Intakes">Restock Intakes</span>
+              <div className="kpi-value text-success">{restockCount}</div>
+              <span className="kpi-sub">stock additions</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-3">
+        <div className="col-6 col-md-4 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-primary border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Check-Out Handovers</span>
-              <h3 className="fw-bold text-primary mb-0 mt-1">{checkoutsCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>dispatched on loan</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Check-Out Handovers">Check-Out Handovers</span>
+              <div className="kpi-value text-primary">{checkoutsCount}</div>
+              <span className="kpi-sub">dispatched on loan</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-3">
+        <div className="col-6 col-md-6 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-info border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Check-In Returns</span>
-              <h3 className="fw-bold text-info mb-0 mt-1">{checkinsCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>returned & verified</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Check-In Returns">Check-In Returns</span>
+              <div className="kpi-value text-info">{checkinsCount}</div>
+              <span className="kpi-sub">returned & verified</span>
             </div>
           </div>
         </div>
 
-        <div className="col-6 col-md-4 col-lg-2">
+        <div className="col-12 col-md-6 col-lg">
           <div className="card border-0 shadow-sm h-100 border-start border-warning border-3">
-            <div className="card-body p-3">
-              <span className="text-muted small d-block">Quarantines</span>
-              <h3 className="fw-bold text-warning mb-0 mt-1">{maintenanceCount}</h3>
-              <span className="text-muted" style={{ fontSize: '0.72rem' }}>service routing</span>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Quarantines">Quarantines</span>
+              <div className="kpi-value text-warning">{maintenanceCount}</div>
+              <span className="kpi-sub">service routing</span>
             </div>
           </div>
         </div>
@@ -494,7 +494,7 @@ const StockMovements = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Select Gear Model <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Select Gear Model</label>
                     <select
                       className="form-select form-select-sm"
                       value={selectedGearId}
@@ -513,7 +513,7 @@ const StockMovements = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Quantity to Add <span className="text-danger">*</span></label>
+                    <label className="form-label small fw-semibold text-secondary">Quantity to Add</label>
                     <input
                       type="number"
                       min="1"

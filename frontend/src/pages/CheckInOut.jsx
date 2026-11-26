@@ -124,7 +124,7 @@ const CheckInOut = () => {
                 onClick={() => setActiveTab('checkout')}
               >
                 <i className="bi bi-box-arrow-right me-2"></i>
-                1. Handover (Checkout) Queue
+                Handover (Checkout) Queue
               </button>
             </li>
             <li className="nav-item">
@@ -134,7 +134,7 @@ const CheckInOut = () => {
                 onClick={() => setActiveTab('checkin')}
               >
                 <i className="bi bi-box-arrow-in-left me-2"></i>
-                2. Return (Check-in & Inspection)
+                Return (Check-in & Inspection)
               </button>
             </li>
             <li className="nav-item">
@@ -144,7 +144,7 @@ const CheckInOut = () => {
                 onClick={() => setActiveTab('history')}
               >
                 <i className="bi bi-clock-history me-2"></i>
-                3. Historical Handover Logs
+                Historical Handover Logs
               </button>
             </li>
           </ul>
@@ -176,7 +176,7 @@ const CheckInOut = () => {
                 <table className="table table-custom">
                   <thead>
                     <tr>
-                      <th>Request #</th>
+                      <th>Request Code</th>
                       <th>Borrower & Department</th>
                       <th>Project Title</th>
                       <th>Scheduled Return</th>
@@ -246,7 +246,7 @@ const CheckInOut = () => {
                 <table className="table table-custom">
                   <thead>
                     <tr>
-                      <th>Request #</th>
+                      <th>Request Code</th>
                       <th>Borrower</th>
                       <th>Project</th>
                       <th>Due Date</th>

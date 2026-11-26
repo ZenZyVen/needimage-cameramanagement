@@ -38,9 +38,21 @@ const EquipmentList = () => {
 
   // Filters
   const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [activeTabFilter, setActiveTabFilter] = useState('ALL'); // 'ALL', 'AVAILABLE', 'BORROWED', 'MAINTENANCE', 'OUT_OF_STOCK', 'ARCHIVED'
-  const [selectedCondition, setSelectedCondition] = useState('ALL');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'ALL');
+  const [activeTabFilter, setActiveTabFilter] = useState(searchParams.get('status') || 'ALL'); // 'ALL', 'AVAILABLE', 'BORROWED', 'UNDER_MAINTENANCE', 'ARCHIVED'
+  const [selectedCondition, setSelectedCondition] = useState(searchParams.get('condition') || 'ALL');
+
+  // Sync URL query params when navigating from Dashboard or global search
+  useEffect(() => {
+    const qStatus = searchParams.get('status');
+    const qCondition = searchParams.get('condition');
+    const qSearch = searchParams.get('search');
+    const qView = searchParams.get('view');
+    if (qStatus) setActiveTabFilter(qStatus);
+    if (qCondition) setSelectedCondition(qCondition);
+    if (qSearch !== null) setSearch(qSearch);
+    if (qView === 'stock-dashboard') setActiveMainView('stock-dashboard');
+  }, [searchParams]);
 
   // Stock Dashboard Data
   const [dashboardTimeframe, setDashboardTimeframe] = useState('monthly');
@@ -212,6 +224,9 @@ const EquipmentList = () => {
       setShowAdjustModal(false);
       setAlertMsg({ type: 'success', text: `Stock adjusted for ${adjustingEquipment.assetTag}.` });
       loadEquipment();
+      if (activeMainView === 'stock-dashboard') {
+        loadStockDashboard();
+      }
     } catch (err) {
       setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to adjust stock.' });
     } finally {
@@ -301,53 +316,65 @@ const EquipmentList = () => {
         </div>
       )}
 
-      {/* KPI Stat Cards (Stock Overview) */}
+      {/* KPI Stat Cards (Stock Overview - Balanced 6-Column Grid) */}
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Total Stock Units</div>
-            <div className="fs-4 fw-bold text-dark">{totalStockUnits}</div>
-            <div className="text-muted" style={{ fontSize: '0.72rem' }}>{equipmentList.length} unique models</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="Total Stock Units">Total Stock Units</div>
+              <div className="kpi-value text-dark">{totalStockUnits}</div>
+              <div className="kpi-sub">{equipmentList.length} unique models</div>
+            </div>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Available in Vault</div>
-            <div className="fs-4 fw-bold text-success">{availableStockUnits}</div>
-            <div className="text-success small" style={{ fontSize: '0.72rem' }}>Ready for dispatch</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="Available in Vault">Available in Vault</div>
+              <div className="kpi-value text-success">{availableStockUnits}</div>
+              <div className="kpi-sub text-success">Ready for dispatch</div>
+            </div>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Borrowed / In Use</div>
-            <div className="fs-4 fw-bold text-warning">{borrowedStockUnits}</div>
-            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>Active on production</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="Borrowed / In Use">Borrowed / In Use</div>
+              <div className="kpi-value text-warning">{borrowedStockUnits}</div>
+              <div className="kpi-sub">Active on production</div>
+            </div>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Maintenance / Damaged</div>
-            <div className="fs-4 fw-bold text-danger">{maintenanceStockUnits}</div>
-            <div className="text-danger small" style={{ fontSize: '0.72rem' }}>Quarantined</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="In Maintenance">In Maintenance</div>
+              <div className="kpi-value text-danger">{maintenanceStockUnits}</div>
+              <div className="kpi-sub text-danger">Quarantined</div>
+            </div>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Out of Stock</div>
-            <div className="fs-4 fw-bold text-secondary">{outOfStockCount}</div>
-            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>0 available</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="Out of Stock">Out of Stock</div>
+              <div className="kpi-value text-secondary">{outOfStockCount}</div>
+              <div className="kpi-sub">0 available</div>
+            </div>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-xl-2">
-          <div className="card border-0 shadow-sm text-center p-3 h-100">
-            <div className="text-muted small mb-1">Inventory Valuation</div>
-            <div className="fs-5 fw-bold text-dark">{formatCurrency(totalValuation)}</div>
-            <div className="text-muted small" style={{ fontSize: '0.72rem' }}>Total asset cost</div>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card text-center">
+              <div className="kpi-label" title="Inventory Valuation">Inventory Valuation</div>
+              <div className="kpi-value text-dark">{formatCurrency(totalValuation)}</div>
+              <div className="kpi-sub">Total asset cost</div>
+            </div>
           </div>
         </div>
       </div>
@@ -361,17 +388,23 @@ const EquipmentList = () => {
               <div className="d-flex align-items-center gap-2 overflow-auto py-1" style={{ whiteSpace: 'nowrap' }}>
                 <button
                   type="button"
-                  className={`btn btn-sm ${selectedCategory === 'ALL' ? 'btn-primary' : 'btn-white border text-secondary'} rounded-pill px-3 py-1`}
+                  className={`btn btn-sm ${selectedCategory === 'ALL' ? 'btn-primary' : 'btn-white bg-white border text-secondary'} rounded-pill px-3 d-inline-flex align-items-center gap-1 flex-shrink-0`}
+                  style={{ height: '34px', minHeight: '34px' }}
                   onClick={() => setSelectedCategory('ALL')}
                 >
-                  <i className="bi bi-grid-fill me-1"></i> All Categories
+                  <i className="bi bi-grid-fill"></i>
+                  <span>All Categories</span>
+                  <span className={`badge rounded-pill ms-1 ${selectedCategory === 'ALL' ? 'bg-white text-primary' : 'bg-light text-muted border'}`} style={{ fontSize: '0.65rem' }}>
+                    {equipmentList.length}
+                  </span>
                 </button>
 
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
-                    className={`btn btn-sm ${selectedCategory === cat.id ? 'btn-primary' : 'btn-white border text-secondary'} rounded-pill px-3 py-1 d-flex align-items-center gap-1`}
+                    className={`btn btn-sm ${selectedCategory === cat.id ? 'btn-primary' : 'btn-white bg-white border text-secondary'} rounded-pill px-3 d-inline-flex align-items-center gap-1 flex-shrink-0`}
+                    style={{ height: '34px', minHeight: '34px' }}
                     onClick={() => setSelectedCategory(cat.id)}
                   >
                     <i className={`bi ${cat.icon || 'bi-camera'}`}></i>
@@ -387,12 +420,12 @@ const EquipmentList = () => {
             </div>
           </div>
 
-          {/* Filter & Search Bar */}
+          {/* Filter & Search Bar (Balanced Single-Row Alignment) */}
           <div className="card mb-4 border-0 shadow-sm">
             <div className="card-body p-3">
               <div className="row g-2 align-items-center">
                 {/* Search */}
-                <div className="col-md-4">
+                <div className="col-12 col-lg-4">
                   <div className="input-group input-group-sm">
                     <span className="input-group-text bg-white border-end-0">
                       <i className="bi bi-search text-muted"></i>
@@ -404,24 +437,33 @@ const EquipmentList = () => {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                     />
+                    {search && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setSearch('')}
+                      >
+                        <i className="bi bi-x"></i>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Stock Status Pills */}
-                <div className="col-md-5">
-                  <div className="d-flex flex-wrap gap-1">
+                <div className="col-12 col-lg-5">
+                  <div className="d-flex align-items-center gap-1 overflow-auto" style={{ whiteSpace: 'nowrap' }}>
                     {[
                       { key: 'ALL', label: 'All Stock' },
                       { key: 'AVAILABLE', label: 'Available' },
                       { key: 'BORROWED', label: 'Borrowed' },
                       { key: 'UNDER_MAINTENANCE', label: 'Maintenance' },
-                      { key: 'ARCHIVED', label: 'Archived / Deleted' }
+                      { key: 'ARCHIVED', label: 'Archived' }
                     ].map((tab) => (
                       <button
                         key={tab.key}
                         type="button"
-                        className={`btn btn-sm py-1 px-2 ${activeTabFilter === tab.key ? 'btn-dark' : 'btn-outline-secondary'}`}
-                        style={{ fontSize: '0.76rem' }}
+                        className={`btn btn-sm px-2.5 flex-shrink-0 ${activeTabFilter === tab.key ? 'btn-dark' : 'btn-outline-secondary'}`}
+                        style={{ fontSize: '0.76rem', height: '36px', minHeight: '36px' }}
                         onClick={() => setActiveTabFilter(tab.key)}
                       >
                         {tab.label}
@@ -431,10 +473,10 @@ const EquipmentList = () => {
                 </div>
 
                 {/* Condition Filter & View Toggle */}
-                <div className="col-md-3 d-flex justify-content-md-end align-items-center gap-2">
+                <div className="col-12 col-lg-3 d-flex justify-content-lg-end align-items-center gap-2">
                   <select
-                    className="form-select form-select-sm"
-                    style={{ width: '130px' }}
+                    className="form-select form-select-sm flex-fill"
+                    style={{ maxWidth: '175px', height: '36px' }}
                     value={selectedCondition}
                     onChange={(e) => setSelectedCondition(e.target.value)}
                   >
@@ -445,10 +487,11 @@ const EquipmentList = () => {
                     <option value="DAMAGED">Damaged</option>
                   </select>
 
-                  <div className="btn-group btn-group-sm">
+                  <div className="btn-group btn-group-sm flex-shrink-0">
                     <button
                       type="button"
                       className={`btn ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      style={{ height: '36px', minHeight: '36px', width: '36px', padding: 0 }}
                       onClick={() => setViewMode('grid')}
                       title="Grid View"
                     >
@@ -457,6 +500,7 @@ const EquipmentList = () => {
                     <button
                       type="button"
                       className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      style={{ height: '36px', minHeight: '36px', width: '36px', padding: 0 }}
                       onClick={() => setViewMode('table')}
                       title="Table View"
                     >
@@ -571,13 +615,22 @@ const EquipmentList = () => {
                           </td>
                           <td>
                             <div className="d-flex align-items-center gap-2">
-                              {eq.imageUrl && (
+                              {eq.imageUrl ? (
                                 <img
                                   src={eq.imageUrl}
                                   alt=""
-                                  className="rounded border"
-                                  style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                                  referrerPolicy="no-referrer"
+                                  className="rounded border bg-light flex-shrink-0"
+                                  style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
                                 />
+                              ) : (
+                                <div
+                                  className="rounded border bg-light d-flex align-items-center justify-content-center text-muted flex-shrink-0"
+                                  style={{ width: '36px', height: '36px' }}
+                                >
+                                  <i className="bi bi-camera"></i>
+                                </div>
                               )}
                               <div>
                                 <span

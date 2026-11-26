@@ -7,6 +7,7 @@ const users = [
   {
     id: 'user-admin-1',
     name: 'Sarah Connor',
+    username: 'admin',
     email: 'admin@cameragear.com',
     password: passwordHash,
     role: 'ADMIN',
@@ -21,6 +22,7 @@ const users = [
   {
     id: 'user-stock-1',
     name: 'Marcus Vance',
+    username: 'stock',
     email: 'stock@cameragear.com',
     password: passwordHash,
     role: 'STOCK_CONTROLLER',
@@ -35,6 +37,7 @@ const users = [
   {
     id: 'user-normal-1',
     name: 'David Kim',
+    username: 'user',
     email: 'user@cameragear.com',
     password: passwordHash,
     role: 'USER',
@@ -49,6 +52,7 @@ const users = [
   {
     id: 'user-normal-2',
     name: 'Elena Rostova',
+    username: 'elena',
     email: 'elena@cameragear.com',
     password: passwordHash,
     role: 'USER',
@@ -921,7 +925,11 @@ function filterCollection(collection, where = {}) {
 const mockStore = {
   user: {
     findMany: async ({ where } = {}) => filterCollection(users, where),
-    findUnique: async ({ where } = {}) => users.find(u => (where.id && u.id === where.id) || (where.email && u.email.toLowerCase() === where.email.toLowerCase())),
+    findUnique: async ({ where } = {}) => users.find(u =>
+      (where.id && u.id === where.id) ||
+      (where.username && u.username && u.username.toLowerCase() === where.username.toLowerCase()) ||
+      (where.email && u.email && u.email.toLowerCase() === where.email.toLowerCase())
+    ),
     findFirst: async ({ where } = {}) => filterCollection(users, where)[0] || null,
     count: async ({ where } = {}) => filterCollection(users, where).length,
     create: async ({ data }) => {

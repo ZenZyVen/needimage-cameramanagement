@@ -135,32 +135,40 @@ const Maintenance = () => {
 
       {/* Summary KPI Cards */}
       <div className="row g-3 mb-4">
-        <div className="col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm p-3">
-            <span className="small text-muted fw-semibold">Active Service Tickets</span>
-            <div className="fs-3 fw-bold text-danger mt-1">{activeCount}</div>
-            <span className="small text-muted" style={{ fontSize: '0.72rem' }}>Currently quarantined or in repair</span>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Active Service Tickets">Active Service Tickets</span>
+              <div className="kpi-value text-danger">{activeCount}</div>
+              <span className="kpi-sub">Quarantined or in repair</span>
+            </div>
           </div>
         </div>
-        <div className="col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm p-3">
-            <span className="small text-muted fw-semibold">Resolved & Repaired</span>
-            <div className="fs-3 fw-bold text-success mt-1">{resolvedCount}</div>
-            <span className="small text-muted" style={{ fontSize: '0.72rem' }}>Restored back to available stock</span>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Resolved & Repaired">Resolved & Repaired</span>
+              <div className="kpi-value text-success">{resolvedCount}</div>
+              <span className="kpi-sub">Restored to available stock</span>
+            </div>
           </div>
         </div>
-        <div className="col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm p-3">
-            <span className="small text-muted fw-semibold">Decommissioned</span>
-            <div className="fs-3 fw-bold text-secondary mt-1">{decommissionedCount}</div>
-            <span className="small text-muted" style={{ fontSize: '0.72rem' }}>Permanently written off gear</span>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Decommissioned">Decommissioned</span>
+              <div className="kpi-value text-secondary">{decommissionedCount}</div>
+              <span className="kpi-sub">Permanently written off</span>
+            </div>
           </div>
         </div>
-        <div className="col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm p-3">
-            <span className="small text-muted fw-semibold">Total Repair Expenditure</span>
-            <div className="fs-3 fw-bold text-dark mt-1">{formatCurrency(totalCost)}</div>
-            <span className="small text-muted" style={{ fontSize: '0.72rem' }}>Recorded parts and labor costs</span>
+        <div className="col-6 col-lg-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Repair Expenditure">Total Repair Expenditure</span>
+              <div className="kpi-value text-dark">{formatCurrency(totalCost)}</div>
+              <span className="kpi-sub">Recorded parts & labor</span>
+            </div>
           </div>
         </div>
       </div>
@@ -286,7 +294,7 @@ const Maintenance = () => {
             <table className="table table-custom align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Ticket #</th>
+                  <th>Ticket Code</th>
                   <th>Equipment Item</th>
                   <th>Category & Issue Details</th>
                   <th>Severity</th>

@@ -241,7 +241,14 @@ const Profile = () => {
               </div>
 
               <div>
-                <h5 className="fw-bold text-dark mb-0">{user?.name}</h5>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <h5 className="fw-bold text-dark mb-0">{user?.name}</h5>
+                  {user?.username && (
+                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style={{ fontSize: '0.75rem' }}>
+                      @{user.username}
+                    </span>
+                  )}
+                </div>
                 <div className="text-muted small">{user?.email}</div>
                 <div className="mt-1 d-flex gap-2">
                   <span className="badge bg-slate-900 text-white">{user?.role}</span>

@@ -120,7 +120,7 @@ const MaintenanceResolveModal = ({ show, onHide, ticket, onResolve }) => {
               {/* Technical Notes */}
               <div className="mb-0">
                 <label className="form-label">
-                  Resolution & Technical Service Notes <span className="required-star">*</span>
+                  Resolution & Technical Service Notes
                 </label>
                 <textarea
                   className="form-control"

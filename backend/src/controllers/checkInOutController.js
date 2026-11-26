@@ -25,7 +25,10 @@ exports.checkoutItems = async (req, res, next) => {
     if (requestId) {
       request = await prisma.borrowRequest.findUnique({
         where: { id: requestId },
-        include: { items: true, user: true }
+        include: {
+          items: true,
+          user: { select: { id: true, name: true, email: true, department: true, phone: true } }
+        }
       });
 
       if (!request) {
@@ -182,7 +185,10 @@ exports.checkinItems = async (req, res, next) => {
     if (requestId) {
       request = await prisma.borrowRequest.findUnique({
         where: { id: requestId },
-        include: { items: true, user: true }
+        include: {
+          items: true,
+          user: { select: { id: true, name: true, email: true, department: true, phone: true } }
+        }
       });
     }
 
@@ -373,14 +379,19 @@ exports.checkinItems = async (req, res, next) => {
 exports.getHistory = async (req, res, next) => {
   try {
     const { type, equipmentId, requestId, page = 1, limit = 50 } = req.query;
+    const isStaff = ['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER'].includes(req.user.role);
 
     const where = {};
     if (type && type !== 'ALL') where.type = type;
     if (equipmentId) where.equipmentId = equipmentId;
     if (requestId) where.requestId = requestId;
+    if (!isStaff) {
+      where.request = { userId: req.user.id };
+    }
 
-    const take = parseInt(limit, 10);
-    const skip = (parseInt(page, 10) - 1) * take;
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const take = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (safePage - 1) * take;
 
     const [total, records] = await Promise.all([
       prisma.checkInOut.count({ where }),

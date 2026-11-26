@@ -23,26 +23,47 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security Headers
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+      connectSrc: ["'self'", "https:", "http:"],
+      mediaSrc: ["'self'", "blob:", "mediastream:"],
+      workerSrc: ["'self'", "blob:"]
+    }
+  }
 }));
 
 // CORS Configuration
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.CLIENT_URL
-].filter(Boolean);
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : []),
+  process.env.RENDER_EXTERNAL_URL,
+  process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null,
+  process.env.KOYEB_PUBLIC_DOMAIN ? `https://${process.env.KOYEB_PUBLIC_DOMAIN}` : null
+]
+  .filter(Boolean)
+  .map(origin => origin.trim().replace(/\/+$/, ''));
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps, curl, or same-origin)
+    // Allow requests with no origin (mobile apps, curl, server-to-server, or same-origin)
     if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in deployment or can be restricted
+    return callback(new Error('Origin not allowed by CORS policy'), false);
   },
   credentials: true
 }));
@@ -56,10 +77,29 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Static folder for uploaded equipment images
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static folder for uploaded equipment images (sandboxed against script execution)
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
-// Rate Limiter
+// Strict Rate Limiter for Authentication Endpoints (Brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 25, // Limit each IP to 25 failed auth attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many failed authentication attempts from this IP, please try again after 15 minutes.'
+  }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// General API Rate Limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per windowMs

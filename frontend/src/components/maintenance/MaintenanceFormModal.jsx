@@ -179,7 +179,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
               {/* SECTION 1: EQUIPMENT SELECTOR */}
               <div className="form-section-card">
                 <div className="form-section-title d-flex justify-content-between align-items-center">
-                  <span><i className="bi bi-camera text-primary me-1"></i> 1. Select Equipment</span>
+                  <span><i className="bi bi-camera text-primary me-1"></i> Select Equipment</span>
                   {selectedEquipment && !equipmentItem && (
                     <button
                       type="button"
@@ -306,12 +306,12 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
               {/* SECTION 2: DEFECT CATEGORY & SEVERITY */}
               <div className="form-section-card">
                 <div className="form-section-title">
-                  <i className="bi bi-exclamation-triangle text-warning me-1"></i> 2. Damage Classification & Severity
+                  <i className="bi bi-exclamation-triangle text-warning me-1"></i> Damage Classification & Severity
                 </div>
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>
-                      Damage / Maintenance Category <span className="required-star">*</span>
+                      Damage / Maintenance Category
                     </label>
                     <select
                       className="form-select form-select-sm"
@@ -328,7 +328,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
 
                   <div className="col-md-6">
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>
-                      Priority / Severity Level <span className="required-star">*</span>
+                      Priority / Severity Level
                     </label>
                     <select
                       className="form-select form-select-sm"
@@ -345,7 +345,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
 
                   <div className="col-12">
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>
-                      Issue Summary Title <span className="required-star">*</span>
+                      Issue Summary Title
                     </label>
                     <input
                       type="text"
@@ -360,7 +360,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
 
                   <div className="col-12">
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>
-                      Detailed Problem Description <span className="required-star">*</span>
+                      Detailed Problem Description
                     </label>
                     <textarea
                       className="form-control form-control-sm"
@@ -378,7 +378,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
               {/* SECTION 3: DAMAGE PHOTO UPLOAD */}
               <div className="form-section-card">
                 <div className="form-section-title">
-                  <i className="bi bi-image text-primary me-1"></i> 3. Damage Photo Evidence
+                  <i className="bi bi-image text-primary me-1"></i> Damage Photo Evidence
                 </div>
                 <div className="row g-3 align-items-center">
                   <div className="col-md-8">
@@ -431,7 +431,7 @@ const MaintenanceFormModal = ({ show, onHide, onSubmit, equipmentItem = null }) 
               {/* SECTION 4: TECHNICIAN & REPAIR COSTS */}
               <div className="form-section-card mb-0">
                 <div className="form-section-title">
-                  <i className="bi bi-wrench text-primary me-1"></i> 4. Technician Assignment & Cost Estimation
+                  <i className="bi bi-wrench text-primary me-1"></i> Technician Assignment & Cost Estimation
                 </div>
                 <div className="row g-3">
                   <div className="col-md-6">

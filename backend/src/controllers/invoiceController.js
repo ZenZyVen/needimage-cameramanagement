@@ -160,7 +160,7 @@ exports.createInvoice = async (req, res, next) => {
         notes: notes ? notes.trim() : null
       },
       include: {
-        user: true,
+        user: { select: { id: true, name: true, email: true, department: true, phone: true } },
         project: true,
         request: true
       }

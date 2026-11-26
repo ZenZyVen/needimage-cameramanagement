@@ -34,10 +34,30 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  // Upload / CORS validation errors
+  if (err.message && (err.message.includes('Only valid image files') || err.message.includes('Invalid file name'))) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  if (err.message === 'Origin not allowed by CORS policy') {
+    return res.status(403).json({
+      success: false,
+      message: 'CORS policy: Origin not allowed.'
+    });
+  }
+
   const statusCode = err.statusCode || 500;
+  // Do not leak internal database/system error messages on 500 responses
+  const safeMessage = statusCode === 500
+    ? 'An unexpected internal server error occurred.'
+    : (err.message || 'Request could not be processed.');
+
   return res.status(statusCode).json({
     success: false,
-    message: err.message || 'An unexpected internal server error occurred.'
+    message: safeMessage
   });
 }
 

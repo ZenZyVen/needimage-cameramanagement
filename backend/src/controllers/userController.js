@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
+const { invalidateUserCache } = require('../middlewares/authMiddleware');
 
 // 1. Get all users (Admin only)
 exports.getAllUsers = async (req, res, next) => {
@@ -13,6 +14,7 @@ exports.getAllUsers = async (req, res, next) => {
       const q = search.trim();
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
+        { username: { contains: q, mode: 'insensitive' } },
         { email: { contains: q, mode: 'insensitive' } },
         { department: { contains: q, mode: 'insensitive' } }
       ];
@@ -24,6 +26,7 @@ exports.getAllUsers = async (req, res, next) => {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         role: true,
         department: true,
@@ -56,23 +59,60 @@ exports.getAllUsers = async (req, res, next) => {
   }
 };
 
+const VALID_ROLES = new Set(['ADMIN', 'STOCK_MANAGEMENT', 'STOCK_CONTROLLER', 'USER']);
+const USERNAME_REGEX = /^[a-z0-9._-]{3,30}$/;
+
 // 2. Create user (Admin only)
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, email, password, role = 'USER', department, phone, roleNote } = req.body;
+    const { name, username, email, password, role = 'USER', department, phone, roleNote } = req.body;
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedUsername || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required.'
+        message: 'Name, username, email, and password are required.'
       });
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+    if (!USERNAME_REGEX.test(normalizedUsername)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or hyphens.'
+      });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.'
+      });
+    }
+
+    if (!VALID_ROLES.has(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user role specified.'
+      });
+    }
+
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: normalizedUsername }
     });
 
-    if (existing) {
+    if (existingUsername) {
+      return res.status(409).json({
+        success: false,
+        message: 'This username is already taken.'
+      });
+    }
+
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
         message: 'A user with this email address already exists.'
@@ -84,7 +124,8 @@ exports.createUser = async (req, res, next) => {
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        username: normalizedUsername,
+        email: normalizedEmail,
         password: hashedPassword,
         role,
         department: department ? department.trim() : null,
@@ -95,6 +136,7 @@ exports.createUser = async (req, res, next) => {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         role: true,
         department: true,
@@ -112,7 +154,7 @@ exports.createUser = async (req, res, next) => {
       action: 'ADMIN_CREATE_USER',
       entity: 'User',
       entityId: user.id,
-      details: { email: user.email, role: user.role },
+      details: { username: user.username, email: user.email, role: user.role },
       req
     });
 
@@ -130,14 +172,14 @@ exports.createUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, role, department, phone, isActive, password, roleNote } = req.body;
+    const { name, username, role, department, phone, isActive, password, roleNote } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // Prevent deactivating own account
+    // Prevent deactivating or demoting own admin account
     if (id === req.user.id && isActive === false) {
       return res.status(400).json({
         success: false,
@@ -145,8 +187,41 @@ exports.updateUser = async (req, res, next) => {
       });
     }
 
+    if (id === req.user.id && role && role !== 'ADMIN') {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot demote your own admin role.'
+      });
+    }
+
+    if (role && !VALID_ROLES.has(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user role specified.'
+      });
+    }
+
     const dataToUpdate = {};
     if (name) dataToUpdate.name = name.trim();
+    if (username !== undefined && String(username).trim() !== '') {
+      const normalizedUsername = String(username).trim().toLowerCase();
+      if (!USERNAME_REGEX.test(normalizedUsername)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or hyphens.'
+        });
+      }
+      if (normalizedUsername !== existing.username) {
+        const conflict = await prisma.user.findUnique({ where: { username: normalizedUsername } });
+        if (conflict && conflict.id !== id) {
+          return res.status(409).json({
+            success: false,
+            message: 'This username is already taken by another user.'
+          });
+        }
+        dataToUpdate.username = normalizedUsername;
+      }
+    }
     if (role) dataToUpdate.role = role;
     if (department !== undefined) dataToUpdate.department = department ? department.trim() : null;
     if (phone !== undefined) dataToUpdate.phone = phone ? phone.trim() : null;
@@ -154,6 +229,12 @@ exports.updateUser = async (req, res, next) => {
     if (roleNote !== undefined) dataToUpdate.avatar = roleNote ? roleNote.trim() : null;
 
     if (password && password.trim() !== '') {
+      if (password.trim().length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long.'
+        });
+      }
       dataToUpdate.password = await bcrypt.hash(password.trim(), 10);
     }
 
@@ -163,6 +244,7 @@ exports.updateUser = async (req, res, next) => {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         role: true,
         department: true,
@@ -175,12 +257,14 @@ exports.updateUser = async (req, res, next) => {
       }
     });
 
+    invalidateUserCache(id);
+
     await logAudit({
       userId: req.user.id,
       action: 'ADMIN_UPDATE_USER',
       entity: 'User',
       entityId: id,
-      details: { email: updated.email, role: updated.role, isActive: updated.isActive },
+      details: { username: updated.username, email: updated.email, role: updated.role, isActive: updated.isActive },
       req
     });
 
@@ -227,6 +311,7 @@ exports.deleteUser = async (req, res, next) => {
     }
 
     await prisma.user.delete({ where: { id } });
+    invalidateUserCache(id);
 
     await logAudit({
       userId: req.user.id,

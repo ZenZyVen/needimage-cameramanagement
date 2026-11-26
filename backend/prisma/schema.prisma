@@ -97,6 +97,7 @@ enum NotificationType {
 model User {
   id               String          @id @default(uuid())
   name             String
+  username         String          @unique
   email            String          @unique
   password         String
   role             Role            @default(USER)
@@ -120,6 +121,7 @@ model User {
   invoices         Invoice[]       @relation("UserInvoices")
   issuedInvoices   Invoice[]       @relation("IssuedInvoices")
 
+  @@index([username])
   @@index([email])
   @@index([role])
   @@index([isActive])

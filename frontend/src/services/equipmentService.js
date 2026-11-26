@@ -1,6 +1,7 @@
 import api from './api';
 
 export const getEquipment = (params) => api.get('/equipment', { params });
+export const getNextEquipmentCodes = () => api.get('/equipment/next-codes');
 export const getEquipmentById = (id) => api.get(`/equipment/${id}`);
 export const lookupEquipment = (code) => api.get(`/equipment/lookup/${encodeURIComponent(code)}`);
 export const getStockDashboard = (params) => api.get('/equipment/stock-dashboard', { params });
@@ -25,6 +26,7 @@ export const uploadEquipmentImage = (file) => {
 
 export default {
   getEquipment,
+  getNextEquipmentCodes,
   getEquipmentById,
   lookupEquipment,
   getStockDashboard,

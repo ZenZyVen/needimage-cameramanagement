@@ -53,6 +53,13 @@ const AppLayout = () => {
 
   return (
     <div className="app-container">
+      {sidebarOpen && (
+        <div
+          className="sidebar-backdrop d-lg-none no-print"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
         <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />

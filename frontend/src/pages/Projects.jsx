@@ -241,6 +241,7 @@ const Projects = () => {
         show={showCrewModal}
         onHide={() => setShowCrewModal(false)}
         project={crewProject}
+        onCrewUpdated={loadProjects}
       />
 
       {/* Project Detail Modal */}
@@ -299,6 +300,41 @@ const Projects = () => {
                       <div className="p-3 border rounded bg-white mb-4">
                         <span className="text-muted small text-uppercase fw-semibold d-block mb-1">Notes</span>
                         <p className="small text-secondary mb-0">{selectedProject.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Assigned Crew Roster */}
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h6 className="fw-bold text-secondary small text-uppercase mb-0">
+                        Assigned Production Crew ({selectedProject.crew?.length || 0})
+                      </h6>
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-outline-primary"
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          setCrewProject(selectedProject);
+                          setShowCrewModal(true);
+                        }}
+                      >
+                        <i className="bi bi-people me-1"></i> Manage Crew & Roles
+                      </button>
+                    </div>
+
+                    {!selectedProject.crew?.length ? (
+                      <div className="p-3 border rounded bg-light text-center text-muted small mb-4">
+                        No crew members assigned yet.
+                      </div>
+                    ) : (
+                      <div className="d-flex flex-wrap gap-2 mb-4">
+                        {selectedProject.crew.map((c) => (
+                          <div key={c.id} className="p-2 border rounded bg-white d-inline-flex align-items-center gap-2 shadow-xs">
+                            <span className="fw-bold text-dark small">{c.name}</span>
+                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle" style={{ fontSize: '0.68rem' }}>
+                              {c.role}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     )}
 

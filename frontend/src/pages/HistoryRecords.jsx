@@ -31,8 +31,10 @@ const HistoryRecords = () => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (isAdmin) {
+      loadUsers();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     loadRecords();
@@ -146,13 +148,13 @@ const HistoryRecords = () => {
     const action = (rec.action || '').toUpperCase();
 
     if (action === 'CREATE_REQUEST') {
-      return `Submitted borrow request #${details.requestNumber || rec.entityId || ''} (${details.itemsCount || 1} item(s))`;
+      return `Submitted borrow request ${details.requestNumber || ''} (${details.itemsCount || 1} item(s))`;
     }
     if (action === 'APPROVE_REQUEST') {
-      return `Approved borrow requisition #${details.requestNumber || rec.entityId || ''}`;
+      return `Approved borrow requisition ${details.requestNumber || ''}`;
     }
     if (action === 'REJECT_REQUEST') {
-      return `Rejected requisition #${details.requestNumber || rec.entityId || ''}: "${details.reason || 'Not approved'}"`;
+      return `Rejected requisition ${details.requestNumber || ''}: "${details.reason || 'Not approved'}"`;
     }
     if (action === 'CHECK_OUT') {
       return `Handed over ${details.itemsCount || 1} item(s) to ${details.borrower || 'crew lead'}`;
@@ -161,18 +163,18 @@ const HistoryRecords = () => {
       return `Verified return inspection of ${details.itemsCount || 1} item(s) from ${details.borrower || 'crew lead'}`;
     }
     if (action === 'RESTOCK_EQUIPMENT') {
-      return `Restocked +${details.delta || ''} units of [${details.assetTag || ''}] ${details.name || ''} (New Avail: ${details.newAvailable || ''})`;
+      return `Restocked +${details.delta || ''} units of ${details.assetTag || ''} ${details.name || ''} (New Avail: ${details.newAvailable || ''})`;
     }
     if (action === 'REDUCE_STOCK') {
-      return `Deducted ${details.delta || ''} units of [${details.assetTag || ''}] ${details.name || ''}`;
+      return `Deducted ${details.delta || ''} units of ${details.assetTag || ''} ${details.name || ''}`;
     }
     if (action === 'UPDATE_EQUIPMENT') {
-      return `Updated equipment records for [${details.assetTag || ''}] ${details.name || ''}`;
+      return `Updated equipment records for ${details.assetTag || ''} ${details.name || ''}`;
     }
     if (action.includes('PROJECT')) {
-      return `${action.replace(/_/g, ' ')} for project "${details.title || rec.entityId || ''}"`;
+      return `${action.replace(/_/g, ' ')} for project "${details.title || ''}"`;
     }
-    return `${action.replace(/_/g, ' ')} on ${rec.entity || 'System'} #${rec.entityId || ''}`;
+    return `${action.replace(/_/g, ' ')} on ${rec.entity || 'System'}`;
   };
 
   // CSV Export
@@ -253,43 +255,43 @@ const HistoryRecords = () => {
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Total Records</span>
-              <div className="fs-4 fw-bold text-dark mt-1">{records.length}</div>
-              <small className="text-secondary">Historical entries stored</small>
+            <div className="kpi-card">
+              <span className="kpi-label" title="Total Records">Total Records</span>
+              <div className="kpi-value text-dark">{records.length}</div>
+              <span className="kpi-sub">Historical entries stored</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Loans & Handovers</span>
-              <div className="fs-4 fw-bold text-primary mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Loans & Handovers">Loans & Handovers</span>
+              <div className="kpi-value text-primary">
                 {records.filter(r => matchesTab(r, 'BORROW') || matchesTab(r, 'RETURN')).length}
               </div>
-              <small className="text-secondary">Borrow & return events</small>
+              <span className="kpi-sub">Borrow & return events</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Stock Adjustments</span>
-              <div className="fs-4 fw-bold text-success mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Stock Adjustments">Stock Adjustments</span>
+              <div className="kpi-value text-success">
                 {records.filter(r => matchesTab(r, 'STOCK')).length}
               </div>
-              <small className="text-secondary">Restocks and deductions</small>
+              <span className="kpi-sub">Restocks & deductions</span>
             </div>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-3">
-              <span className="text-muted small fw-semibold text-uppercase">Approvals & Reviews</span>
-              <div className="fs-4 fw-bold text-dark mt-1">
+            <div className="kpi-card">
+              <span className="kpi-label" title="Approvals & Reviews">Approvals & Reviews</span>
+              <div className="kpi-value text-dark">
                 {records.filter(r => matchesTab(r, 'APPROVAL')).length}
               </div>
-              <small className="text-secondary">Admin review decisions</small>
+              <span className="kpi-sub">Admin review decisions</span>
             </div>
           </div>
         </div>
@@ -343,19 +345,21 @@ const HistoryRecords = () => {
               </div>
             </div>
 
-            {/* User Filter */}
-            <div className="col-md-3">
-              <select
-                className="form-select form-select-sm"
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-              >
-                <option value="ALL">All Team Members</option>
-                {usersList.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                ))}
-              </select>
-            </div>
+            {/* User Filter (Admin only) */}
+            {isAdmin && (
+              <div className="col-md-3">
+                <select
+                  className="form-select form-select-sm"
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                >
+                  <option value="ALL">All Team Members</option>
+                  {usersList.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Date Range & Presets */}
             <div className="col-md-5 d-flex align-items-center gap-1">
@@ -445,8 +449,8 @@ const HistoryRecords = () => {
 
                         <td className="small text-dark">
                           <div>{getRecordDescription(rec)}</div>
-                          <div className="text-muted font-monospace" style={{ fontSize: '0.7rem' }}>
-                            Entity: {rec.entity} {rec.entityId ? `#${rec.entityId}` : ''}
+                          <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                            Module: {rec.entity}
                           </div>
                         </td>
 
@@ -481,7 +485,7 @@ const HistoryRecords = () => {
               <div className="modal-header py-2 px-3 bg-light border-bottom">
                 <h6 className="modal-title fw-bold text-dark mb-0">
                   <i className="bi bi-clock-history text-primary me-2"></i>
-                  Historical Audit Record #{selectedRecord.id}
+                  Historical Audit Record Details
                 </h6>
                 <button
                   type="button"
@@ -514,8 +518,8 @@ const HistoryRecords = () => {
                   </div>
                   <div className="col-md-6">
                     <div className="p-2 border rounded">
-                      <span className="text-muted small">Target Entity:</span>
-                      <div className="fw-bold text-dark small">{selectedRecord.entity} #{selectedRecord.entityId || 'N/A'}</div>
+                      <span className="text-muted small">Target Module:</span>
+                      <div className="fw-bold text-dark small">{selectedRecord.entity}</div>
                       <div className="text-muted small">IP: {selectedRecord.ipAddress || '127.0.0.1'}</div>
                     </div>
                   </div>

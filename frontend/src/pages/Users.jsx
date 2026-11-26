@@ -15,6 +15,7 @@ const Users = () => {
 
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     role: 'USER',
@@ -52,11 +53,15 @@ const Users = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await createUser(formData);
-      setAlertMsg({ type: 'success', text: `User "${formData.name}" created successfully.` });
+      await createUser({
+        ...formData,
+        username: formData.username.trim().toLowerCase()
+      });
+      setAlertMsg({ type: 'success', text: `User "${formData.name}" (@${formData.username.trim().toLowerCase()}) created successfully.` });
       setShowCreateModal(false);
       setFormData({
         name: '',
+        username: '',
         email: '',
         password: '',
         role: 'USER',
@@ -76,14 +81,19 @@ const Users = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await updateUser(editingUser.id, {
+      const payload = {
         name: editingUser.name,
+        username: editingUser.username?.trim().toLowerCase(),
         role: editingUser.role,
         roleNote: editingUser.roleNote,
         department: editingUser.department,
         phone: editingUser.phone,
         isActive: editingUser.isActive
-      });
+      };
+      if (editingUser.password && editingUser.password.trim() !== '') {
+        payload.password = editingUser.password.trim();
+      }
+      await updateUser(editingUser.id, payload);
       setAlertMsg({ type: 'success', text: `User "${editingUser.name}" updated successfully.` });
       setShowEditModal(false);
       loadUsers();
@@ -91,16 +101,6 @@ const Users = () => {
       setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error updating user.' });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleQuickRoleChange = async (userId, newRole, userName) => {
-    try {
-      await updateUser(userId, { role: newRole });
-      setAlertMsg({ type: 'success', text: `Role for "${userName}" updated to ${newRole}.` });
-      loadUsers();
-    } catch (err) {
-      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to update role.' });
     }
   };
 
@@ -166,7 +166,7 @@ const Users = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search users..."
+                  placeholder="Search by name, username, email, or department..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -224,25 +224,17 @@ const Users = () => {
                 {users.map(u => (
                   <tr key={u.id}>
                     <td>
-                      <div className="fw-bold text-dark">{u.name}</div>
+                      <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <span className="fw-bold text-dark">{u.name}</span>
+                        {u.username && (
+                          <span className="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style={{ fontSize: '0.72rem' }}>
+                            @{u.username}
+                          </span>
+                        )}
+                      </div>
                       <div className="small text-muted">{u.email}</div>
                     </td>
-                    <td>
-                      <div className="d-flex align-items-center gap-1">
-                        {getRoleBadge(u.role)}
-                        <select
-                          className="form-select form-select-sm py-0 px-1 border-0 bg-transparent text-secondary"
-                          style={{ width: '22px', cursor: 'pointer' }}
-                          title="Change Role"
-                          value={u.role}
-                          onChange={(e) => handleQuickRoleChange(u.id, e.target.value, u.name)}
-                        >
-                          <option value="USER">Normal User</option>
-                          <option value="STOCK_MANAGEMENT">Stock Management</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
-                      </div>
-                    </td>
+                    <td>{getRoleBadge(u.role)}</td>
                     <td>
                       <div className="small text-dark fw-medium" style={{ fontSize: '0.82rem' }}>
                         {u.roleNote || <span className="text-muted fst-italic">No role note</span>}
@@ -325,7 +317,7 @@ const Users = () => {
                     </div>
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label">Full Name <span className="required-star">*</span></label>
+                        <label className="form-label">Full Name</label>
                         <input
                           type="text"
                           className="form-control"
@@ -336,7 +328,26 @@ const Users = () => {
                         />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label">Email Address <span className="required-star">*</span></label>
+                        <label className="form-label">Username (for Login)</label>
+                        <div className="input-group">
+                          <span className="input-group-text"><i className="bi bi-at"></i></span>
+                          <input
+                            type="text"
+                            className="form-control font-monospace"
+                            placeholder="username"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                            value={formData.username}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+                            })}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">Email Address</label>
                         <input
                           type="email"
                           className="form-control"
@@ -347,11 +358,11 @@ const Users = () => {
                         />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label">Initial Password <span className="required-star">*</span></label>
+                        <label className="form-label">Initial Password</label>
                         <input
                           type="password"
                           className="form-control"
-                          placeholder="Temporary Password"
+                          placeholder="Temporary Password (min 6 chars)"
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                           required
@@ -376,7 +387,7 @@ const Users = () => {
                     </div>
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label">System Role <span className="required-star">*</span></label>
+                        <label className="form-label">System Role</label>
                         <select
                           className="form-select"
                           value={formData.role}
@@ -455,7 +466,7 @@ const Users = () => {
                     </div>
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label">Full Name <span className="required-star">*</span></label>
+                        <label className="form-label">Full Name</label>
                         <input
                           type="text"
                           className="form-control"
@@ -463,6 +474,24 @@ const Users = () => {
                           onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
                           required
                         />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">Username (for Login)</label>
+                        <div className="input-group">
+                          <span className="input-group-text"><i className="bi bi-at"></i></span>
+                          <input
+                            type="text"
+                            className="form-control font-monospace"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                            value={editingUser.username || ''}
+                            onChange={(e) => setEditingUser({
+                              ...editingUser,
+                              username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+                            })}
+                            required
+                          />
+                        </div>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Account Status</label>
@@ -504,7 +533,7 @@ const Users = () => {
                     </div>
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label">System Role <span className="required-star">*</span></label>
+                        <label className="form-label">System Role</label>
                         <select
                           className="form-select"
                           value={editingUser.role}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { uploadEquipmentImage } from '../../services/equipmentService';
+import { uploadEquipmentImage, getNextEquipmentCodes } from '../../services/equipmentService';
+import { normalizeImageUrl } from '../../utils/imageHelper';
 
 const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categories = [] }) => {
   const isEdit = Boolean(equipment);
@@ -23,6 +24,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,12 +65,29 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
         imageUrl: '',
         notes: ''
       });
+      if (show) {
+        getNextEquipmentCodes()
+          .then((res) => {
+            if (res.data?.success && res.data.data) {
+              setFormData(prev => ({
+                ...prev,
+                assetTag: prev.assetTag || res.data.data.assetTag,
+                serialNumber: prev.serialNumber || res.data.data.serialNumber
+              }));
+            }
+          })
+          .catch(() => {});
+      }
     }
+    setPreviewError(false);
     setErrorMsg('');
   }, [equipment, categories, show]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'imageUrl') {
+      setPreviewError(false);
+    }
     setFormData(prev => {
       const next = { ...prev, [name]: value };
       // When quantity changes for a new item, synchronize availableQuantity
@@ -100,8 +119,8 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.assetTag.trim() || !formData.name.trim() || !formData.brand.trim() || !formData.serialNumber.trim()) {
-      setErrorMsg('Asset Tag, Equipment Name, Brand, and Serial Number are required.');
+    if (!formData.name.trim()) {
+      setErrorMsg('Equipment Name is required.');
       return;
     }
 
@@ -117,6 +136,8 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
         ...formData,
         assetTag: formData.assetTag.trim().toUpperCase(),
         serialNumber: formData.serialNumber.trim(),
+        brand: formData.brand.trim() || 'General',
+        imageUrl: normalizeImageUrl(formData.imageUrl) || null,
         quantity: parseInt(formData.quantity, 10) || 1,
         availableQuantity: parseInt(formData.availableQuantity, 10) || 1,
         purchasePrice: formData.purchasePrice !== '' ? parseFloat(formData.purchasePrice) : null,
@@ -169,23 +190,30 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
               <div className="p-3 border rounded bg-light mb-4">
                 <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
                   <div
-                    className="border rounded bg-white d-flex align-items-center justify-content-center overflow-hidden"
+                    className="border rounded bg-white p-1 d-flex align-items-center justify-content-center overflow-hidden"
                     style={{ width: '110px', height: '110px', flexShrink: 0 }}
                   >
-                    {formData.imageUrl ? (
+                    {formData.imageUrl && !previewError ? (
                       <img
-                        src={formData.imageUrl}
+                        src={normalizeImageUrl(formData.imageUrl)}
                         alt="Preview"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        referrerPolicy="no-referrer"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        onError={() => setPreviewError(true)}
                       />
                     ) : (
-                      <i className="bi bi-camera text-muted fs-1"></i>
+                      <div className="text-center px-2">
+                        <i className={`bi ${previewError ? 'bi-image-alt text-warning' : 'bi-camera text-muted'} fs-2 d-block`}></i>
+                        {previewError && (
+                          <span className="text-danger" style={{ fontSize: '0.62rem', lineHeight: 1.1 }}>Invalid URL</span>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   <div className="flex-grow-1">
                     <label className="form-label small fw-semibold text-secondary mb-1">
-                      Equipment Photo
+                      Equipment Photo (Upload or Paste URL)
                     </label>
                     <div className="d-flex flex-wrap gap-2 mb-2">
                       <label className="btn btn-sm btn-outline-primary mb-0 cursor-pointer">
@@ -203,59 +231,66 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary"
-                          onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                          onClick={() => {
+                            setPreviewError(false);
+                            setFormData(prev => ({ ...prev, imageUrl: '' }));
+                          }}
                         >
                           Clear
                         </button>
                       )}
                     </div>
                     <input
-                      type="url"
+                      type="text"
                       className="form-control form-control-sm"
-                      placeholder="Image URL: https://..."
+                      placeholder="Paste image URL (https://...) or upload a file above"
                       name="imageUrl"
                       value={formData.imageUrl}
                       onChange={handleChange}
                     />
+                    {previewError && formData.imageUrl && (
+                      <div className="text-danger mt-1" style={{ fontSize: '0.72rem' }}>
+                        <i className="bi bi-exclamation-circle me-1"></i>
+                        Could not load image from this URL. Make sure it is a direct image link (e.g. .jpg, .png, .webp).
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* SECTION: Identity & Categorization */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-4">
+              <div className="row g-3 mb-3 align-items-end">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
-                    Asset Tag <span className="required-star">*</span>
+                    Asset Tag
                   </label>
                   <input
                     type="text"
                     className="form-control text-uppercase fw-bold"
                     name="assetTag"
-                    placeholder="CAM-001"
+                    placeholder="NE01"
                     value={formData.assetTag}
                     onChange={handleChange}
-                    required
                   />
                 </div>
 
-                <div className="col-md-4">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
-                    Serial Number <span className="required-star">*</span>
+                    Serial Number
                   </label>
                   <input
                     type="text"
                     className="form-control font-monospace"
                     name="serialNumber"
-                    placeholder="SN-123456"
+                    placeholder="SN-NE01"
                     value={formData.serialNumber}
                     onChange={handleChange}
-                    required
                   />
                 </div>
 
-                <div className="col-md-4">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
-                    Category <span className="required-star">*</span>
+                    Category
                   </label>
                   <select
                     className="form-select"
@@ -275,10 +310,10 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
               </div>
 
               {/* SECTION: Gear Name & Specs */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-6">
+              <div className="row g-3 mb-3 align-items-end">
+                <div className="col-md-6 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
-                    Equipment Name <span className="required-star">*</span>
+                    Equipment Name
                   </label>
                   <input
                     type="text"
@@ -291,9 +326,9 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-3 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
-                    Brand <span className="required-star">*</span>
+                    Brand
                   </label>
                   <input
                     type="text"
@@ -302,11 +337,10 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     placeholder="Brand name"
                     value={formData.brand}
                     onChange={handleChange}
-                    required
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-3 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">
                     Model
                   </label>
@@ -326,10 +360,10 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                 <h6 className="fw-bold text-secondary small text-uppercase mb-2">
                   <i className="bi bi-stack me-1 text-primary"></i> Stock Quantities & Status
                 </h6>
-                <div className="row g-3">
-                  <div className="col-md-3">
-                    <label className="form-label small fw-semibold text-secondary">
-                      Total Quantity in Stock <span className="required-star">*</span>
+                <div className="row g-3 align-items-end">
+                  <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                    <label className="form-label small fw-semibold text-secondary text-nowrap">
+                      Total Qty
                     </label>
                     <input
                       type="number"
@@ -342,9 +376,9 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     />
                   </div>
 
-                  <div className="col-md-3">
-                    <label className="form-label small fw-semibold text-secondary">
-                      Available to Borrow
+                  <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                    <label className="form-label small fw-semibold text-secondary text-nowrap">
+                      Available Qty
                     </label>
                     <input
                       type="number"
@@ -358,8 +392,8 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     />
                   </div>
 
-                  <div className="col-md-3">
-                    <label className="form-label small fw-semibold text-secondary">Stock Status</label>
+                  <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                    <label className="form-label small fw-semibold text-secondary text-nowrap">Stock Status</label>
                     <select
                       className="form-select"
                       name="status"
@@ -376,8 +410,8 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                     </select>
                   </div>
 
-                  <div className="col-md-3">
-                    <label className="form-label small fw-semibold text-secondary">Condition</label>
+                  <div className="col-6 col-md-3 d-flex flex-column justify-content-end">
+                    <label className="form-label small fw-semibold text-secondary text-nowrap">Condition</label>
                     <select
                       className="form-select"
                       name="condition"
@@ -395,8 +429,8 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
               </div>
 
               {/* SECTION: Valuation & Pricing */}
-              <div className="row g-3 mb-3">
-                <div className="col-md-4">
+              <div className="row g-3 mb-3 align-items-end">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">Purchase Date</label>
                   <input
                     type="date"
@@ -407,7 +441,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   />
                 </div>
 
-                <div className="col-md-4">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">Purchase Value ($)</label>
                   <input
                     type="number"
@@ -421,7 +455,7 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
                   />
                 </div>
 
-                <div className="col-md-4">
+                <div className="col-md-4 d-flex flex-column justify-content-end">
                   <label className="form-label small fw-semibold text-secondary">Daily Rental Rate ($)</label>
                   <input
                     type="number"

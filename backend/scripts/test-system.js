@@ -35,7 +35,7 @@ async function runTests() {
     const text = await res.text();
     let body;
     try { body = JSON.parse(text); } catch (e) { body = text; }
-    return { status: res.status, body };
+    return { status: res.status, headers: res.headers, body };
   };
 
   try {
@@ -53,9 +53,9 @@ async function runTests() {
     // Admin Login
     const adminLogin = await api('/api/auth/login', {
       method: 'POST',
-      body: { email: 'admin@cameragear.com', password: 'password123' }
+      body: { username: 'admin', password: 'password123' }
     });
-    console.log('   Admin Login:', adminLogin.status, '| User:', adminLogin.body?.user?.name, '| Role:', adminLogin.body?.user?.role);
+    console.log('   Admin Login:', adminLogin.status, '| User:', adminLogin.body?.user?.name, '| Username:', adminLogin.body?.user?.username, '| Role:', adminLogin.body?.user?.role);
     if (adminLogin.status !== 200 || adminLogin.body?.user?.role !== 'ADMIN') {
       throw new Error('Admin login failed: ' + JSON.stringify(adminLogin.body));
     }
@@ -64,9 +64,9 @@ async function runTests() {
     // Stock Management Login
     const stockLogin = await api('/api/auth/login', {
       method: 'POST',
-      body: { email: 'stock@cameragear.com', password: 'password123' }
+      body: { username: 'stock', password: 'password123' }
     });
-    console.log('   Stock Management Login:', stockLogin.status, '| User:', stockLogin.body?.user?.name, '| Role:', stockLogin.body?.user?.role);
+    console.log('   Stock Management Login:', stockLogin.status, '| User:', stockLogin.body?.user?.name, '| Username:', stockLogin.body?.user?.username, '| Role:', stockLogin.body?.user?.role);
     if (stockLogin.status !== 200 || !['STOCK_MANAGEMENT', 'STOCK_CONTROLLER'].includes(stockLogin.body?.user?.role)) {
       throw new Error('Stock Management login failed: ' + JSON.stringify(stockLogin.body));
     }
@@ -75,9 +75,9 @@ async function runTests() {
     // Normal User Login
     const userLogin = await api('/api/auth/login', {
       method: 'POST',
-      body: { email: 'user@cameragear.com', password: 'password123' }
+      body: { username: 'user', password: 'password123' }
     });
-    console.log('   Normal User Login:', userLogin.status, '| User:', userLogin.body?.user?.name, '| Role:', userLogin.body?.user?.role);
+    console.log('   Normal User Login:', userLogin.status, '| User:', userLogin.body?.user?.name, '| Username:', userLogin.body?.user?.username, '| Role:', userLogin.body?.user?.role);
     if (userLogin.status !== 200 || userLogin.body?.user?.role !== 'USER') {
       throw new Error('Normal User login failed: ' + JSON.stringify(userLogin.body));
     }
@@ -117,6 +117,32 @@ async function runTests() {
     console.log('   Normal User Approve Request Attempt -> Status:', forbiddenApprove.status, '(Expected: 403 Forbidden)');
     if (forbiddenApprove.status !== 403) {
       throw new Error('Security Breach: Normal user was allowed to approve a request!');
+    }
+
+    // 4b. Dashboard Stats & Stock Dashboard Verification
+    console.log('\n4b. Testing Dashboard Stats & Stock Dashboard Endpoints:');
+    const dashAdminRes = await api('/api/dashboard/stats?timeframe=monthly', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    console.log('   Admin Dashboard Stats -> Status:', dashAdminRes.status, '| Total Equipment:', dashAdminRes.body?.stats?.totalEquipment, '| Stock Units:', dashAdminRes.body?.stats?.totalStockUnits);
+    if (dashAdminRes.status !== 200 || !dashAdminRes.body?.stats || !dashAdminRes.body?.charts) {
+      throw new Error('Admin dashboard stats failed!');
+    }
+
+    const dashUserRes = await api('/api/dashboard/stats?timeframe=all', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    console.log('   User Dashboard Stats -> Status:', dashUserRes.status, '| My Active Loans:', dashUserRes.body?.userStats?.myActiveLoans);
+    if (dashUserRes.status !== 200 || !dashUserRes.body?.userStats) {
+      throw new Error('User dashboard stats failed!');
+    }
+
+    const stockDashRes = await api('/api/equipment/stock-dashboard?timeframe=monthly', {
+      headers: { Authorization: `Bearer ${stockToken}` }
+    });
+    console.log('   Stock Dashboard -> Status:', stockDashRes.status, '| Low Stock Alerts:', stockDashRes.body?.lowStockAlerts?.length);
+    if (stockDashRes.status !== 200 || !stockDashRes.body?.summary) {
+      throw new Error('Stock dashboard failed!');
     }
 
     // 4. Equipment Management & Product Price Updates
@@ -336,8 +362,70 @@ async function runTests() {
       throw new Error('Audit logs verification failed!');
     }
 
+    // 13. Security Hardening & Data Protection Verification
+    console.log('\n13. Testing Security Hardening & Data Protection:');
+
+    // 13a. Verify no password hash leakage in approveRequest or invoices or backup
+    if (approveRes.body?.data?.user?.password) {
+      throw new Error('Security Breach: Password hash leaked in approveRequest response!');
+    }
+    console.log('   Password Hash Redaction (Approve Request): PASS (no password field in user payload)');
+
+    // 13b. Verify forged / tampered JWT is rejected with 401
+    const forgedTokenRes = await api('/api/equipment', {
+      headers: { Authorization: 'Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpZCI6InVzZXItYWRtaW4tMSIsInJvbGUiOiJBRE1JTiJ9.' }
+    });
+    console.log('   Forged JWT (alg:none) Rejection -> Status:', forgedTokenRes.status, '(Expected: 401 Unauthorized)');
+    if (forgedTokenRes.status !== 401) {
+      throw new Error('Security Breach: Forged JWT token was accepted!');
+    }
+
+    // 13c. Verify Admin cannot demote or deactivate own account
+    const adminSelfId = adminLogin.body.user.id;
+    const selfDemoteRes = await api(`/api/users/${adminSelfId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { role: 'USER' }
+    });
+    console.log('   Admin Self-Demotion Protection -> Status:', selfDemoteRes.status, '(Expected: 400 Bad Request)');
+    if (selfDemoteRes.status !== 400) {
+      throw new Error('Security Breach: Admin was allowed to demote their own role!');
+    }
+
+    // 13d. Verify Live Neon Database Backup Export & Password Redaction
+    const backupRes = await api('/api/settings/backup', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    const backupUsers = backupRes.body?.data?.users || [];
+    const leakedBackupPassword = backupUsers.some(u => u.password && u.password !== '[REDACTED]');
+    console.log('   Live Neon Backup Export -> Status:', backupRes.status, '| Source:', backupRes.body?.data?.source, '| Password Redacted:', !leakedBackupPassword);
+    if (backupRes.status !== 200 || leakedBackupPassword || backupRes.body?.data?.source !== 'Neon PostgreSQL') {
+      throw new Error('Backup export verification failed!');
+    }
+
+    // 13e. Verify Security Headers (Helmet)
+    const xContentType = healthRes.headers.get('x-content-type-options');
+    const referrerPolicy = healthRes.headers.get('referrer-policy');
+    console.log('   HTTP Security Headers -> X-Content-Type-Options:', xContentType, '| Referrer-Policy:', referrerPolicy);
+    if (xContentType !== 'nosniff') {
+      throw new Error('Security header X-Content-Type-Options: nosniff is missing!');
+    }
+
+    // Clean up temporary test artifacts so Neon DB stays clean
+    console.log('\n🧹 Cleaning up temporary test records from Neon DB...');
+    await prisma.checkInOut.deleteMany({ where: { requestId: submittedReq.id } });
+    await prisma.borrowRequestItem.deleteMany({ where: { requestId: submittedReq.id } });
+    await prisma.borrowRequest.delete({ where: { id: submittedReq.id } });
+    await prisma.projectCrew.deleteMany({ where: { projectId: createdProject.id } });
+    await prisma.project.delete({ where: { id: createdProject.id } });
+    await prisma.equipment.update({
+      where: { id: fx3.id },
+      data: { availableQuantity: preAvail, quantity: fx3.quantity, purchasePrice: fx3.purchasePrice, dailyRate: fx3.dailyRate }
+    });
+    console.log('   Cleanup complete.');
+
     console.log('\n========================================================');
-    console.log('🎉 ALL 12 SYSTEM VERIFICATION SUITES PASSED! 🎉');
+    console.log('🎉 ALL 13 SYSTEM & SECURITY VERIFICATION SUITES PASSED! 🎉');
     console.log('   Neon PostgreSQL is 100% connected, secure, and ready.');
     console.log('========================================================\n');
   } finally {

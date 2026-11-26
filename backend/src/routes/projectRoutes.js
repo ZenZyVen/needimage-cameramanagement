@@ -7,6 +7,7 @@ const { requireRole } = require('../middlewares/roleMiddleware');
 // Read routes: All authenticated users (Admin, Stock Controller, Normal Users) can view projects
 router.get('/', authenticate, projectController.getAllProjects);
 router.get('/next-code', authenticate, projectController.getNextProjectCode);
+router.get('/crew-candidates', authenticate, projectController.getCrewCandidates);
 router.get('/:id', authenticate, projectController.getProjectById);
 router.get('/:id/crew', authenticate, projectController.getProjectCrew);
 

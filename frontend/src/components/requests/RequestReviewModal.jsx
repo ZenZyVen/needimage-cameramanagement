@@ -188,7 +188,7 @@ const RequestReviewModal = ({ show, onHide, request, onApprove, onReject }) => {
               ) : (
                 <div>
                   <label className="form-label text-danger">
-                    Reason for Rejection <span className="required-star">*</span>
+                    Reason for Rejection
                   </label>
                   <input
                     type="text"

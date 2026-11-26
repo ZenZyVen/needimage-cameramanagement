@@ -346,8 +346,10 @@ const CheckinModal = ({ show, onHide, request = null, equipment = null, initialI
                               <img
                                 src={item.imageUrl}
                                 alt={item.name}
+                                referrerPolicy="no-referrer"
                                 className="rounded border flex-shrink-0"
                                 style={{ width: 44, height: 44, objectFit: 'cover' }}
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&auto=format&fit=crop&q=80'; }}
                               />
                             ) : (
                               <div

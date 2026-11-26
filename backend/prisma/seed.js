@@ -34,6 +34,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: 'Sarah Connor',
+      username: 'admin',
       email: 'admin@cameragear.com',
       password: passwordHash,
       role: 'ADMIN',
@@ -50,6 +51,7 @@ async function main() {
   const stockController = await prisma.user.create({
     data: {
       name: 'Marcus Vance',
+      username: 'stock',
       email: 'stock@cameragear.com',
       password: passwordHash,
       role: 'STOCK_MANAGEMENT',
@@ -66,6 +68,7 @@ async function main() {
   const userDavid = await prisma.user.create({
     data: {
       name: 'David Kim',
+      username: 'user',
       email: 'user@cameragear.com',
       password: passwordHash,
       role: 'USER',
@@ -82,6 +85,7 @@ async function main() {
   const userElena = await prisma.user.create({
     data: {
       name: 'Elena Rostova',
+      username: 'elena',
       email: 'elena@cameragear.com',
       password: passwordHash,
       role: 'USER',
@@ -222,7 +226,7 @@ async function main() {
       purchasePrice: 2535.00,
       dailyRate: 95.00,
       location: 'Vault Locker A-04',
-      imageUrl: 'https://images.unsplash.com/photo-1589872782806-0370487560a6?w=600&auto=format&fit=crop&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
       accessories: ['Tilta Full Camera Cage', '2x NP-F570 Batteries', 'AC Power Supply', 'Sunhood'],
       specifications: { sensor: 'Super 35 6144 x 3456 HDR Sensor', ndFilter: 'Built-In 2, 4, and 6-stop ND filters', mount: 'Canon EF Mount' },
       notes: 'Equipped with Blackmagic OS 8.1.'
@@ -342,7 +346,7 @@ async function main() {
       purchasePrice: 349.00,
       dailyRate: 35.00,
       location: 'Audio Drawer M-02',
-      imageUrl: 'https://images.unsplash.com/photo-1520523839898-5071270425a8?w=600&auto=format&fit=crop&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600&auto=format&fit=crop&q=80',
       accessories: ['Charging Case', '2x Clip-on Transmitters', 'Camera Receiver', '2x Furry Windscreens', 'Lightning and USB-C Adapters'],
       specifications: { range: '250m Transmission Range', recording: '32-bit Float Internal Recording', batteryLife: '18 Hours with Case' },
       notes: '32-bit float internal backup recording prevents any clipping.'

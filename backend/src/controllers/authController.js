@@ -2,26 +2,34 @@ const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { generateToken } = require('../config/jwt');
 const { logAudit } = require('../utils/auditLogger');
+const { invalidateUserCache, setCachedUser } = require('../middlewares/authMiddleware');
+
+const USERNAME_REGEX = /^[a-z0-9._-]{3,30}$/;
+
+function normalizeUsername(raw) {
+  return String(raw || '').trim().toLowerCase();
+}
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
+    const normalizedUsername = normalizeUsername(username);
 
-    if (!email || !password) {
+    if (!normalizedUsername || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required.'
+        message: 'Username and password are required.'
       });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+      where: { username: normalizedUsername }
     });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.'
+        message: 'Invalid username or password.'
       });
     }
 
@@ -36,12 +44,13 @@ exports.login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.'
+        message: 'Invalid username or password.'
       });
     }
 
     const token = generateToken({
       id: user.id,
+      username: user.username,
       email: user.email,
       role: user.role
     });
@@ -51,21 +60,25 @@ exports.login = async (req, res, next) => {
       action: 'LOGIN',
       entity: 'User',
       entityId: user.id,
-      details: { email: user.email, role: user.role },
+      details: { username: user.username, email: user.email, role: user.role },
       req
     });
 
     const userSafe = {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       role: user.role,
       department: user.department,
       phone: user.phone,
       avatar: user.avatar,
       profilePhoto: user.profilePhoto || user.avatar,
-      signatureUrl: user.signatureUrl || null
+      signatureUrl: user.signatureUrl || null,
+      isActive: user.isActive
     };
+
+    setCachedUser(userSafe);
 
     return res.json({
       success: true,
@@ -80,12 +93,21 @@ exports.login = async (req, res, next) => {
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, department, phone, profilePhoto } = req.body;
+    const { name, username, email, password, department, phone, profilePhoto } = req.body;
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedEmail = String(email || '').toLowerCase().trim();
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedUsername || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required fields.'
+        message: 'Full name, username, email, and password are required fields.'
+      });
+    }
+
+    if (!USERNAME_REGEX.test(normalizedUsername)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username must be 3-30 characters and contain only letters, numbers, dots, underscores, or hyphens.'
       });
     }
 
@@ -96,11 +118,22 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: normalizedUsername }
     });
 
-    if (existingUser) {
+    if (existingUsername) {
+      return res.status(409).json({
+        success: false,
+        message: 'This username is already taken. Please choose another one.'
+      });
+    }
+
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
         message: 'An account with this email address already exists.'
@@ -115,7 +148,8 @@ exports.register = async (req, res, next) => {
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        username: normalizedUsername,
+        email: normalizedEmail,
         password: hashedPassword,
         role,
         department: department ? department.trim() : null,
@@ -128,6 +162,7 @@ exports.register = async (req, res, next) => {
 
     const token = generateToken({
       id: newUser.id,
+      username: newUser.username,
       email: newUser.email,
       role: newUser.role
     });
@@ -137,7 +172,7 @@ exports.register = async (req, res, next) => {
       action: 'REGISTER',
       entity: 'User',
       entityId: newUser.id,
-      details: { email: newUser.email, role: newUser.role },
+      details: { username: newUser.username, email: newUser.email, role: newUser.role },
       req
     });
 
@@ -148,6 +183,7 @@ exports.register = async (req, res, next) => {
       user: {
         id: newUser.id,
         name: newUser.name,
+        username: newUser.username,
         email: newUser.email,
         role: newUser.role,
         department: newUser.department,
@@ -219,6 +255,7 @@ exports.updateProfile = async (req, res, next) => {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         role: true,
         department: true,
@@ -229,6 +266,8 @@ exports.updateProfile = async (req, res, next) => {
         isActive: true
       }
     });
+
+    setCachedUser(updatedUser);
 
     return res.json({
       success: true,
@@ -252,6 +291,7 @@ exports.uploadSignature = async (req, res, next) => {
       where: { id: req.user.id },
       data: { signatureUrl }
     });
+    invalidateUserCache(req.user.id);
 
     return res.json({
       success: true,
@@ -275,6 +315,7 @@ exports.uploadAvatar = async (req, res, next) => {
       where: { id: req.user.id },
       data: { profilePhoto, avatar: profilePhoto }
     });
+    invalidateUserCache(req.user.id);
 
     return res.json({
       success: true,

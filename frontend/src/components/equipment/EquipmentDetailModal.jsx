@@ -99,12 +99,14 @@ const EquipmentDetailModal = ({ show, onHide, equipment, onShowQR }) => {
                 <div className="row g-4 mb-4">
                   {/* Photo & Stock Counters */}
                   <div className="col-md-5">
-                    <div className="border rounded overflow-hidden bg-light mb-3" style={{ height: '220px' }}>
+                    <div className="border rounded overflow-hidden bg-light p-2 mb-3 d-flex align-items-center justify-content-center" style={{ height: '220px' }}>
                       <img
                         src={equipment.imageUrl || defaultImage}
                         alt={equipment.name}
-                        className="w-100 h-100 object-fit-cover"
-                        onError={(e) => { e.target.src = defaultImage; }}
+                        referrerPolicy="no-referrer"
+                        className="w-100 h-100"
+                        style={{ objectFit: 'contain' }}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultImage; }}
                       />
                     </div>
 
@@ -250,7 +252,7 @@ const EquipmentDetailModal = ({ show, onHide, equipment, onShowQR }) => {
                     <table className="table table-sm table-bordered align-middle" style={{ fontSize: '8.5pt' }}>
                       <thead className="table-light">
                         <tr>
-                          <th>Ticket #</th>
+                          <th>Ticket Code</th>
                           <th>Issue Title</th>
                           <th>Severity</th>
                           <th>Status</th>

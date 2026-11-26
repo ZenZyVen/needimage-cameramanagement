@@ -1,6 +1,37 @@
-const { prisma } = require('../config/db');
+const { prisma, isPostgresConnected } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { mockStore } = require('../config/mockDb');
+
+const ALLOWED_SETTING_KEYS = new Set([
+  'companyName',
+  'companyTagline',
+  'logoUrl',
+  'address',
+  'phone',
+  'email',
+  'website',
+  'brandColor',
+  'accentColor',
+  'currency',
+  'maxLoanDurationDays',
+  'requireApproval',
+  'autoOverdueCheck',
+  'allowMultipleItemsPerRequest',
+  'lowStockThreshold',
+  'autoOutOfStockStatus',
+  'enableStockMovementLogging',
+  'defaultInspectorTitle',
+  'requireInspectionSignature',
+  'autoCreateTicketOnDamagedCheckin',
+  'notifyOnBorrowRequest',
+  'notifyOnOverdue',
+  'notifyOnLowStock',
+  'invoiceHeader',
+  'invoiceTaxId',
+  'invoiceTerms',
+  'invoiceDeclaration',
+  'invoiceAuthorizedSigner'
+]);
 
 let inMemorySettings = {
   companyName: 'CineVault Media Production Studios',
@@ -59,8 +90,14 @@ exports.getSettings = async (req, res, next) => {
 // 2. Update system settings (Admin only)
 exports.updateSettings = async (req, res, next) => {
   try {
-    const payload = req.body;
-    inMemorySettings = { ...inMemorySettings, ...payload };
+    const payload = req.body || {};
+    const sanitizedUpdates = {};
+    for (const key of Object.keys(payload)) {
+      if (ALLOWED_SETTING_KEYS.has(key)) {
+        sanitizedUpdates[key] = payload[key];
+      }
+    }
+    inMemorySettings = { ...inMemorySettings, ...sanitizedUpdates };
 
     if (prisma.systemSetting?.upsert) {
       try {
@@ -112,11 +149,14 @@ exports.getAuditLogs = async (req, res, next) => {
     }
 
     let logs = [];
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeLimit = Math.min(500, Math.max(1, parseInt(limit, 10) || 150));
+
     if (prisma.auditLog?.findMany) {
       logs = await prisma.auditLog.findMany({
         where,
-        take: parseInt(limit, 10),
-        skip: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+        take: safeLimit,
+        skip: (safePage - 1) * safeLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { id: true, name: true, email: true, role: true, department: true } }
@@ -165,25 +205,32 @@ exports.getAuditLogs = async (req, res, next) => {
 exports.exportBackup = async (req, res, next) => {
   try {
     let backupData = {};
-    if (mockStore.getBackup) {
-      backupData = mockStore.getBackup();
-    } else {
-      const [users, categories, equipment, projects, requests] = await Promise.all([
-        prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, department: true } }),
+    if (isPostgresConnected()) {
+      const [users, categories, equipment, projects, requests, invoices, maintenances] = await Promise.all([
+        prisma.user.findMany({
+          select: { id: true, name: true, email: true, role: true, department: true, phone: true, isActive: true, createdAt: true }
+        }),
         prisma.category.findMany(),
         prisma.equipment.findMany(),
         prisma.project.findMany(),
-        prisma.borrowRequest.findMany()
+        prisma.borrowRequest.findMany(),
+        prisma.invoice.findMany(),
+        prisma.maintenance.findMany()
       ]);
       backupData = {
         timestamp: new Date().toISOString(),
+        source: 'Neon PostgreSQL',
         systemSettings: inMemorySettings,
         users,
         categories,
         equipment,
         projects,
-        borrowRequests: requests
+        borrowRequests: requests,
+        invoices,
+        maintenances
       };
+    } else if (mockStore.getBackup) {
+      backupData = mockStore.getBackup();
     }
 
     res.setHeader('Content-Type', 'application/json');
