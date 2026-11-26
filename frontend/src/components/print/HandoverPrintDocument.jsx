@@ -87,7 +87,7 @@ const HandoverPrintDocument = ({ request, checkOutRecords, staffUser }) => {
         <table className="table table-bordered mb-4" style={{ fontSize: '9pt' }}>
           <thead className="table-light">
             <tr>
-              <th style={{ width: '40px' }}>#</th>
+              <th style={{ width: '44px' }}>No.</th>
               <th style={{ width: '90px' }}>Asset Tag</th>
               <th>Equipment Description & Model</th>
               <th>Serial Number</th>

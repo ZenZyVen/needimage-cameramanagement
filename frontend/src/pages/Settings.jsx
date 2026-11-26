@@ -743,7 +743,7 @@ const Settings = () => {
                         <tr>
                           <th>Asset Tag</th>
                           <th>Equipment Description</th>
-                          <th>Serial #</th>
+                          <th>Serial Number</th>
                           <th className="text-center">Qty</th>
                           <th className="text-center">Condition</th>
                           <th className="text-end">Daily Rate</th>

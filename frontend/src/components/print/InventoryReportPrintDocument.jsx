@@ -102,7 +102,7 @@ const InventoryReportPrintDocument = ({ inventoryData, summary }) => {
         <table className="table table-bordered mb-4" style={{ fontSize: '8.5pt' }}>
           <thead className="table-light">
             <tr>
-              <th style={{ width: '30px' }} className="text-center">#</th>
+              <th style={{ width: '36px' }} className="text-center">No.</th>
               <th style={{ width: '45px' }} className="text-center">Photo</th>
               <th style={{ width: '85px' }}>Asset Tag</th>
               <th>Equipment Name & Model</th>

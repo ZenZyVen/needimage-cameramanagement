@@ -6,7 +6,7 @@
 
 :root {
   /* Surface & Background */
-  --app-bg: #f8fafc;
+  --app-bg: #f6f8fb;
   --surface-card: #ffffff;
   --surface-subtle: #f1f5f9;
   --surface-muted: #e2e8f0;
@@ -538,7 +538,7 @@ input[type="time"].form-control {
    ========================================================================== */
 .card {
   background-color: var(--surface-card);
-  border: 1px solid var(--slate-200);
+  border: 1px solid #e6ecf2;
   border-radius: 12px;
   box-shadow: var(--shadow-card);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
@@ -1130,4 +1130,84 @@ input[type="time"].form-control {
 
 .table-responsive::-webkit-scrollbar-thumb:hover {
   background: var(--slate-400);
+}
+
+/* ==========================================================================
+   PROJECT CARDS, MODAL MOTION & ACCESSIBLE INTERACTION POLISH
+   ========================================================================== */
+.project-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--slate-300);
+}
+
+.modal.show {
+  backdrop-filter: blur(4px);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal.show .modal-dialog {
+  animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-item {
+  border-radius: 7px;
+  margin: 0.1rem 0.35rem;
+  width: auto;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--slate-100);
+  color: var(--slate-900);
+}
+
+.form-select optgroup {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slate-600);
+  background-color: var(--slate-50);
+}
+
+.form-select option {
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-transform: none;
+  color: var(--slate-900);
+  background-color: #ffffff;
+}
+
+.card > .table-responsive {
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-600);
+  outline-offset: 2px;
+}
+
+.form-control:focus-visible,
+.form-select:focus-visible,
+.btn:focus-visible {
+  outline: none;
 }

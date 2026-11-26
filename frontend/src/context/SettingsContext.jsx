@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getSettings, updateSettings as apiUpdateSettings } from '../services/settingsService';
 
 const defaultSettings = {
-  companyName: 'CineVault Media Production Studios',
+  companyName: 'Need Image Studio',
   companyTagline: 'Professional Camera Equipment & Stock Vault',
-  logoUrl: '/logo.svg',
+  logoUrl: '/Need-Image_StudioLogo_White.png',
   address: 'Studio Lot 4B, 742 Sunset Boulevard, Media Arts District, CA 90028',
   phone: '+1 (555) 019-2831',
   email: 'operations@cinevault-studios.com',

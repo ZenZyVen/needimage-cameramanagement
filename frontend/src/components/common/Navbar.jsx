@@ -1,9 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import NotificationDropdown from './NotificationDropdown';
 import QRScannerModal from './QRScannerModal';
+
+const ROUTE_META = {
+  '/dashboard': { section: 'Overview', title: 'Dashboard', icon: 'bi-grid-1x2-fill' },
+  '/equipment': { section: 'Stock & Inventory', title: 'Equipment Vault', icon: 'bi-camera-reels-fill' },
+  '/products': { section: 'Stock & Inventory', title: 'Product Management', icon: 'bi-box-seam-fill' },
+  '/stock': { section: 'Stock & Inventory', title: 'Stock Management', icon: 'bi-boxes' },
+  '/low-stock': { section: 'Stock & Inventory', title: 'Low-Stock Alerts', icon: 'bi-exclamation-triangle-fill' },
+  '/stock-movements': { section: 'Stock & Inventory', title: 'Stock Movements Log', icon: 'bi-clock-history' },
+  '/projects': { section: 'Stock & Inventory', title: 'Production Projects', icon: 'bi-film' },
+  '/requests': { section: 'Stock & Inventory', title: 'Borrow Requests', icon: 'bi-calendar2-check-fill' },
+  '/checkin-out': { section: 'Vault Logistics', title: 'Checkout & Check-in', icon: 'bi-arrow-left-right' },
+  '/handover-logs': { section: 'Vault Logistics', title: 'Handover & Return Logs', icon: 'bi-card-checklist' },
+  '/maintenance': { section: 'Vault Logistics', title: 'Maintenance & Repairs', icon: 'bi-tools' },
+  '/reports': { section: 'Operations & Reports', title: 'Loan Activity Report', icon: 'bi-file-earmark-bar-graph-fill' },
+  '/history': { section: 'Operations & Reports', title: 'History Records', icon: 'bi-archive-fill' },
+  '/activity-log': { section: 'Operations & Reports', title: 'System Activity Log', icon: 'bi-journal-text' },
+  '/qr-tags': { section: 'Operations & Reports', title: 'Asset Tag Printing', icon: 'bi-qr-code' },
+  '/users': { section: 'Administration', title: 'User & Role Access', icon: 'bi-people-fill' },
+  '/settings': { section: 'Administration', title: 'Settings & Invoices', icon: 'bi-gear-fill' },
+  '/profile': { section: 'Account', title: 'My Profile & Signature', icon: 'bi-person-circle' }
+};
 
 const Navbar = ({ onToggleSidebar }) => {
   const { user, isAdmin, logout } = useAuth();
@@ -12,6 +33,13 @@ const Navbar = ({ onToggleSidebar }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const pageMeta = ROUTE_META[location.pathname] || {
+    section: 'Workspace',
+    title: settings.companyName || 'Need Image Studio',
+    icon: 'bi-boxes'
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -39,8 +67,9 @@ const Navbar = ({ onToggleSidebar }) => {
     switch (role) {
       case 'ADMIN':
         return <span className="badge bg-slate-900 text-white" style={{ fontSize: '0.65rem' }}>ADMIN</span>;
+      case 'STOCK_MANAGEMENT':
       case 'STOCK_CONTROLLER':
-        return <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>STOCK CONTROLLER</span>;
+        return <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>STOCK MANAGER</span>;
       case 'USER':
       default:
         return <span className="badge bg-primary" style={{ fontSize: '0.65rem' }}>CREW / USER</span>;
@@ -63,29 +92,34 @@ const Navbar = ({ onToggleSidebar }) => {
             <i className="bi bi-list fs-5"></i>
           </button>
 
-          {/* System Branding / Name */}
+          {/* Dynamic Page Title / Breadcrumb */}
           <div className="d-flex align-items-center gap-2 min-w-0">
             <div
-              className="bg-primary text-white rounded d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs"
-              style={{ width: '30px', height: '30px' }}
+              className="bg-primary-subtle text-primary border border-primary-subtle rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+              style={{ width: '32px', height: '32px' }}
             >
-              <i className="bi bi-boxes" style={{ fontSize: '0.9rem' }}></i>
+              <i className={`bi ${pageMeta.icon}`} style={{ fontSize: '0.92rem' }}></i>
             </div>
-            <span className="fw-bold text-dark fs-6 text-truncate" style={{ letterSpacing: '-0.02em' }}>
-              Stock & Inventory Management System
-            </span>
+            <div className="min-w-0">
+              <div className="text-muted text-uppercase fw-semibold text-truncate d-none d-sm-block" style={{ fontSize: '0.64rem', letterSpacing: '0.06em', lineHeight: 1.1 }}>
+                {pageMeta.section}
+              </div>
+              <span className="fw-bold text-dark d-block text-truncate" style={{ fontSize: '0.94rem', letterSpacing: '-0.015em', lineHeight: 1.25 }}>
+                {pageMeta.title}
+              </span>
+            </div>
           </div>
 
           {/* Quick Scanner Shortcut */}
           <button
             type="button"
-            className="btn btn-outline-secondary btn-sm d-none d-xl-flex align-items-center gap-2 ms-2"
+            className="btn btn-outline-secondary btn-sm d-none d-md-inline-flex align-items-center gap-2 ms-2"
             onClick={() => setShowScanner(true)}
             title="Scan Equipment Barcode / QR Code"
-            style={{ height: '32px', fontSize: '0.78rem' }}
+            style={{ height: '32px', minHeight: '32px', fontSize: '0.78rem', padding: '0 0.7rem' }}
           >
             <i className="bi bi-qr-code-scan text-primary"></i>
-            <span className="fw-medium">Scan Barcode / QR</span>
+            <span className="fw-medium d-none d-lg-inline">Scan QR / Barcode</span>
           </button>
         </div>
 
@@ -94,7 +128,7 @@ const Navbar = ({ onToggleSidebar }) => {
           {/* Welcome Greeting */}
           <div className="d-none d-md-flex align-items-center gap-1 text-secondary" style={{ fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
             <span>Welcome back,</span>
-            <strong className="text-dark">{user?.name || 'Sarah Connor'}</strong>
+            <strong className="text-dark">{user?.name || 'Studio Member'}</strong>
           </div>
 
           {/* Notifications */}

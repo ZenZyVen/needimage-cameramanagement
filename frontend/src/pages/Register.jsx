@@ -87,14 +87,23 @@ const Register = () => {
       <div className="card shadow-lg border-0" style={{ maxWidth: '500px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
         <div className="card-body p-4 p-sm-5">
           <div className="text-center mb-4">
-            <img
-              src={settings.logoUrl || '/logo.svg'}
-              alt={settings.companyName || 'CineVault'}
-              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
-              className="mb-2"
-              onError={(e) => { e.target.src = '/logo.svg'; }}
-            />
-            <h4 className="fw-bold text-dark mb-1">Create CineVault Account</h4>
+            <div
+              className="d-inline-flex align-items-center justify-content-center rounded-4 mb-2 shadow-sm"
+              style={{
+                width: '54px',
+                height: '54px',
+                backgroundColor: '#0f172a',
+                border: '1px solid #1e293b'
+              }}
+            >
+              <img
+                src={settings.logoUrl || '/Need-Image_StudioLogo_White.png'}
+                alt={settings.companyName || 'Need Image Studio'}
+                style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/Need-Image_StudioLogo_White.png'; }}
+              />
+            </div>
+            <h4 className="fw-bold text-dark mb-1">Create Studio Account</h4>
             <p className="text-muted small">Register for equipment loans and production vault access</p>
           </div>
 

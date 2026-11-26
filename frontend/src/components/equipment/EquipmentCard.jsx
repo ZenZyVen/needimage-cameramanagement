@@ -1,6 +1,7 @@
 import React from 'react';
 import StatusBadge from '../common/StatusBadge';
 import { formatCurrency } from '../../utils/formatters';
+import { normalizeImageUrl, DEFAULT_EQUIPMENT_IMAGE } from '../../utils/imageHelper';
 
 const EquipmentCard = ({
   equipment,
@@ -15,7 +16,7 @@ const EquipmentCard = ({
   onFastCheckout = null,
   onFastCheckin = null
 }) => {
-  const defaultImage = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80';
+  const defaultImage = DEFAULT_EQUIPMENT_IMAGE;
   const qty = equipment.quantity || 1;
   const avail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : (equipment.status === 'AVAILABLE' ? qty : 0);
   const isOutOfStock = avail <= 0;
@@ -26,7 +27,7 @@ const EquipmentCard = ({
       {/* Image & Header Overlay */}
       <div className="equipment-image-container">
         <img
-          src={equipment.imageUrl || defaultImage}
+          src={normalizeImageUrl(equipment.imageUrl) || defaultImage}
           alt={equipment.name}
           referrerPolicy="no-referrer"
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultImage; }}

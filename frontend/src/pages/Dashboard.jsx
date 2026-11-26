@@ -376,7 +376,7 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <div className="small text-muted mb-2">
-                      Request #: <span className="fw-semibold text-dark">{loan.requestNumber}</span>
+                      Request: <span className="fw-semibold text-dark">{loan.requestNumber}</span>
                     </div>
                     <div className="d-flex flex-wrap gap-1">
                       {loan.items?.map(i => (

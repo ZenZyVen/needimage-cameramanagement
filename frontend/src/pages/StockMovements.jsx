@@ -417,7 +417,7 @@ const StockMovements = () => {
                           </div>
                           {m.reference && (
                             <div className="small font-monospace text-secondary text-truncate" style={{ maxWidth: '180px' }} title={m.reference}>
-                              <i className="bi bi-hash me-1 text-muted"></i>{m.reference}
+                              <i className="bi bi-tag me-1 text-muted"></i>{m.reference}
                             </div>
                           )}
                         </td>

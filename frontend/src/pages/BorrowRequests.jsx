@@ -427,7 +427,7 @@ const BorrowRequests = () => {
 
                   return (
                     <tr key={req.id} className={overdue ? 'table-danger bg-opacity-25' : ''}>
-                      {/* Request # & Borrower */}
+                      {/* Request ID & Borrower */}
                       <td>
                         <div className="d-flex align-items-center gap-1.5 mb-1">
                           <span className="badge bg-slate-900 text-white font-monospace" style={{ fontSize: '0.72rem' }}>

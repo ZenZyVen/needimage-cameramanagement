@@ -1025,7 +1025,7 @@ const StockManagement = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-secondary">Incident Reference / Ticket #</label>
+                    <label className="form-label small fw-semibold text-secondary">Incident Reference / Ticket ID</label>
                     <input
                       type="text"
                       className="form-control form-control-sm"

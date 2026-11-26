@@ -57,23 +57,23 @@ const Login = () => {
           {/* Logo & Heading */}
           <div className="text-center mb-4">
             <div
-              className="d-inline-flex align-items-center justify-content-center rounded-4 mb-3"
+              className="d-inline-flex align-items-center justify-content-center rounded-4 mb-3 shadow-sm"
               style={{
-                width: '60px',
-                height: '60px',
-                backgroundColor: '#f1f5f9',
-                border: '1px solid #e2e8f0'
+                width: '62px',
+                height: '62px',
+                backgroundColor: '#0f172a',
+                border: '1px solid #1e293b'
               }}
             >
               <img
-                src={settings.logoUrl || '/logo.svg'}
-                alt={settings.companyName || 'CineVault'}
+                src={settings.logoUrl || '/Need-Image_StudioLogo_White.png'}
+                alt={settings.companyName || 'Need Image Studio'}
                 style={{ width: '40px', height: '40px', objectFit: 'contain' }}
-                onError={(e) => { e.target.src = '/logo.svg'; }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/Need-Image_StudioLogo_White.png'; }}
               />
             </div>
             <h4 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-0.02em' }}>
-              {settings.companyName || 'CineVault Management'}
+              {settings.companyName || 'Need Image Studio'}
             </h4>
             <p className="text-muted small mb-0">
               Sign in with your username to access the equipment vault

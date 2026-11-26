@@ -6,7 +6,7 @@ const ProjectCard = ({ project, onView, onEdit, onDelete, onCrew, canManage }) =
   const crewCount = project.crew?.length ?? project._count?.crew ?? 0;
 
   return (
-    <div className="card border-0 shadow-sm h-100">
+    <div className="card project-card border-0 shadow-sm h-100">
       <div className="card-body p-3 d-flex flex-column justify-content-between">
         <div>
           <div className="d-flex justify-content-between align-items-center mb-2" style={{ height: '24px' }}>

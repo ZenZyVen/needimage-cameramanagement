@@ -386,7 +386,7 @@ const Reports = () => {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light text-muted small">
                   <tr>
-                    <th>Loan / Request #</th>
+                    <th>Loan / Request ID</th>
                     <th>Production Project</th>
                     <th>Borrower / Crew Lead</th>
                     <th>Equipment Dispatched</th>
@@ -546,7 +546,7 @@ const Reports = () => {
                   </div>
                   <div className="text-end">
                     <span className="badge bg-dark fs-6 font-monospace mb-2">
-                      INVOICE #{selectedReqForInvoice.requestNumber}
+                      INVOICE {selectedReqForInvoice.requestNumber}
                     </span>
                     <div className="small text-muted">
                       <strong>Issue Date:</strong> {new Date().toLocaleDateString()}
@@ -589,7 +589,7 @@ const Reports = () => {
                     <table className="table table-sm align-middle mb-0">
                       <thead className="table-light text-muted small">
                         <tr>
-                          <th style={{ width: '40px' }}>#</th>
+                          <th style={{ width: '44px' }}>No.</th>
                           <th style={{ width: '100px' }}>Asset Tag</th>
                           <th>Equipment Description</th>
                           <th>Brand & Model</th>

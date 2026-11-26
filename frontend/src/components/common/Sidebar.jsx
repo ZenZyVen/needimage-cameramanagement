@@ -20,15 +20,15 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="d-flex align-items-center gap-2.5 min-w-0">
           <div className="sidebar-logo-wrap">
             <img
-              src={settings.logoUrl || '/logo.svg'}
-              alt={settings.companyName || 'CineVault'}
+              src={settings.logoUrl || '/Need-Image_StudioLogo_White.png'}
+              alt={settings.companyName || 'Need Image Studio'}
               style={{ width: '26px', height: '26px', objectFit: 'contain' }}
-              onError={(e) => { e.target.src = '/logo.svg'; }}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/Need-Image_StudioLogo_White.png'; }}
             />
           </div>
           <div className="min-w-0">
-            <h1 className="sidebar-brand-name text-truncate" title={settings.companyName || 'CineVault'}>
-              {settings.companyName ? settings.companyName.split(' ')[0] : 'CineVault'}
+            <h1 className="sidebar-brand-name text-truncate" title={settings.companyName || 'Need Image Studio'}>
+              {settings.companyName || 'Need Image Studio'}
             </h1>
             <p className="sidebar-brand-sub text-truncate">Stock & Vault System</p>
           </div>
@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
               onClick={onClose}
             >
-              <i className="bi bi-box-seam-fill text-primary"></i>
+              <i className="bi bi-box-seam-fill"></i>
               <span>Product Management</span>
             </NavLink>
           )}
@@ -97,7 +97,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                 onClick={onClose}
               >
-                <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+                <i className="bi bi-exclamation-triangle-fill"></i>
                 <span>Low-Stock Alerts</span>
               </NavLink>
 
@@ -106,7 +106,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                 onClick={onClose}
               >
-                <i className="bi bi-clock-history text-info"></i>
+                <i className="bi bi-clock-history"></i>
                 <span>Stock Movements Log</span>
               </NavLink>
             </>
@@ -149,7 +149,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
               onClick={onClose}
             >
-              <i className="bi bi-card-checklist text-success"></i>
+              <i className="bi bi-card-checklist"></i>
               <span>Handover & Return Logs</span>
             </NavLink>
 
@@ -181,7 +181,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
             onClick={onClose}
           >
-            <i className="bi bi-archive-fill text-warning"></i>
+            <i className="bi bi-archive-fill"></i>
             <span>History Records</span>
           </NavLink>
 

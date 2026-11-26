@@ -110,7 +110,7 @@ const RequestReviewModal = ({ show, onHide, request, onApprove, onReject }) => {
                     <tr>
                       <th>Asset Tag</th>
                       <th>Equipment Description</th>
-                      <th>Serial #</th>
+                      <th>Serial Number</th>
                       <th>Vault Status</th>
                       <th>Storage Bin</th>
                     </tr>
