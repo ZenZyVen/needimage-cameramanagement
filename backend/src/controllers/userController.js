@@ -278,7 +278,7 @@ exports.updateUser = async (req, res, next) => {
   }
 };
 
-// 4. Delete user (Admin only)
+// 4. Delete user (Admin only - safely reassigns linked records before deleting)
 exports.deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -286,45 +286,56 @@ exports.deleteUser = async (req, res, next) => {
     if (id === req.user.id) {
       return res.status(400).json({
         success: false,
-        message: 'You cannot delete your own account.'
+        message: 'You cannot delete your own account while signed in.'
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            borrowRequests: true,
-            approvedRequests: true,
-            createdProjects: true,
-            checkInsOuts: true,
-            maintenances: true
-          }
-        }
-      }
-    });
-
+    const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const counts = user._count || {};
-    const hasLinkedHistory =
-      (counts.borrowRequests || 0) +
-      (counts.approvedRequests || 0) +
-      (counts.createdProjects || 0) +
-      (counts.checkInsOuts || 0) +
-      (counts.maintenances || 0) > 0;
-
-    if (hasLinkedHistory) {
-      return res.status(400).json({
-        success: false,
-        message: 'User has linked system history and cannot be deleted. Deactivate account instead.'
+    if (user.role === 'ADMIN' && user.isActive) {
+      const totalActiveAdmins = await prisma.user.count({
+        where: { role: 'ADMIN', isActive: true }
       });
+      if (totalActiveAdmins <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete the only active administrator account.'
+        });
+      }
     }
 
-    await prisma.user.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const updates = [];
+      if (tx.project?.updateMany) {
+        updates.push(tx.project.updateMany({ where: { createdById: id }, data: { createdById: req.user.id } }));
+      }
+      if (tx.borrowRequest?.updateMany) {
+        updates.push(tx.borrowRequest.updateMany({ where: { approvedById: id }, data: { approvedById: null } }));
+        updates.push(tx.borrowRequest.updateMany({ where: { userId: id }, data: { userId: req.user.id } }));
+      }
+      if (tx.checkInOut?.updateMany) {
+        updates.push(tx.checkInOut.updateMany({ where: { handledById: id }, data: { handledById: req.user.id } }));
+      }
+      if (tx.maintenance?.updateMany) {
+        updates.push(tx.maintenance.updateMany({ where: { reportedById: id }, data: { reportedById: req.user.id } }));
+      }
+      if (tx.invoice?.updateMany) {
+        updates.push(tx.invoice.updateMany({ where: { userId: id }, data: { userId: null } }));
+        updates.push(tx.invoice.updateMany({ where: { issuedById: id }, data: { issuedById: null } }));
+      }
+      if (tx.auditLog?.updateMany) {
+        updates.push(tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } }));
+      }
+      if (tx.notification?.deleteMany) {
+        updates.push(tx.notification.deleteMany({ where: { userId: id } }));
+      }
+      await Promise.all(updates);
+      await tx.user.delete({ where: { id } });
+    }, { maxWait: 10000, timeout: 30000 });
+
     invalidateUserCache(id);
 
     await logAudit({
@@ -332,13 +343,18 @@ exports.deleteUser = async (req, res, next) => {
       action: 'ADMIN_DELETE_USER',
       entity: 'User',
       entityId: id,
-      details: { email: user.email },
+      details: {
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        reassignedTo: req.user.id
+      },
       req
     });
 
     return res.json({
       success: true,
-      message: 'User deleted successfully.'
+      message: `User "${user.name}" deleted successfully.`
     });
   } catch (error) {
     next(error);

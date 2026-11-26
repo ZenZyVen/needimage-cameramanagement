@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { getUsers, createUser, updateUser, deleteUser } from '../services/userService';
 import { formatDate } from '../utils/formatters';
 import DepartmentSelect from '../components/common/DepartmentSelect';
 
 const Users = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -105,11 +107,15 @@ const Users = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleDelete = async (targetUser) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${targetUser.name}"? Any projects, requests, or logs linked to this account will be safely reassigned to your admin account.`
+      )
+    ) {
       try {
-        await deleteUser(id);
-        setAlertMsg({ type: 'success', text: 'User deleted successfully.' });
+        await deleteUser(targetUser.id);
+        setAlertMsg({ type: 'success', text: `User "${targetUser.name}" deleted successfully.` });
         loadUsers();
       } catch (err) {
         setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error deleting user.' });
@@ -273,8 +279,9 @@ const Users = () => {
                         <button
                           type="button"
                           className="btn btn-outline-danger"
-                          title="Delete User"
-                          onClick={() => handleDelete(u.id)}
+                          title={u.id === currentUser?.id ? 'You cannot delete your own signed-in account' : 'Delete User'}
+                          disabled={u.id === currentUser?.id}
+                          onClick={() => handleDelete(u)}
                         >
                           <i className="bi bi-trash"></i>
                         </button>

@@ -59,10 +59,10 @@ const Settings = () => {
     projectName: 'Horizon 2026 Electric Vehicle Commercial',
     projectCode: 'PRJ-2026-001',
     projectLocation: 'Pacific Rim Highway Stage 3',
-    borrowerName: 'David Kim',
+    borrowerName: 'Studio Crew Lead',
     borrowerDepartment: 'Cinematography Unit',
     borrowerPhone: '+1 (555) 019-7711',
-    borrowerEmail: 'user@cameragear.com',
+    borrowerEmail: 'crew@needimagestudio.com',
     expectedReturnDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     equipmentItems: [
       { tag: 'CAM-002', name: 'Sony FX6 Full-Frame Cinema Camera', serial: 'SN-FX6-902184', qty: 1, rate: 220, condition: 'EXCELLENT' },
@@ -805,7 +805,7 @@ const Settings = () => {
                       </span>
                     </div>
                     <div className="text-center" style={{ fontSize: '0.72rem' }}>
-                      <strong className="d-block text-dark">Sarah Connor</strong>
+                      <strong className="d-block text-dark">{formData.companyName || 'Need Image Studio'}</strong>
                       <span className="text-muted">{formData.invoiceAuthorizedSigner || 'Vault Logistics Authority'}</span>
                     </div>
                   </div>
