@@ -1,51 +1,11 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
-
-// Helper to generate the next sequential project number and code (01, 02, 03, 04, ...)
-async function generateNextProjectSequence() {
-  const allProjects = await prisma.project.findMany({
-    select: { projectCode: true }
-  });
-
-  const existingCodes = new Set();
-  let maxNumber = 0;
-
-  for (const p of allProjects) {
-    if (!p.projectCode) continue;
-    const code = p.projectCode.trim();
-    existingCodes.add(code.toUpperCase());
-
-    // Extract sequence number from formats like PRJ-01, PRJ-2026-003, 01, etc.
-    const match = code.match(/(\d+)$/);
-    if (match) {
-      const parsed = parseInt(match[1], 10);
-      if (!isNaN(parsed) && parsed > maxNumber) {
-        maxNumber = parsed;
-      }
-    }
-  }
-
-  let nextSequence = maxNumber + 1;
-  let candidateNumber = String(nextSequence).padStart(2, '0');
-  let candidateCode = `PRJ-${candidateNumber}`;
-
-  // Collision safety loop: ensure unique code across both number and reference string
-  while (existingCodes.has(candidateCode.toUpperCase()) || existingCodes.has(candidateNumber.toUpperCase())) {
-    nextSequence++;
-    candidateNumber = String(nextSequence).padStart(2, '0');
-    candidateCode = `PRJ-${candidateNumber}`;
-  }
-
-  return {
-    projectNumber: candidateNumber,
-    projectCode: candidateCode
-  };
-}
+const { generateNextProjectSequence } = require('../utils/codeGenerator');
 
 // 0. Get next available project sequence number & code
 exports.getNextProjectCode = async (req, res, next) => {
   try {
-    const sequence = await generateNextProjectSequence();
+    const sequence = await generateNextProjectSequence(prisma);
     return res.json({
       success: true,
       data: sequence
@@ -196,63 +156,78 @@ exports.createProject = async (req, res, next) => {
       });
     }
 
-    // Auto-generate projectCode starting from 01 sequentially (01, 02, 03, 04, ...)
+    // Auto-generate projectCode starting from lowest available sequence (01, 02, 03, ...)
+    let isAutoCode = false;
     let cleanCode = projectCode ? projectCode.trim().toUpperCase() : null;
     if (!cleanCode || cleanCode.startsWith('AUTO') || cleanCode === '') {
-      const seq = await generateNextProjectSequence();
+      isAutoCode = true;
+      const seq = await generateNextProjectSequence(prisma);
       cleanCode = seq.projectCode;
     } else {
       const existingCode = await prisma.project.findUnique({
         where: { projectCode: cleanCode }
       });
       if (existingCode) {
-        const seq = await generateNextProjectSequence();
+        isAutoCode = true;
+        const seq = await generateNextProjectSequence(prisma);
         cleanCode = seq.projectCode;
       }
     }
-
-    const match = cleanCode.match(/(\d+)$/);
-    const projNum = match ? match[1].padStart(2, '0') : '01';
 
     const validCrew = Array.isArray(crewMembers)
       ? crewMembers.filter(c => c && c.name && c.name.trim() && c.role && c.role.trim())
       : [];
 
-    const project = await prisma.project.create({
-      data: {
-        projectNumber: projNum,
-        projectCode: cleanCode,
-        title: title.trim(),
-        client: client ? client.trim() : null,
-        director: director ? director.trim() : null,
-        location: location ? location.trim() : null,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        status: status || 'PLANNING',
-        createdById: req.user.id,
-        notes: notes ? notes.trim() : null,
-        ...(validCrew.length > 0
-          ? {
-              crew: {
-                create: validCrew.map(c => ({
-                  name: c.name.trim(),
-                  role: c.role.trim(),
-                  phone: c.phone ? c.phone.trim() : null,
-                  shootDate: c.shootDate || String(startDate).substring(0, 10),
-                  callTime: c.callTime || '07:00 AM',
-                  projectType: c.projectType || title.trim(),
-                  status: c.status || 'CONFIRMED',
-                  notes: c.notes ? c.notes.trim() : null
-                }))
-              }
-            }
-          : {})
-      },
-      include: {
-        createdBy: { select: { id: true, name: true, email: true } },
-        crew: true
+    let project = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const match = cleanCode.match(/(\d+)$/);
+      const projNum = match ? match[1].padStart(2, '0') : '01';
+      try {
+        project = await prisma.project.create({
+          data: {
+            projectNumber: projNum,
+            projectCode: cleanCode,
+            title: title.trim(),
+            client: client ? client.trim() : null,
+            director: director ? director.trim() : null,
+            location: location ? location.trim() : null,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            status: status || 'PLANNING',
+            createdById: req.user.id,
+            notes: notes ? notes.trim() : null,
+            ...(validCrew.length > 0
+              ? {
+                  crew: {
+                    create: validCrew.map(c => ({
+                      name: c.name.trim(),
+                      role: c.role.trim(),
+                      phone: c.phone ? c.phone.trim() : null,
+                      shootDate: c.shootDate || String(startDate).substring(0, 10),
+                      callTime: c.callTime || '07:00 AM',
+                      projectType: c.projectType || title.trim(),
+                      status: c.status || 'CONFIRMED',
+                      notes: c.notes ? c.notes.trim() : null
+                    }))
+                  }
+                }
+              : {})
+          },
+          include: {
+            createdBy: { select: { id: true, name: true, email: true } },
+            crew: true
+          }
+        });
+        break;
+      } catch (err) {
+        if (err.code === 'P2002' && isAutoCode && attempt < 2) {
+          const seq = await generateNextProjectSequence(prisma);
+          cleanCode = seq.projectCode;
+          continue;
+        }
+        throw err;
       }
-    });
+    }
 
     await logAudit({
       userId: req.user.id,

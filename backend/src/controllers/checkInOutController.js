@@ -1,6 +1,7 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { notifyTeam } = require('../utils/notify');
+const { generateNextMaintenanceTicketNumber } = require('../utils/codeGenerator');
 
 // 1. Equipment Checkout (Handover)
 exports.checkoutItems = async (req, res, next) => {
@@ -197,6 +198,7 @@ exports.checkinItems = async (req, res, next) => {
     const returnRecords = [];
 
     await prisma.$transaction(async (tx) => {
+      const reservedTickets = new Set();
       const equipmentMap = new Map();
       const eqIds = items.map(i => i.equipmentId).filter(Boolean);
       const loadedEquipment = await tx.equipment.findMany({ where: { id: { in: eqIds } } });
@@ -223,10 +225,8 @@ exports.checkinItems = async (req, res, next) => {
           newStatus = 'UNDER_MAINTENANCE';
           newCondition = condition === 'DAMAGED' ? 'DAMAGED' : 'POOR';
 
-          // Automatically generate Maintenance Ticket if damaged
-          const year = new Date().getFullYear();
-          const mntCount = await tx.maintenance.count();
-          const ticketNumber = `MNT-${year}-${String(mntCount + 1).padStart(3, '0')}`;
+          // Automatically generate Maintenance Ticket if damaged (gap-filling across loop items)
+          const ticketNumber = await generateNextMaintenanceTicketNumber(tx, undefined, reservedTickets);
 
           await tx.maintenance.create({
             data: {

@@ -2,49 +2,16 @@ const { prisma } = require('../config/db');
 const { generateQRCode } = require('../utils/qrGenerator');
 const { logAudit } = require('../utils/auditLogger');
 const { notifyTeam } = require('../utils/notify');
-
-async function generateNextEquipmentCodes() {
-  const existing = await prisma.equipment.findMany({
-    select: { assetTag: true, serialNumber: true }
-  });
-
-  const tagSet = new Set(existing.map(e => (e.assetTag || '').toUpperCase()));
-  const serialSet = new Set(existing.map(e => (e.serialNumber || '').toUpperCase()));
-
-  let maxNum = 0;
-  for (const item of existing) {
-    const tagMatch = /^NE(\d+)$/i.exec((item.assetTag || '').trim());
-    if (tagMatch) {
-      maxNum = Math.max(maxNum, parseInt(tagMatch[1], 10));
-    }
-    const snMatch = /^SN-NE(\d+)$/i.exec((item.serialNumber || '').trim());
-    if (snMatch) {
-      maxNum = Math.max(maxNum, parseInt(snMatch[1], 10));
-    }
-  }
-
-  let nextNum = maxNum + 1;
-  let assetTag = '';
-  let serialNumber = '';
-
-  // Guarantee uniqueness against any existing record
-  while (true) {
-    const suffix = String(nextNum).padStart(2, '0');
-    assetTag = `NE${suffix}`;
-    serialNumber = `SN-NE${suffix}`;
-    if (!tagSet.has(assetTag) && !serialSet.has(serialNumber)) {
-      break;
-    }
-    nextNum += 1;
-  }
-
-  return { assetTag, serialNumber };
-}
+const {
+  generateNextEquipmentCodes,
+  stripDeletedSuffix,
+  makeArchivedCode
+} = require('../utils/codeGenerator');
 
 // 0. Get next auto-generated Asset Tag & Serial Number (NE01, SN-NE01, ...)
 exports.getNextEquipmentCodes = async (req, res, next) => {
   try {
-    const codes = await generateNextEquipmentCodes();
+    const codes = await generateNextEquipmentCodes(prisma);
     return res.json({
       success: true,
       data: codes
@@ -278,16 +245,18 @@ exports.createEquipment = async (req, res, next) => {
       });
     }
 
-    const autoCodes = (!assetTag || !assetTag.trim() || !serialNumber || !serialNumber.trim())
-      ? await generateNextEquipmentCodes()
+    const wasAutoTag = !(assetTag && assetTag.trim());
+    const wasAutoSerial = !(serialNumber && serialNumber.trim());
+    const autoCodes = (wasAutoTag || wasAutoSerial)
+      ? await generateNextEquipmentCodes(prisma)
       : null;
 
-    const cleanTag = (assetTag && assetTag.trim()) ? assetTag.trim().toUpperCase() : autoCodes.assetTag;
-    const cleanSerial = (serialNumber && serialNumber.trim()) ? serialNumber.trim() : autoCodes.serialNumber;
+    let cleanTag = !wasAutoTag ? assetTag.trim().toUpperCase() : autoCodes.assetTag;
+    let cleanSerial = !wasAutoSerial ? serialNumber.trim() : autoCodes.serialNumber;
     const cleanBrand = (brand && brand.trim()) ? brand.trim() : 'General';
 
-    // Check unique constraints
-    const existing = await prisma.equipment.findFirst({
+    // Check unique constraints (allow reclaiming codes from archived/soft-deleted items)
+    const conflicts = await prisma.equipment.findMany({
       where: {
         OR: [
           { assetTag: cleanTag },
@@ -296,23 +265,27 @@ exports.createEquipment = async (req, res, next) => {
       }
     });
 
-    if (existing) {
-      const matchField = existing.assetTag.toUpperCase() === cleanTag ? 'Asset Tag' : 'Serial Number';
+    const activeConflict = conflicts.find(c => !c.isDeleted);
+    if (activeConflict) {
+      const matchField = activeConflict.assetTag.toUpperCase() === cleanTag ? 'Asset Tag' : 'Serial Number';
       return res.status(409).json({
         success: false,
         message: `Equipment with this ${matchField} already exists.`
       });
     }
 
-    // Generate QR Code
-    const qrPayload = {
-      assetTag: cleanTag,
-      name: name.trim(),
-      serial: cleanSerial,
-      brand: cleanBrand,
-      model: model ? model.trim() : ''
-    };
-    const qrCode = await generateQRCode(qrPayload);
+    // Release slots held by legacy soft-deleted rows so deleted codes auto-fill seamlessly
+    for (let i = 0; i < conflicts.length; i += 1) {
+      const archived = conflicts[i];
+      const stamp = `${Date.now()}_${i}`;
+      await prisma.equipment.update({
+        where: { id: archived.id },
+        data: {
+          assetTag: makeArchivedCode(archived.assetTag, stamp),
+          serialNumber: makeArchivedCode(archived.serialNumber, stamp)
+        }
+      });
+    }
 
     const parsedQty = Math.max(1, parseInt(quantity, 10) || 1);
     const parsedAvail = availableQuantity !== undefined ? Math.max(0, parseInt(availableQuantity, 10)) : parsedQty;
@@ -320,30 +293,53 @@ exports.createEquipment = async (req, res, next) => {
     let initialStatus = status || 'AVAILABLE';
     if (parsedAvail === 0) initialStatus = 'OUT_OF_STOCK';
 
-    const newEquipment = await prisma.equipment.create({
-      data: {
+    let newEquipment = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const qrPayload = {
         assetTag: cleanTag,
         name: name.trim(),
+        serial: cleanSerial,
         brand: cleanBrand,
-        model: model ? model.trim() : '',
-        serialNumber: cleanSerial,
-        categoryId,
-        quantity: parsedQty,
-        availableQuantity: parsedAvail,
-        status: initialStatus,
-        condition: condition || 'EXCELLENT',
-        purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
-        purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
-        dailyRate: dailyRate ? parseFloat(dailyRate) : null,
-        imageUrl: imageUrl || null,
-        notes: notes ? notes.trim() : null,
-        qrCode,
-        isDeleted: false
-      },
-      include: {
-        category: true
+        model: model ? model.trim() : ''
+      };
+      const qrCode = await generateQRCode(qrPayload);
+
+      try {
+        newEquipment = await prisma.equipment.create({
+          data: {
+            assetTag: cleanTag,
+            name: name.trim(),
+            brand: cleanBrand,
+            model: model ? model.trim() : '',
+            serialNumber: cleanSerial,
+            categoryId,
+            quantity: parsedQty,
+            availableQuantity: parsedAvail,
+            status: initialStatus,
+            condition: condition || 'EXCELLENT',
+            purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
+            purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
+            dailyRate: dailyRate ? parseFloat(dailyRate) : null,
+            imageUrl: imageUrl || null,
+            notes: notes ? notes.trim() : null,
+            qrCode,
+            isDeleted: false
+          },
+          include: {
+            category: true
+          }
+        });
+        break;
+      } catch (err) {
+        if (err.code === 'P2002' && (wasAutoTag || wasAutoSerial) && attempt < 2) {
+          const retryCodes = await generateNextEquipmentCodes(prisma);
+          if (wasAutoTag) cleanTag = retryCodes.assetTag;
+          if (wasAutoSerial) cleanSerial = retryCodes.serialNumber;
+          continue;
+        }
+        throw err;
       }
-    });
+    }
 
     await logAudit({
       userId: req.user.id,
@@ -487,7 +483,7 @@ exports.updateEquipment = async (req, res, next) => {
   }
 };
 
-// 6. Delete equipment item (Soft-delete to archive with permanent option)
+// 6. Delete equipment item (Soft-delete to archive with permanent option; releases code for auto-fill)
 exports.deleteEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -498,6 +494,13 @@ exports.deleteEquipment = async (req, res, next) => {
       include: {
         borrowItems: {
           where: { status: 'CHECKED_OUT' }
+        },
+        _count: {
+          select: {
+            borrowItems: true,
+            checkInsOuts: true,
+            maintenances: true
+          }
         }
       }
     });
@@ -506,24 +509,45 @@ exports.deleteEquipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Equipment not found.' });
     }
 
-    if (equipment.borrowItems && equipment.borrowItems.length > 0) {
+    const activeCheckouts = Array.isArray(equipment.borrowItems)
+      ? equipment.borrowItems.filter(b => b.status === 'CHECKED_OUT')
+      : [];
+    if (activeCheckouts.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Cannot delete equipment that is currently checked out on a loan.'
       });
     }
 
-    if (permanent === 'true' || permanent === true) {
+    const originalTag = stripDeletedSuffix(equipment.assetTag);
+    const originalSerial = stripDeletedSuffix(equipment.serialNumber);
+    const counts = equipment._count || {};
+    const hasLinkedHistory =
+      (counts.borrowItems || 0) +
+      (counts.checkInsOuts || 0) +
+      (counts.maintenances || 0) > 0;
+
+    let actionType = 'moved to archive';
+    const wantPermanent = permanent === 'true' || permanent === true;
+
+    if (wantPermanent && !hasLinkedHistory) {
       await prisma.equipment.delete({ where: { id } });
+      actionType = 'permanently removed';
     } else {
+      const archiveStamp = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       await prisma.equipment.update({
         where: { id },
         data: {
           isDeleted: true,
           deletedAt: new Date(),
-          status: 'RETIRED'
+          status: 'RETIRED',
+          assetTag: makeArchivedCode(originalTag, archiveStamp),
+          serialNumber: makeArchivedCode(originalSerial, archiveStamp)
         }
       });
+      actionType = wantPermanent
+        ? 'archived (linked history preserved; code released)'
+        : 'moved to archive (code released for reuse)';
     }
 
     await logAudit({
@@ -531,13 +555,13 @@ exports.deleteEquipment = async (req, res, next) => {
       action: 'DELETE_EQUIPMENT',
       entity: 'Equipment',
       entityId: id,
-      details: { assetTag: equipment.assetTag, name: equipment.name, permanent },
+      details: { assetTag: originalTag, name: equipment.name, permanent: wantPermanent, actionType },
       req
     });
 
     return res.json({
       success: true,
-      message: `Equipment ${equipment.assetTag} ${permanent ? 'permanently removed' : 'moved to archive'}.`
+      message: `Equipment ${originalTag} ${actionType}.`
     });
   } catch (error) {
     next(error);
@@ -556,12 +580,47 @@ exports.restoreEquipment = async (req, res, next) => {
     const avail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity;
     const targetStatus = avail > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK';
 
+    const recoveredTag = stripDeletedSuffix(equipment.assetTag);
+    const recoveredSerial = stripDeletedSuffix(equipment.serialNumber);
+
+    const collisions = await prisma.equipment.findMany({
+      where: {
+        OR: [
+          { assetTag: recoveredTag },
+          { serialNumber: recoveredSerial }
+        ]
+      }
+    });
+    const otherConflict = collisions.some(item => item.id !== id);
+
+    let finalTag = recoveredTag;
+    let finalSerial = recoveredSerial;
+    if (otherConflict || !finalTag || !finalSerial) {
+      const nextCodes = await generateNextEquipmentCodes(prisma);
+      finalTag = nextCodes.assetTag;
+      finalSerial = nextCodes.serialNumber;
+    }
+
+    let qrCode = equipment.qrCode;
+    if (finalTag !== equipment.assetTag || finalSerial !== equipment.serialNumber) {
+      qrCode = await generateQRCode({
+        assetTag: finalTag,
+        name: equipment.name,
+        serial: finalSerial,
+        brand: equipment.brand,
+        model: equipment.model || ''
+      });
+    }
+
     const restored = await prisma.equipment.update({
       where: { id },
       data: {
         isDeleted: false,
         deletedAt: null,
-        status: targetStatus
+        status: targetStatus,
+        assetTag: finalTag,
+        serialNumber: finalSerial,
+        qrCode
       },
       include: { category: true }
     });

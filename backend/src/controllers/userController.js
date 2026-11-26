@@ -294,7 +294,13 @@ exports.deleteUser = async (req, res, next) => {
       where: { id },
       include: {
         _count: {
-          select: { borrowRequests: true }
+          select: {
+            borrowRequests: true,
+            approvedRequests: true,
+            createdProjects: true,
+            checkInsOuts: true,
+            maintenances: true
+          }
         }
       }
     });
@@ -303,10 +309,18 @@ exports.deleteUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    if (user._count.borrowRequests > 0) {
+    const counts = user._count || {};
+    const hasLinkedHistory =
+      (counts.borrowRequests || 0) +
+      (counts.approvedRequests || 0) +
+      (counts.createdProjects || 0) +
+      (counts.checkInsOuts || 0) +
+      (counts.maintenances || 0) > 0;
+
+    if (hasLinkedHistory) {
       return res.status(400).json({
         success: false,
-        message: 'User has borrow history and cannot be deleted. Deactivate account instead.'
+        message: 'User has linked system history and cannot be deleted. Deactivate account instead.'
       });
     }
 

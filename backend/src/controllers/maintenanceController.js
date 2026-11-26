@@ -1,5 +1,6 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
+const { generateNextMaintenanceTicketNumber } = require('../utils/codeGenerator');
 
 // 1. Get all maintenance tickets with filters
 exports.getAllMaintenance = async (req, res, next) => {
@@ -73,9 +74,7 @@ exports.createMaintenance = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Equipment not found.' });
     }
 
-    const year = new Date().getFullYear();
-    const count = await prisma.maintenance.count();
-    const ticketNumber = `MNT-${year}-${String(count + 1).padStart(3, '0')}`;
+    const ticketNumber = await generateNextMaintenanceTicketNumber(prisma);
 
     const newTicket = await prisma.maintenance.create({
       data: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers, createUser, updateUser, deleteUser } from '../services/userService';
 import { formatDate } from '../utils/formatters';
+import DepartmentSelect from '../components/common/DepartmentSelect';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -400,12 +401,9 @@ const Users = () => {
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Department</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Department"
+                        <DepartmentSelect
                           value={formData.department}
-                          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                          onChange={(val) => setFormData({ ...formData, department: val })}
                         />
                       </div>
                       <div className="col-12">
@@ -506,12 +504,9 @@ const Users = () => {
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Department</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Department"
+                        <DepartmentSelect
                           value={editingUser.department || ''}
-                          onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
+                          onChange={(val) => setEditingUser({ ...editingUser, department: val })}
                         />
                       </div>
                       <div className="col-md-6">

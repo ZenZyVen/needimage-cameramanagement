@@ -1,6 +1,7 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { notifyTeam } = require('../utils/notify');
+const { generateNextRequestNumber } = require('../utils/codeGenerator');
 
 // 1. Get all borrow requests (User gets their own; Admin/Stock gets all)
 exports.getAllRequests = async (req, res, next) => {
@@ -191,10 +192,8 @@ exports.createRequest = async (req, res, next) => {
       });
     }
 
-    // Generate requestNumber REQ-YYYY-XXX
-    const year = new Date().getFullYear();
-    const count = await prisma.borrowRequest.count();
-    const requestNumber = `REQ-${year}-${String(count + 1).padStart(3, '0')}`;
+    // Generate lowest available requestNumber REQ-YYYY-XXX
+    const requestNumber = await generateNextRequestNumber(prisma);
 
     const newRequest = await prisma.borrowRequest.create({
       data: {

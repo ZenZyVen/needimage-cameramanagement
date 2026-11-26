@@ -1,12 +1,6 @@
 const { prisma } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
-
-// Helper to generate sequential invoice number
-async function generateNextInvoiceNumber() {
-  const year = new Date().getFullYear();
-  const count = await prisma.invoice.count();
-  return `INV-${year}-${String(count + 1).padStart(3, '0')}`;
-}
+const { generateNextInvoiceNumber } = require('../utils/codeGenerator');
 
 // 1. Get all invoices (Admin/Stock can view all; Normal user views their own)
 exports.getAllInvoices = async (req, res, next) => {
@@ -128,9 +122,21 @@ exports.createInvoice = async (req, res, next) => {
       notes
     } = req.body;
 
-    const finalInvoiceNumber = invoiceNumber && invoiceNumber.trim()
-      ? invoiceNumber.trim().toUpperCase()
-      : await generateNextInvoiceNumber();
+    let finalInvoiceNumber = '';
+    if (invoiceNumber && invoiceNumber.trim()) {
+      finalInvoiceNumber = invoiceNumber.trim().toUpperCase();
+      const existingInv = await prisma.invoice.findUnique({
+        where: { invoiceNumber: finalInvoiceNumber }
+      });
+      if (existingInv) {
+        return res.status(409).json({
+          success: false,
+          message: `Invoice number "${finalInvoiceNumber}" already exists.`
+        });
+      }
+    } else {
+      finalInvoiceNumber = await generateNextInvoiceNumber(prisma);
+    }
 
     const invoice = await prisma.invoice.create({
       data: {

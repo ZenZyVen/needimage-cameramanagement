@@ -34,19 +34,6 @@ const Login = () => {
     }
   };
 
-  const handleQuickLogin = (demoUsername, demoPassword) => {
-    setUsername(demoUsername);
-    setPassword(demoPassword);
-    setLoading(true);
-    setErrorMsg('');
-    login(demoUsername, demoPassword)
-      .then(() => navigate('/dashboard'))
-      .catch((err) => {
-        setErrorMsg(err.response?.data?.message || err.message || 'Login failed. Please verify database connection.');
-      })
-      .finally(() => setLoading(false));
-  };
-
   return (
     <div
       className="d-flex align-items-center justify-content-center min-vh-100 p-3"
@@ -164,56 +151,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          {/* 1-Click Role Switcher Demo Box */}
-          <div className="mt-4 pt-3 border-top">
-            <span className="text-muted small d-block mb-2 text-center fw-semibold" style={{ fontSize: '0.73rem', letterSpacing: '0.03em' }}>
-              QUICK DEMO LOGIN (BY USERNAME)
-            </span>
-            <div className="d-flex flex-column gap-2">
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-dark d-flex justify-content-between align-items-center py-2 px-3 rounded-3"
-                style={{ fontSize: '0.79rem' }}
-                onClick={() => handleQuickLogin('admin', 'password123')}
-                disabled={loading}
-              >
-                <span className="d-flex align-items-center gap-2">
-                  <i className="bi bi-shield-lock"></i>
-                  <span>Admin <span className="text-muted font-monospace">@admin</span></span>
-                </span>
-                <span className="badge bg-dark">ADMIN</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary d-flex justify-content-between align-items-center py-2 px-3 rounded-3"
-                style={{ fontSize: '0.79rem' }}
-                onClick={() => handleQuickLogin('stock', 'password123')}
-                disabled={loading}
-              >
-                <span className="d-flex align-items-center gap-2">
-                  <i className="bi bi-box-seam"></i>
-                  <span>Stock Manager <span className="text-muted font-monospace">@stock</span></span>
-                </span>
-                <span className="badge bg-secondary">STOCK</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary d-flex justify-content-between align-items-center py-2 px-3 rounded-3"
-                style={{ fontSize: '0.79rem' }}
-                onClick={() => handleQuickLogin('user', 'password123')}
-                disabled={loading}
-              >
-                <span className="d-flex align-items-center gap-2">
-                  <i className="bi bi-camera"></i>
-                  <span>Crew Member <span className="text-muted font-monospace">@user</span></span>
-                </span>
-                <span className="badge bg-primary">USER</span>
-              </button>
-            </div>
-          </div>
 
           <div className="text-center mt-4">
             <span className="text-muted small">Need an account? </span>

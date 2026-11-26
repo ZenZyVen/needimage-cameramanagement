@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import DepartmentSelect from '../components/common/DepartmentSelect';
 
 const DEFAULT_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
@@ -196,20 +197,10 @@ const Register = () => {
             <div className="row g-3 mb-3 align-items-end">
               <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
                 <label className="form-label small fw-semibold text-secondary">Department</label>
-                <select
-                  className="form-select"
-                  name="department"
+                <DepartmentSelect
                   value={formData.department}
-                  onChange={handleChange}
-                >
-                  <option value="Cinematography">Cinematography</option>
-                  <option value="Directing">Directing</option>
-                  <option value="Lighting & Grip">Lighting & Grip</option>
-                  <option value="Sound & Audio">Sound & Audio</option>
-                  <option value="Production Unit">Production Unit</option>
-                  <option value="Documentary">Documentary</option>
-                  <option value="DIT & Media">DIT & Media</option>
-                </select>
+                  onChange={(val) => setFormData(prev => ({ ...prev, department: val }))}
+                />
               </div>
               <div className="col-12 col-sm-6 d-flex flex-column justify-content-end">
                 <label className="form-label small fw-semibold text-secondary">Phone Number</label>

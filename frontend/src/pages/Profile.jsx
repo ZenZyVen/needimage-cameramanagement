@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import DepartmentSelect from '../components/common/DepartmentSelect';
 
 const Profile = () => {
   const { user, updateUserProfile } = useAuth();
@@ -399,12 +400,9 @@ const Profile = () => {
             <div className="row g-3 mb-4">
               <div className="col-md-6">
                 <label className="form-label small fw-semibold text-secondary">Department / Crew Unit</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="department"
+                <DepartmentSelect
                   value={formData.department}
-                  onChange={handleChange}
+                  onChange={(val) => setFormData(prev => ({ ...prev, department: val }))}
                 />
               </div>
               <div className="col-md-6">
