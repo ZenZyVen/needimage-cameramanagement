@@ -316,7 +316,7 @@ exports.updateProject = async (req, res, next) => {
   }
 };
 
-// 5. Delete project
+// 5. Delete project (Admin full control: safely unlinks borrow requests & invoices)
 exports.deleteProject = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -332,21 +332,40 @@ exports.deleteProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found.' });
     }
 
-    if (project._count.borrowRequests > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete project that has associated borrow requests. Change status to CANCELLED instead.'
-      });
-    }
-
-    await prisma.project.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      if (tx.borrowRequest?.updateMany) {
+        await tx.borrowRequest.updateMany({
+          where: { projectId: id },
+          data: { projectId: null }
+        });
+      }
+      if (tx.invoice?.updateMany) {
+        await tx.invoice.updateMany({
+          where: { projectId: id },
+          data: { projectId: null }
+        });
+      }
+      if (tx.projectCrew?.deleteMany) {
+        await tx.projectCrew.deleteMany({
+          where: { projectId: id }
+        });
+      }
+      await tx.project.delete({ where: { id } });
+    }, {
+      maxWait: 10000,
+      timeout: 30000
+    });
 
     await logAudit({
       userId: req.user.id,
       action: 'DELETE_PROJECT',
       entity: 'Project',
       entityId: id,
-      details: { projectCode: project.projectCode, title: project.title },
+      details: {
+        projectCode: project.projectCode,
+        title: project.title,
+        unlinkedRequests: project._count?.borrowRequests || 0
+      },
       req
     });
 

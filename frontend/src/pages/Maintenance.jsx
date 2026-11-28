@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   getMaintenanceTickets,
   createMaintenanceTicket,
   updateMaintenanceTicket,
-  resolveMaintenanceTicket
+  resolveMaintenanceTicket,
+  deleteMaintenanceTicket
 } from '../services/maintenanceService';
 import MaintenanceFormModal from '../components/maintenance/MaintenanceFormModal';
 import MaintenanceResolveModal from '../components/maintenance/MaintenanceResolveModal';
@@ -21,6 +23,7 @@ const STATUS_PROGRESS = [
 ];
 
 const Maintenance = () => {
+  const { isAdmin } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -78,6 +81,18 @@ const Maintenance = () => {
     await resolveMaintenanceTicket(id, payload);
     setAlertMsg({ type: 'success', text: 'Ticket marked as resolved and equipment stock restored.' });
     loadTickets();
+  };
+
+  const handleDeleteTicket = async (t) => {
+    if (window.confirm(`Delete maintenance ticket ${t.ticketNumber}? If it was active, equipment availability will be restored.`)) {
+      try {
+        await deleteMaintenanceTicket(t.id);
+        setAlertMsg({ type: 'success', text: `Maintenance ticket ${t.ticketNumber} deleted.` });
+        loadTickets();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete ticket.' });
+      }
+    }
   };
 
   // Filtered tickets
@@ -418,6 +433,16 @@ const Maintenance = () => {
                             }}
                           >
                             <i className="bi bi-check2-circle me-1"></i> Resolve
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            title="Delete Ticket"
+                            onClick={() => handleDeleteTicket(t)}
+                          >
+                            <i className="bi bi-trash"></i>
                           </button>
                         )}
                       </div>

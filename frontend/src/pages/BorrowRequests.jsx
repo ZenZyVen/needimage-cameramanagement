@@ -6,7 +6,8 @@ import {
   createRequest,
   approveRequest,
   rejectRequest,
-  cancelRequest
+  cancelRequest,
+  deleteRequest
 } from '../services/requestService';
 import { getCategories } from '../services/equipmentService';
 import { checkoutItems, checkinItems } from '../services/checkInOutService';
@@ -30,7 +31,7 @@ const STATUS_TABS = [
 ];
 
 const BorrowRequests = () => {
-  const { user, isStaff, isUser } = useAuth();
+  const { user, isAdmin, isStaff, isUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [requests, setRequests] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -150,6 +151,22 @@ const BorrowRequests = () => {
         loadRequests();
       } catch (err) {
         setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to cancel.' });
+      }
+    }
+  };
+
+  const handleDeleteRequest = async (req) => {
+    if (
+      window.confirm(
+        `Permanently delete borrow request ${req.requestNumber}? Any checked-out items on this request will be returned to available stock.`
+      )
+    ) {
+      try {
+        await deleteRequest(req.id);
+        setAlertMsg({ type: 'success', text: `Request ${req.requestNumber} deleted successfully.` });
+        loadRequests();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete request.' });
       }
     }
   };
@@ -611,6 +628,19 @@ const BorrowRequests = () => {
                               onClick={() => handleCancel(req.id)}
                             >
                               <i className="bi bi-x-circle" style={{ fontSize: '0.75rem' }}></i>
+                            </button>
+                          )}
+
+                          {/* Admin Delete Button on any Request */}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              className="btn btn-light border btn-sm text-danger"
+                              style={{ width: '28px', height: '28px', padding: 0 }}
+                              title="Delete Request"
+                              onClick={() => handleDeleteRequest(req)}
+                            >
+                              <i className="bi bi-trash" style={{ fontSize: '0.75rem' }}></i>
                             </button>
                           )}
                         </div>

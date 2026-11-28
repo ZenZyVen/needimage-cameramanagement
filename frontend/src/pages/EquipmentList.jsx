@@ -18,6 +18,7 @@ import EquipmentCard from '../components/equipment/EquipmentCard';
 import EquipmentFormModal from '../components/equipment/EquipmentFormModal';
 import EquipmentDetailModal from '../components/equipment/EquipmentDetailModal';
 import CategoryModal from '../components/equipment/CategoryModal';
+import CategoryIcon from '../components/common/CategoryIcon';
 import QRModal from '../components/common/QRModal';
 import QRScannerModal from '../components/common/QRScannerModal';
 import RequestFormModal from '../components/requests/RequestFormModal';
@@ -199,6 +200,22 @@ const EquipmentList = () => {
       }
     } catch (err) {
       setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error restoring equipment.' });
+    }
+  };
+
+  const handlePermanentDelete = async (id) => {
+    if (
+      window.confirm(
+        'Permanently delete this equipment item and all its linked stock/loan history? This action cannot be undone.'
+      )
+    ) {
+      try {
+        const res = await deleteEquipment(id, { permanent: true });
+        setAlertMsg({ type: 'success', text: res.data?.message || 'Equipment permanently deleted.' });
+        loadEquipment();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Error permanently deleting equipment.' });
+      }
     }
   };
 
@@ -407,7 +424,7 @@ const EquipmentList = () => {
                     style={{ height: '34px', minHeight: '34px' }}
                     onClick={() => setSelectedCategory(cat.id)}
                   >
-                    <i className={`bi ${cat.icon || 'bi-camera'}`}></i>
+                    <CategoryIcon icon={cat.icon} name={cat.name} size={15} />
                     <span>{cat.name}</span>
                     {cat._count?.equipment !== undefined && (
                       <span className={`badge rounded-pill ms-1 ${selectedCategory === cat.id ? 'bg-white text-primary' : 'bg-light text-muted border'}`} style={{ fontSize: '0.65rem' }}>
@@ -551,6 +568,7 @@ const EquipmentList = () => {
                   <EquipmentCard
                     equipment={eq}
                     canManage={isStaff}
+                    isAdmin={isAdmin}
                     onView={(item) => {
                       setViewingEquipment(item);
                       setShowDetailModal(true);
@@ -565,6 +583,7 @@ const EquipmentList = () => {
                     }}
                     onDelete={handleDelete}
                     onRestore={handleRestore}
+                    onPermanentDelete={handlePermanentDelete}
                     onAdjustStock={handleOpenAdjust}
                     onRequest={(item) => {
                       setRequestItem(item);
@@ -674,13 +693,25 @@ const EquipmentList = () => {
                           <td className="text-end">
                             <div className="d-flex justify-content-end gap-1">
                               {isArchived ? (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline-success py-1 px-2"
-                                  onClick={() => handleRestore(eq.id)}
-                                >
-                                  <i className="bi bi-arrow-counterclockwise me-1"></i> Restore
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-success py-1 px-2"
+                                    onClick={() => handleRestore(eq.id)}
+                                  >
+                                    <i className="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                  </button>
+                                  {isAdmin && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-danger py-1 px-2"
+                                      title="Delete Permanently"
+                                      onClick={() => handlePermanentDelete(eq.id)}
+                                    >
+                                      <i className="bi bi-trash"></i>
+                                    </button>
+                                  )}
+                                </>
                               ) : (
                                 <>
                                   <button
@@ -734,6 +765,16 @@ const EquipmentList = () => {
                                       >
                                         <i className="bi bi-archive"></i>
                                       </button>
+                                      {isAdmin && (
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-light border py-1 px-2 text-danger"
+                                          title="Delete Permanently"
+                                          onClick={() => handlePermanentDelete(eq.id)}
+                                        >
+                                          <i className="bi bi-trash"></i>
+                                        </button>
+                                      )}
                                     </>
                                   )}
                                 </>
@@ -1041,7 +1082,8 @@ const EquipmentList = () => {
       <CategoryModal
         show={showCategoryModal}
         onHide={() => setShowCategoryModal(false)}
-        onCategoriesChanged={() => {
+        categories={categories}
+        onCategoriesUpdated={() => {
           loadCategories();
           loadEquipment();
         }}

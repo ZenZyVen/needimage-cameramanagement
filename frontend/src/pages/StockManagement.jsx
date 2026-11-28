@@ -4,7 +4,9 @@ import {
   getEquipment,
   getCategories,
   adjustStock,
+  deleteEquipment,
   getStockMovements,
+  deleteStockMovement,
   getStockDashboard
 } from '../services/equipmentService';
 import { triggerNotificationRefresh } from '../context/NotificationContext';
@@ -250,6 +252,36 @@ const StockManagement = () => {
     }
   };
 
+  const handleDeleteStockEquipment = async (eq) => {
+    if (
+      window.confirm(
+        `Permanently delete ${eq.assetTag} (${eq.name}) and all its stock movement history? This cannot be undone.`
+      )
+    ) {
+      try {
+        await deleteEquipment(eq.id, { permanent: true });
+        setAlertMsg({ type: 'success', text: `Equipment ${eq.assetTag} permanently deleted.` });
+        loadInventory();
+        loadDashboardSummary();
+        loadHistory();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete equipment.' });
+      }
+    }
+  };
+
+  const handleDeleteMovementRow = async (m) => {
+    if (window.confirm(`Delete stock movement record for ${m.assetTag} (${m.type})?`)) {
+      try {
+        await deleteStockMovement(m.id);
+        setAlertMsg({ type: 'success', text: 'Stock movement record deleted.' });
+        loadHistory();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete stock movement.' });
+      }
+    }
+  };
+
   // Export CSV of Stock Ledger
   const handleExportCSV = () => {
     if (movements.length === 0) return;
@@ -486,7 +518,7 @@ const StockManagement = () => {
                       <th className="text-center">On Loan</th>
                       <th className="text-center">Maintenance</th>
                       <th>Status</th>
-                      {isAdmin && <th className="text-end" style={{ width: '180px' }}>Actions</th>}
+                      {isAdmin && <th className="text-end" style={{ width: '215px' }}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -578,6 +610,14 @@ const StockManagement = () => {
                                 >
                                   <i className="bi bi-dash-lg me-1"></i> Deduct
                                 </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-danger"
+                                  title="Delete Equipment Permanently"
+                                  onClick={() => handleDeleteStockEquipment(eq)}
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </button>
                               </div>
                             </td>
                           )}
@@ -621,6 +661,7 @@ const StockManagement = () => {
                   onChange={(e) => setHistoryTypeFilter(e.target.value)}
                 >
                   <option value="ALL">All Action Types</option>
+                  <option value="INITIAL_STOCK">INITIAL_STOCK (New Equipment)</option>
                   <option value="RESTOCK">RESTOCK / Intake (+)</option>
                   <option value="STOCK_IN">STOCK_IN (+)</option>
                   <option value="STOCK_REDUCTION">STOCK_REDUCTION (-)</option>
@@ -688,6 +729,7 @@ const StockManagement = () => {
                       <th>Reference / PO</th>
                       <th>Notes / Description</th>
                       <th>Responsible Person</th>
+                      {isAdmin && <th className="text-end">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -710,7 +752,7 @@ const StockManagement = () => {
                           </td>
                           <td>
                             <span className={`badge ${
-                              m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
+                              m.type === 'INITIAL_STOCK' || m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
                                 ? 'bg-success-subtle text-success border border-success-subtle'
                                 : m.type === 'DAMAGED_WRITE_OFF' || m.type === 'STOCK_REDUCTION'
                                 ? 'bg-danger-subtle text-danger border border-danger-subtle'
@@ -742,8 +784,21 @@ const StockManagement = () => {
                           </td>
                           <td className="small fw-semibold text-dark">
                             <i className="bi bi-person me-1 text-primary"></i>
-                            {m.performedBy || 'System Admin'}
+                            {m.performedBy || 'Admin'}
                           </td>
+                          {isAdmin && (
+                            <td className="text-end">
+                              <button
+                                type="button"
+                                className="btn btn-light border btn-sm text-danger"
+                                style={{ width: '28px', height: '28px', padding: 0 }}
+                                title="Delete Movement Record"
+                                onClick={() => handleDeleteMovementRow(m)}
+                              >
+                                <i className="bi bi-trash" style={{ fontSize: '0.75rem' }}></i>
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}

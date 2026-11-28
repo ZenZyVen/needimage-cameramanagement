@@ -4,6 +4,7 @@ export const getMaintenanceTickets = (params) => api.get('/maintenance', { param
 export const createMaintenanceTicket = (data) => api.post('/maintenance', data);
 export const updateMaintenanceTicket = (id, data) => api.put(`/maintenance/${id}`, data);
 export const resolveMaintenanceTicket = (id, data) => api.patch(`/maintenance/${id}/resolve`, data);
+export const deleteMaintenanceTicket = (id) => api.delete(`/maintenance/${id}`);
 
 export const uploadDamageImage = (file) => {
   const formData = new FormData();
@@ -18,5 +19,6 @@ export default {
   createMaintenanceTicket,
   updateMaintenanceTicket,
   resolveMaintenanceTicket,
+  deleteMaintenanceTicket,
   uploadDamageImage
 };

@@ -132,14 +132,16 @@ const EquipmentFormModal = ({ show, onHide, onSubmit, equipment = null, categori
     try {
       setSubmitting(true);
       setErrorMsg('');
+      const parsedQty = parseInt(formData.quantity, 10) || 1;
+      const parsedAvail = parseInt(formData.availableQuantity, 10);
       await onSubmit({
         ...formData,
         assetTag: formData.assetTag.trim().toUpperCase(),
         serialNumber: formData.serialNumber.trim(),
         brand: formData.brand.trim() || 'General',
         imageUrl: normalizeImageUrl(formData.imageUrl) || null,
-        quantity: parseInt(formData.quantity, 10) || 1,
-        availableQuantity: parseInt(formData.availableQuantity, 10) || 1,
+        quantity: parsedQty,
+        availableQuantity: isNaN(parsedAvail) ? parsedQty : Math.max(0, parsedAvail),
         purchasePrice: formData.purchasePrice !== '' ? parseFloat(formData.purchasePrice) : null,
         dailyRate: formData.dailyRate !== '' ? parseFloat(formData.dailyRate) : null
       });

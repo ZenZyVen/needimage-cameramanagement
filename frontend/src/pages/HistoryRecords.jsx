@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAuditLogs } from '../services/settingsService';
+import { getAuditLogs, deleteAuditLog } from '../services/settingsService';
 import { getUsers } from '../services/userService';
 import { formatDateTime, formatDate } from '../utils/formatters';
 
@@ -29,6 +29,7 @@ const HistoryRecords = () => {
   // Detail Modal
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
     if (isAdmin) {
@@ -73,6 +74,18 @@ const HistoryRecords = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     loadRecords();
+  };
+
+  const handleDeleteRecord = async (rec) => {
+    if (window.confirm(`Delete history record "${rec.action}" (${rec.entity})?`)) {
+      try {
+        await deleteAuditLog(rec.id);
+        setAlertMsg({ type: 'success', text: 'History record deleted.' });
+        loadRecords();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete record.' });
+      }
+    }
   };
 
   // Determine category of action for tab filtering
@@ -251,6 +264,13 @@ const HistoryRecords = () => {
         </div>
       </div>
 
+      {alertMsg.text && (
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-4`} role="alert">
+          {alertMsg.text}
+          <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
@@ -410,7 +430,7 @@ const HistoryRecords = () => {
                     <th style={{ width: '140px' }}>Action Type</th>
                     <th>User / Responsible Staff</th>
                     <th>Record Description</th>
-                    <th className="text-end" style={{ width: '90px' }}>Details</th>
+                    <th className="text-end" style={{ width: isAdmin ? '125px' : '90px' }}>Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -455,17 +475,30 @@ const HistoryRecords = () => {
                         </td>
 
                         <td className="text-end">
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm py-0 px-2"
-                            style={{ fontSize: '0.72rem' }}
-                            onClick={() => {
-                              setSelectedRecord(rec);
-                              setShowModal(true);
-                            }}
-                          >
-                            Inspect
-                          </button>
+                          <div className="d-inline-flex align-items-center gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm py-0 px-2"
+                              style={{ fontSize: '0.72rem' }}
+                              onClick={() => {
+                                setSelectedRecord(rec);
+                                setShowModal(true);
+                              }}
+                            >
+                              Inspect
+                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn btn-light border btn-sm text-danger py-0 px-1"
+                                style={{ fontSize: '0.72rem' }}
+                                title="Delete Record"
+                                onClick={() => handleDeleteRecord(rec)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

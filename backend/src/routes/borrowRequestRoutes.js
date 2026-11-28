@@ -13,5 +13,6 @@ router.patch('/:id/reject', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER
 router.post('/:id/reject', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), requestController.rejectRequest);
 router.patch('/:id/cancel', authenticate, requestController.cancelRequest);
 router.post('/:id/cancel', authenticate, requestController.cancelRequest);
+router.delete('/:id', authenticate, requireRole('ADMIN'), requestController.deleteRequest);
 
 module.exports = router;

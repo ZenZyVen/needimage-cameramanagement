@@ -389,7 +389,7 @@ exports.rejectRequest = async (req, res, next) => {
   }
 };
 
-// 6. Cancel request (requester only, when pending)
+// 6. Cancel request (requester when pending; Admin when pending or approved)
 exports.cancelRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -399,14 +399,18 @@ exports.cancelRequest = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Request not found.' });
     }
 
-    if (request.userId !== req.user.id && req.user.role !== 'ADMIN') {
+    const isAdmin = req.user.role === 'ADMIN';
+    if (request.userId !== req.user.id && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    if (request.status !== 'PENDING') {
+    const cancellableStatuses = isAdmin ? ['PENDING', 'APPROVED'] : ['PENDING'];
+    if (!cancellableStatuses.includes(request.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Only pending requests can be cancelled.'
+        message: isAdmin
+          ? 'Only pending or approved requests can be cancelled.'
+          : 'Only pending requests can be cancelled.'
       });
     }
 
@@ -419,6 +423,92 @@ exports.cancelRequest = async (req, res, next) => {
       success: true,
       message: `Request ${request.requestNumber} cancelled.`,
       data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 7. Delete borrow request (Admin only - safely restores checked-out stock and cleans linked records)
+exports.deleteRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const request = await prisma.borrowRequest.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            equipment: true
+          }
+        }
+      }
+    });
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found.' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Restore stock for any items still marked CHECKED_OUT
+      const checkedOutItems = (request.items || []).filter(
+        (item) => item.status === 'CHECKED_OUT' && item.equipment
+      );
+
+      for (const item of checkedOutItems) {
+        const eq = item.equipment;
+        const qty = eq.quantity || 1;
+        const currAvail = eq.availableQuantity !== undefined ? eq.availableQuantity : 0;
+        const newAvail = Math.min(qty, currAvail + (item.quantity || 1));
+        const nextStatus =
+          ['BORROWED', 'IN_USE', 'OUT_OF_STOCK'].includes(eq.status) && newAvail > 0
+            ? 'AVAILABLE'
+            : eq.status;
+
+        await tx.equipment.update({
+          where: { id: eq.id },
+          data: {
+            availableQuantity: newAvail,
+            status: nextStatus
+          }
+        });
+      }
+
+      if (tx.invoice?.updateMany) {
+        await tx.invoice.updateMany({
+          where: { requestId: id },
+          data: { requestId: null }
+        });
+      }
+      if (tx.checkInOut?.updateMany) {
+        await tx.checkInOut.updateMany({
+          where: { requestId: id },
+          data: { requestId: null }
+        });
+      }
+      if (tx.borrowRequestItem?.deleteMany) {
+        await tx.borrowRequestItem.deleteMany({
+          where: { requestId: id }
+        });
+      }
+      await tx.borrowRequest.delete({ where: { id } });
+    }, {
+      maxWait: 10000,
+      timeout: 30000
+    });
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'DELETE_REQUEST',
+      entity: 'BorrowRequest',
+      entityId: id,
+      details: { requestNumber: request.requestNumber },
+      req
+    });
+
+    return res.json({
+      success: true,
+      message: `Borrow request ${request.requestNumber} deleted successfully.`
     });
   } catch (error) {
     next(error);

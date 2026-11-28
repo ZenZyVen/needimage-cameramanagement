@@ -11,9 +11,12 @@ export const deleteEquipment = (id, params) => api.delete(`/equipment/${id}`, { 
 export const restoreEquipment = (id) => api.post(`/equipment/${id}/restore`);
 export const adjustStock = (id, data) => api.post(`/equipment/${id}/adjust-stock`, data);
 export const getStockMovements = (params) => api.get('/equipment/stock-movements', { params });
+export const deleteStockMovement = (id) => api.delete(`/equipment/stock-movements/${id}`);
+export const clearStockMovements = (data) => api.delete('/equipment/stock-movements', { data });
 
 export const getCategories = () => api.get('/equipment/categories');
 export const createCategory = (data) => api.post('/equipment/categories', data);
+export const updateCategory = (id, data) => api.put(`/equipment/categories/${id}`, data);
 export const deleteCategory = (id) => api.delete(`/equipment/categories/${id}`);
 
 export const uploadEquipmentImage = (file) => {
@@ -35,8 +38,11 @@ export default {
   deleteEquipment,
   restoreEquipment,
   adjustStock,
+  deleteStockMovement,
+  clearStockMovements,
   getCategories,
   createCategory,
+  updateCategory,
   deleteCategory,
   uploadEquipmentImage
 };

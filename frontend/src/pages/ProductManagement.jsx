@@ -14,8 +14,8 @@ import { formatCurrency } from '../utils/formatters';
 import { normalizeImageUrl, handleImgError } from '../utils/imageHelper';
 import StatusBadge from '../components/common/StatusBadge';
 
-const CONDITIONS = ['EXCELLENT', 'GOOD', 'FAIR', 'MAINTENANCE', 'DAMAGED'];
-const STATUSES = ['AVAILABLE', 'BORROWED', 'MAINTENANCE', 'DAMAGED', 'OUT_OF_STOCK'];
+const CONDITIONS = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR', 'DAMAGED'];
+const STATUSES = ['AVAILABLE', 'BORROWED', 'UNDER_MAINTENANCE', 'DAMAGED', 'OUT_OF_STOCK'];
 
 const ProductManagement = () => {
   const { user, isAdmin, isStaff } = useAuth();
@@ -174,6 +174,8 @@ const ProductManagement = () => {
 
     try {
       setSubmitting(true);
+      const parsedQty = parseInt(formData.quantity, 10) || 1;
+      const parsedAvail = parseInt(formData.availableQuantity, 10);
       const payload = {
         name: formData.name.trim(),
         assetTag: formData.assetTag.trim().toUpperCase(),
@@ -183,8 +185,8 @@ const ProductManagement = () => {
         serialNumber: formData.serialNumber.trim(),
         purchasePrice: formData.purchasePrice !== '' ? parseFloat(formData.purchasePrice) : null,
         dailyRate: formData.dailyRate !== '' ? parseFloat(formData.dailyRate) : null,
-        quantity: parseInt(formData.quantity, 10) || 1,
-        availableQuantity: parseInt(formData.availableQuantity, 10) || parseInt(formData.quantity, 10) || 1,
+        quantity: parsedQty,
+        availableQuantity: isNaN(parsedAvail) ? parsedQty : Math.max(0, parsedAvail),
         condition: formData.condition,
         status: formData.status,
         imageUrl: normalizeImageUrl(formData.imageUrl) || null,
@@ -236,15 +238,19 @@ const ProductManagement = () => {
     }
   };
 
-  // Delete Product
+  // Delete Product (Admin permanent delete)
   const handleDeleteProduct = async (product) => {
-    if (!window.confirm(`Are you sure you want to delete product "${product.name}" (${product.assetTag})?`)) {
+    if (
+      !window.confirm(
+        `Permanently delete product "${product.name}" (${product.assetTag})? This will remove the item and release its asset tag.`
+      )
+    ) {
       return;
     }
 
     try {
-      await deleteEquipment(product.id);
-      setAlertMsg({ type: 'success', text: `Product "${product.name}" removed from active catalog.` });
+      await deleteEquipment(product.id, { permanent: true });
+      setAlertMsg({ type: 'success', text: `Product "${product.name}" permanently deleted.` });
       triggerNotificationRefresh();
       loadProducts();
     } catch (err) {

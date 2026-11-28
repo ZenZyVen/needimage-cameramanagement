@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAuditLogs } from '../services/settingsService';
+import { getAuditLogs, deleteAuditLog } from '../services/settingsService';
 import { getUsers } from '../services/userService';
 import { formatDateTime } from '../utils/formatters';
 
@@ -32,6 +32,7 @@ const ActivityLog = () => {
   // Selected Log for JSON inspector
   const [selectedLog, setSelectedLog] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
     loadUsers();
@@ -74,6 +75,18 @@ const ActivityLog = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     loadLogs();
+  };
+
+  const handleDeleteLog = async (log) => {
+    if (window.confirm(`Delete activity log "${log.action}" (${log.entity})?`)) {
+      try {
+        await deleteAuditLog(log.id);
+        setAlertMsg({ type: 'success', text: 'Activity log deleted.' });
+        loadLogs();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete log.' });
+      }
+    }
   };
 
   // Filter logs by category in-memory for flexible matching
@@ -216,6 +229,13 @@ const ActivityLog = () => {
           </button>
         </div>
       </div>
+
+      {alertMsg.text && (
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-4`} role="alert">
+          {alertMsg.text}
+          <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="row g-3 mb-4">
@@ -362,7 +382,7 @@ const ActivityLog = () => {
                     <th style={{ width: '180px' }}>Date & Actor</th>
                     <th style={{ width: '160px' }}>Action & Entity</th>
                     <th>Activity Summary</th>
-                    <th className="text-end" style={{ width: '85px' }}>Inspect</th>
+                    <th className="text-end" style={{ width: isAdmin ? '125px' : '85px' }}>Inspect</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -416,18 +436,31 @@ const ActivityLog = () => {
                         </td>
 
                         <td className="text-end">
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm py-0 px-2"
-                            style={{ fontSize: '0.72rem' }}
-                            onClick={() => {
-                              setSelectedLog(log);
-                              setShowDetailModal(true);
-                            }}
-                            title="Inspect Raw JSON Metadata"
-                          >
-                            <i className="bi bi-code-slash me-1"></i> View
-                          </button>
+                          <div className="d-inline-flex align-items-center gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm py-0 px-2"
+                              style={{ fontSize: '0.72rem' }}
+                              onClick={() => {
+                                setSelectedLog(log);
+                                setShowDetailModal(true);
+                              }}
+                              title="Inspect Raw JSON Metadata"
+                            >
+                              <i className="bi bi-code-slash me-1"></i> View
+                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn btn-light border btn-sm text-danger py-0 px-1"
+                                style={{ fontSize: '0.72rem' }}
+                                title="Delete Log"
+                                onClick={() => handleDeleteLog(log)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

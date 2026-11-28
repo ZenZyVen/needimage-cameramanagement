@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getDashboardStats } from '../services/dashboardService';
+import { getCheckInOutHistory, deleteCheckInOutRecord } from '../services/checkInOutService';
 import { formatDateTime, formatDate } from '../utils/formatters';
 
 const HandoverLogs = () => {
@@ -9,6 +9,7 @@ const HandoverLogs = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,14 +29,26 @@ const HandoverLogs = () => {
     try {
       setLoading(true);
       setErrorMsg('');
-      const res = await getDashboardStats({ timeframe: 'all' });
-      if (res.data?.success && res.data.recentActivity) {
-        setLogs(res.data.recentActivity || []);
+      const res = await getCheckInOutHistory({ limit: 300 });
+      if (res.data?.success) {
+        setLogs(res.data.data || []);
       }
     } catch (err) {
       setErrorMsg('Failed to load handover and return logs.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLog = async (log) => {
+    if (window.confirm(`Delete ${log.type === 'CHECK_OUT' ? 'handover' : 'return'} log record for ${log.equipment?.assetTag || 'equipment'}?`)) {
+      try {
+        await deleteCheckInOutRecord(log.id);
+        setAlertMsg({ type: 'success', text: 'Handover/return log record deleted.' });
+        loadHandoverLogs();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete log record.' });
+      }
     }
   };
 
@@ -127,6 +140,13 @@ const HandoverLogs = () => {
       {errorMsg && (
         <div className="alert alert-danger py-2 small mb-4 shadow-sm">
           <i className="bi bi-exclamation-triangle me-1"></i> {errorMsg}
+        </div>
+      )}
+
+      {alertMsg.text && (
+        <div className={`alert alert-${alertMsg.type} alert-dismissible fade show py-2 small mb-4 shadow-sm`} role="alert">
+          {alertMsg.text}
+          <button type="button" className="btn-close py-2" onClick={() => setAlertMsg({ type: '', text: '' })}></button>
         </div>
       )}
 
@@ -306,24 +326,37 @@ const HandoverLogs = () => {
                           <div className="small text-secondary text-truncate" style={{ maxWidth: '200px' }} title={log.notes || 'No special notes'}>
                             {log.notes || '—'}
                           </div>
-                          {log.condition && (
+                          {(log.conditionAtAction || log.condition) && (
                             <span className="badge bg-light text-dark border" style={{ fontSize: '0.65rem' }}>
-                              Condition: {log.condition}
+                              Condition: {log.conditionAtAction || log.condition}
                             </span>
                           )}
                         </td>
                         <td className="text-end">
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm py-0 px-2"
-                            style={{ fontSize: '0.72rem' }}
-                            onClick={() => {
-                              setSelectedLog(log);
-                              setShowModal(true);
-                            }}
-                          >
-                            View
-                          </button>
+                          <div className="d-inline-flex align-items-center gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm py-0 px-2"
+                              style={{ fontSize: '0.72rem' }}
+                              onClick={() => {
+                                setSelectedLog(log);
+                                setShowModal(true);
+                              }}
+                            >
+                              View
+                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn btn-light border btn-sm text-danger py-0 px-1"
+                                style={{ fontSize: '0.72rem' }}
+                                title="Delete Log Record"
+                                onClick={() => handleDeleteLog(log)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -383,7 +416,7 @@ const HandoverLogs = () => {
                 <div className="mb-3">
                   <label className="text-muted small fw-semibold">Condition Assessment:</label>
                   <div className="p-2 border rounded bg-white small">
-                    {selectedLog.condition || 'Inspected Good Condition'}
+                    {selectedLog.conditionAtAction || selectedLog.condition || 'Inspected Good Condition'}
                   </div>
                 </div>
 

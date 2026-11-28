@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getRequests } from '../services/requestService';
-import { checkoutItems, checkinItems, getCheckInOutHistory } from '../services/checkInOutService';
+import { checkoutItems, checkinItems, getCheckInOutHistory, deleteCheckInOutRecord } from '../services/checkInOutService';
 import { lookupEquipment } from '../services/equipmentService';
 import CheckoutModal from '../components/checkinout/CheckoutModal';
 import CheckinModal from '../components/checkinout/CheckinModal';
@@ -12,7 +12,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import { formatDate, formatDateTime } from '../utils/formatters';
 
 const CheckInOut = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'checkout'); // 'checkout', 'checkin', 'history'
@@ -94,6 +94,18 @@ const CheckInOut = () => {
     loadData();
     if (checkinReq) {
       setPrintReturnReq(checkinReq);
+    }
+  };
+
+  const handleDeleteHistoryLog = async (log) => {
+    if (window.confirm(`Delete ${log.type === 'CHECK_OUT' ? 'checkout' : 'return'} log record for ${log.equipment?.assetTag || 'equipment'}?`)) {
+      try {
+        await deleteCheckInOutRecord(log.id);
+        setAlertMsg({ type: 'success', text: 'Handover log record deleted.' });
+        loadData();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete log record.' });
+      }
     }
   };
 
@@ -320,12 +332,13 @@ const CheckInOut = () => {
                   <th>Vault Staff</th>
                   <th>Condition Logged</th>
                   <th>Inspection Notes</th>
+                  {isAdmin && <th className="text-end">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {historyLogs.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center py-4 text-muted small">
+                    <td colSpan={isAdmin ? 8 : 7} className="text-center py-4 text-muted small">
                       No handover actions recorded yet.
                     </td>
                   </tr>
@@ -362,6 +375,19 @@ const CheckInOut = () => {
                           log.notes || 'Normal'
                         )}
                       </td>
+                      {isAdmin && (
+                        <td className="text-end">
+                          <button
+                            type="button"
+                            className="btn btn-light border btn-sm text-danger"
+                            style={{ width: '28px', height: '28px', padding: 0 }}
+                            title="Delete Log Record"
+                            onClick={() => handleDeleteHistoryLog(log)}
+                          >
+                            <i className="bi bi-trash" style={{ fontSize: '0.75rem' }}></i>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

@@ -65,7 +65,7 @@ const Projects = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
+    if (window.confirm('Permanently delete this project? Any linked borrow requests will be unlinked safely.')) {
       try {
         await deleteProject(id);
         setAlertMsg({ type: 'success', text: 'Project deleted successfully.' });

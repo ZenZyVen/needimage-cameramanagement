@@ -66,7 +66,7 @@ const users = [
   }
 ];
 
-// 17 Complete Media Production Categories
+// 18 Complete Media Production Categories
 const categories = [
   { id: 'cat-cameras', name: 'Cameras', description: 'Cinema cameras, mirrorless bodies, and medium format systems', icon: 'bi-camera-reels' },
   { id: 'cat-lenses', name: 'Lenses', description: 'Cinema prime lenses, anamorphic optics, and cine zooms', icon: 'bi-disc' },
@@ -74,6 +74,7 @@ const categories = [
   { id: 'cat-audio', name: 'Audio', description: 'Multi-track field recorders, mixers, and audio accessories', icon: 'bi-soundwave' },
   { id: 'cat-microphones', name: 'Microphones', description: 'Shotgun microphones, wireless lavalier kits, and boundary mics', icon: 'bi-mic' },
   { id: 'cat-tripods', name: 'Tripods', description: 'Carbon fiber fluid head tripods, heavy-duty pedestals, and hi-hats', icon: 'bi-triangle' },
+  { id: 'cat-stand', name: 'Stand', description: 'Light stands, C-stands, boom arms, and studio support stands', icon: 'bi-arrows-move' },
   { id: 'cat-gimbals', name: 'Gimbals', description: '3-axis motorized gimbals, steadicams, and vehicle rig mounts', icon: 'bi-joystick' },
   { id: 'cat-drones', name: 'Drones', description: 'Aerial cinematography drones, FPV rigs, and flight controllers', icon: 'bi-send' },
   { id: 'cat-monitors', name: 'Monitors', description: 'High-brightness field monitors and wireless director stations', icon: 'bi-display' },
@@ -970,6 +971,14 @@ const mockStore = {
       categories.push(newCat);
       return newCat;
     },
+    update: async ({ where, data }) => {
+      const idx = categories.findIndex(c => c.id === where.id);
+      if (idx !== -1) {
+        categories[idx] = { ...categories[idx], ...data, updatedAt: new Date() };
+        return categories[idx];
+      }
+      return null;
+    },
     delete: async ({ where }) => {
       const idx = categories.findIndex(c => c.id === where.id);
       if (idx !== -1) {
@@ -1057,24 +1066,6 @@ const mockStore = {
       };
       equipment.push(newEq);
 
-      // Log stock movement
-      stockMovements.unshift({
-        id: `mov-${Date.now()}`,
-        equipmentId: newEq.id,
-        assetTag: newEq.assetTag,
-        equipmentName: newEq.name,
-        type: 'INITIAL_STOCK',
-        quantityChanged: qty,
-        previousAvailable: 0,
-        newAvailable: avail,
-        previousTotal: 0,
-        newTotal: qty,
-        reference: 'INITIAL_INTAKE',
-        notes: `Registered with ${qty} total unit(s).`,
-        performedBy: 'System Admin',
-        createdAt: new Date()
-      });
-
       return { ...newEq, category: categories.find(c => c.id === newEq.categoryId) };
     },
     update: async ({ where, data }) => {
@@ -1098,29 +1089,16 @@ const mockStore = {
     delete: async ({ where }) => {
       const idx = equipment.findIndex(e => e.id === where.id);
       if (idx !== -1) {
-        // Soft delete
-        equipment[idx].isDeleted = true;
-        equipment[idx].deletedAt = new Date();
-        equipment[idx].status = 'RETIRED';
-
-        stockMovements.unshift({
-          id: `mov-${Date.now()}`,
-          equipmentId: equipment[idx].id,
-          assetTag: equipment[idx].assetTag,
-          equipmentName: equipment[idx].name,
-          type: 'ARCHIVE',
-          quantityChanged: -equipment[idx].availableQuantity,
-          previousAvailable: equipment[idx].availableQuantity,
-          newAvailable: 0,
-          previousTotal: equipment[idx].quantity,
-          newTotal: 0,
-          reference: 'SOFT_DELETE',
-          notes: 'Equipment archived / soft-deleted by administrator.',
-          performedBy: 'Administrator',
-          createdAt: new Date()
-        });
+        return equipment.splice(idx, 1)[0];
       }
       return { success: true };
+    },
+    deleteMany: async ({ where } = {}) => {
+      const toRemove = new Set(filterCollection(equipment, where).map(e => e.id));
+      for (let i = equipment.length - 1; i >= 0; i--) {
+        if (toRemove.has(equipment[i].id)) equipment.splice(i, 1);
+      }
+      return { count: toRemove.size };
     }
   },
 
@@ -1163,11 +1141,25 @@ const mockStore = {
       }
       return null;
     },
+    updateMany: async ({ where, data }) => {
+      let count = 0;
+      projects.forEach((p, idx) => {
+        if (!where?.createdById || p.createdById === where.createdById) {
+          projects[idx] = { ...p, ...data, updatedAt: new Date() };
+          count++;
+        }
+      });
+      return { count };
+    },
     delete: async ({ where }) => {
       const idx = projects.findIndex(p => p.id === where.id);
       if (idx !== -1) projects.splice(idx, 1);
       return { success: true };
     }
+  },
+
+  projectCrew: {
+    deleteMany: async () => ({ count: 0 })
   },
 
   borrowRequest: {
@@ -1245,6 +1237,24 @@ const mockStore = {
         };
       }
       return null;
+    },
+    updateMany: async ({ where, data }) => {
+      let count = 0;
+      borrowRequests.forEach((r, idx) => {
+        const matchProject = !where?.projectId || r.projectId === where.projectId;
+        const matchUser = !where?.userId || r.userId === where.userId;
+        const matchApproved = !where?.approvedById || r.approvedById === where.approvedById;
+        if (matchProject && matchUser && matchApproved) {
+          borrowRequests[idx] = { ...r, ...data, updatedAt: new Date() };
+          count++;
+        }
+      });
+      return { count };
+    },
+    delete: async ({ where }) => {
+      const idx = borrowRequests.findIndex(r => r.id === where.id);
+      if (idx !== -1) borrowRequests.splice(idx, 1);
+      return { success: true };
     }
   },
 
@@ -1253,7 +1263,7 @@ const mockStore = {
     updateMany: async ({ where, data }) => {
       let count = 0;
       borrowRequestItems.forEach((i, idx) => {
-        if ((!where.requestId || i.requestId === where.requestId) && (!where.equipmentId || i.equipmentId === where.equipmentId)) {
+        if ((!where.requestId || i.requestId === where.requestId) && (!where.equipmentId || i.equipmentId === where.equipmentId) && (!where.status || i.status === where.status)) {
           borrowRequestItems[idx] = { ...i, ...data };
           count++;
         }
@@ -1264,6 +1274,19 @@ const mockStore = {
       const item = { id: `item-${Date.now()}`, ...data };
       borrowRequestItems.push(item);
       return item;
+    },
+    deleteMany: async ({ where } = {}) => {
+      let count = 0;
+      for (let i = borrowRequestItems.length - 1; i >= 0; i--) {
+        const item = borrowRequestItems[i];
+        const matchReq = !where?.requestId || item.requestId === where.requestId;
+        const matchEq = !where?.equipmentId || item.equipmentId === where.equipmentId;
+        if (matchReq && matchEq) {
+          borrowRequestItems.splice(i, 1);
+          count++;
+        }
+      }
+      return { count };
     }
   },
 
@@ -1277,11 +1300,37 @@ const mockStore = {
         request: borrowRequests.find(r => r.id === c.requestId)
       }));
     },
+    findUnique: async ({ where }) => checkInOuts.find(c => c.id === where.id) || null,
     count: async ({ where } = {}) => filterCollection(checkInOuts, where).length,
     create: async ({ data }) => {
       const newRec = { id: `chk-${Date.now()}`, actionDate: new Date(), ...data };
       checkInOuts.unshift(newRec);
       return newRec;
+    },
+    updateMany: async ({ where, data }) => {
+      let count = 0;
+      checkInOuts.forEach((c, idx) => {
+        if ((!where?.requestId || c.requestId === where.requestId) && (!where?.handledById || c.handledById === where.handledById)) {
+          checkInOuts[idx] = { ...c, ...data };
+          count++;
+        }
+      });
+      return { count };
+    },
+    delete: async ({ where }) => {
+      const idx = checkInOuts.findIndex(c => c.id === where.id);
+      if (idx !== -1) checkInOuts.splice(idx, 1);
+      return { success: true };
+    },
+    deleteMany: async ({ where } = {}) => {
+      let count = 0;
+      for (let i = checkInOuts.length - 1; i >= 0; i--) {
+        if (!where?.equipmentId || checkInOuts[i].equipmentId === where.equipmentId) {
+          checkInOuts.splice(i, 1);
+          count++;
+        }
+      }
+      return { count };
     }
   },
 
@@ -1323,6 +1372,21 @@ const mockStore = {
         };
       }
       return null;
+    },
+    delete: async ({ where }) => {
+      const idx = maintenances.findIndex(m => m.id === where.id);
+      if (idx !== -1) maintenances.splice(idx, 1);
+      return { success: true };
+    },
+    deleteMany: async ({ where } = {}) => {
+      let count = 0;
+      for (let i = maintenances.length - 1; i >= 0; i--) {
+        if (!where?.equipmentId || maintenances[i].equipmentId === where.equipmentId) {
+          maintenances.splice(i, 1);
+          count++;
+        }
+      }
+      return { count };
     }
   },
 
@@ -1362,11 +1426,24 @@ const mockStore = {
         user: l.userId ? users.find(u => u.id === l.userId) : null
       }));
     },
+    findUnique: async ({ where }) => auditLogs.find(l => l.id === where.id) || null,
     count: async ({ where } = {}) => filterCollection(auditLogs, where).length,
     create: async ({ data }) => {
       const log = { id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
       auditLogs.unshift(log);
       return log;
+    },
+    delete: async ({ where }) => {
+      const idx = auditLogs.findIndex(l => l.id === where.id);
+      if (idx !== -1) auditLogs.splice(idx, 1);
+      return { success: true };
+    },
+    deleteMany: async ({ where } = {}) => {
+      const matches = new Set(filterCollection(auditLogs, where).map(l => l.id));
+      for (let i = auditLogs.length - 1; i >= 0; i--) {
+        if (matches.has(auditLogs[i].id)) auditLogs.splice(i, 1);
+      }
+      return { count: matches.size };
     }
   },
 
@@ -1376,11 +1453,24 @@ const mockStore = {
       list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       return list.slice(skip, skip + take);
     },
+    findUnique: async ({ where }) => stockMovements.find(m => m.id === where.id) || null,
     count: async ({ where } = {}) => filterCollection(stockMovements, where).length,
     create: async ({ data }) => {
       const mov = { id: `mov-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
       stockMovements.unshift(mov);
       return mov;
+    },
+    delete: async ({ where }) => {
+      const idx = stockMovements.findIndex(m => m.id === where.id);
+      if (idx !== -1) stockMovements.splice(idx, 1);
+      return { success: true };
+    },
+    deleteMany: async ({ where } = {}) => {
+      const matches = new Set(filterCollection(stockMovements, where).map(m => m.id));
+      for (let i = stockMovements.length - 1; i >= 0; i--) {
+        if (matches.has(stockMovements[i].id)) stockMovements.splice(i, 1);
+      }
+      return { count: matches.size };
     }
   },
 

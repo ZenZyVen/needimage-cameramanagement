@@ -4,13 +4,15 @@ import {
   getStockMovements,
   getEquipment,
   getCategories,
-  adjustStock
+  adjustStock,
+  deleteStockMovement
 } from '../services/equipmentService';
 import { triggerNotificationRefresh } from '../context/NotificationContext';
 import { formatDateTime } from '../utils/formatters';
 
 const MOVEMENT_TYPES = [
   { value: 'ALL', label: 'All Movement Types' },
+  { value: 'INITIAL_STOCK', label: 'INITIAL_STOCK (New Equipment)' },
   { value: 'RESTOCK', label: 'RESTOCK / Intake (+)' },
   { value: 'STOCK_IN', label: 'STOCK_IN (+)' },
   { value: 'CHECK_OUT', label: 'CHECK_OUT (Handover / Loan)' },
@@ -149,9 +151,21 @@ const StockMovements = () => {
     document.body.removeChild(link);
   };
 
+  const handleDeleteMovement = async (m) => {
+    if (window.confirm(`Delete stock movement record for ${m.assetTag} (${m.type})?`)) {
+      try {
+        await deleteStockMovement(m.id);
+        setAlertMsg({ type: 'success', text: 'Stock movement record deleted.' });
+        loadMovements();
+      } catch (err) {
+        setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete stock movement.' });
+      }
+    }
+  };
+
   // Metrics
   const totalCount = movements.length;
-  const restockCount = movements.filter(m => m.type === 'RESTOCK' || m.type === 'STOCK_IN').length;
+  const restockCount = movements.filter(m => m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'INITIAL_STOCK').length;
   const checkoutsCount = movements.filter(m => m.type === 'CHECK_OUT').length;
   const checkinsCount = movements.filter(m => m.type === 'CHECK_IN').length;
   const maintenanceCount = movements.filter(m => m.type === 'MAINTENANCE').length;
@@ -355,6 +369,7 @@ const StockMovements = () => {
                     <th style={{ width: '160px' }}>Movement & Delta</th>
                     <th style={{ width: '190px' }}>Progression & Ref</th>
                     <th>Notes & Details</th>
+                    {isAdmin && <th className="text-end" style={{ width: '75px' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -369,7 +384,7 @@ const StockMovements = () => {
                           </div>
                           <div className="small text-muted d-flex align-items-center gap-1 mt-0">
                             <i className="bi bi-person text-primary" style={{ fontSize: '0.8rem' }}></i>
-                            <span>{m.performedBy || 'System Admin'}</span>
+                            <span>{m.performedBy || 'Admin'}</span>
                           </div>
                         </td>
 
@@ -389,7 +404,7 @@ const StockMovements = () => {
                         <td>
                           <div className="d-flex align-items-center gap-2">
                             <span className={`badge ${
-                              m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
+                              m.type === 'INITIAL_STOCK' || m.type === 'RESTOCK' || m.type === 'STOCK_IN' || m.type === 'CHECK_IN'
                                 ? 'bg-success-subtle text-success border border-success-subtle'
                                 : m.type === 'DAMAGED_WRITE_OFF' || m.type === 'STOCK_REDUCTION'
                                 ? 'bg-danger-subtle text-danger border border-danger-subtle'
@@ -428,6 +443,20 @@ const StockMovements = () => {
                             {m.notes || <span className="text-muted fst-italic">No additional notes</span>}
                           </div>
                         </td>
+
+                        {isAdmin && (
+                          <td className="text-end">
+                            <button
+                              type="button"
+                              className="btn btn-light border btn-sm text-danger"
+                              style={{ width: '28px', height: '28px', padding: 0 }}
+                              title="Delete Movement Record"
+                              onClick={() => handleDeleteMovement(m)}
+                            >
+                              <i className="bi bi-trash" style={{ fontSize: '0.75rem' }}></i>
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

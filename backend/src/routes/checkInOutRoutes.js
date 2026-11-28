@@ -8,5 +8,6 @@ const { requireRole } = require('../middlewares/roleMiddleware');
 router.post('/checkout', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), checkInOutController.checkoutItems);
 router.post('/checkin', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), checkInOutController.checkinItems);
 router.get('/history', authenticate, checkInOutController.getHistory);
+router.delete('/:id', authenticate, requireRole('ADMIN'), checkInOutController.deleteCheckInOutRecord);
 
 module.exports = router;

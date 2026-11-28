@@ -101,7 +101,7 @@ async function main() {
 
   console.log('✅ Created 4 users (Admin, Stock Management, 2 Normal Users).');
 
-  // 2. Create 17 Production Categories
+  // 2. Create 18 Production Categories
   const categoriesData = [
     { name: 'Cameras', description: 'Cinema cameras, mirrorless bodies, and medium format systems', icon: 'bi-camera-reels' },
     { name: 'Lenses', description: 'Cinema prime lenses, anamorphic optics, and cine zooms', icon: 'bi-disc' },
@@ -109,6 +109,7 @@ async function main() {
     { name: 'Audio', description: 'Multi-track field recorders, mixers, and audio accessories', icon: 'bi-soundwave' },
     { name: 'Microphones', description: 'Shotgun microphones, wireless lavalier kits, and boundary mics', icon: 'bi-mic' },
     { name: 'Tripods', description: 'Carbon fiber fluid head tripods, heavy-duty pedestals, and hi-hats', icon: 'bi-triangle' },
+    { name: 'Stand', description: 'Light stands, C-stands, boom arms, and studio support stands', icon: 'bi-arrows-move' },
     { name: 'Gimbals', description: '3-axis motorized gimbals, steadicams, and vehicle rig mounts', icon: 'bi-joystick' },
     { name: 'Drones', description: 'Aerial cinematography drones, FPV rigs, and flight controllers', icon: 'bi-send' },
     { name: 'Monitors', description: 'High-brightness field monitors and wireless director stations', icon: 'bi-display' },

@@ -12,6 +12,8 @@ router.get('/', settingsController.getSettings);
 router.get('/audit-logs', authenticate, settingsController.getAuditLogs);
 
 // Admin-only management routes
+router.delete('/audit-logs/:id', authenticate, requireRole('ADMIN'), settingsController.deleteAuditLog);
+router.delete('/audit-logs', authenticate, requireRole('ADMIN'), settingsController.clearAuditLogs);
 router.put('/', authenticate, requireRole('ADMIN'), settingsController.updateSettings);
 router.get('/backup', authenticate, requireRole('ADMIN'), settingsController.exportBackup);
 router.post('/upload-logo', authenticate, requireRole('ADMIN'), upload.single('logo'), settingsController.uploadLogo);

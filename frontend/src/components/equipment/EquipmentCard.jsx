@@ -10,8 +10,10 @@ const EquipmentCard = ({
   onEdit,
   onDelete,
   onRestore,
+  onPermanentDelete = null,
   onAdjustStock,
   canManage = false,
+  isAdmin = false,
   onRequest = null,
   onFastCheckout = null,
   onFastCheckin = null
@@ -175,14 +177,36 @@ const EquipmentCard = ({
           {/* Sub-row B: Primary Workflow Action Slot (Strictly 32px height on every card) */}
           <div style={{ height: '32px' }}>
             {isArchived ? (
-              <button
-                type="button"
-                className="btn btn-outline-success btn-sm w-100"
-                style={{ fontSize: '0.75rem', height: '32px', minHeight: '32px', padding: '0 0.5rem' }}
-                onClick={() => onRestore && onRestore(equipment.id)}
-              >
-                <i className="bi bi-arrow-counterclockwise me-1"></i> Restore to Active Stock
-              </button>
+              isAdmin && onPermanentDelete ? (
+                <div className="d-flex align-items-center gap-1" style={{ height: '32px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline-success btn-sm flex-fill"
+                    style={{ fontSize: '0.73rem', height: '32px', minHeight: '32px', padding: '0 0.4rem' }}
+                    onClick={() => onRestore && onRestore(equipment.id)}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1"></i> Restore
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm flex-shrink-0"
+                    style={{ fontSize: '0.73rem', height: '32px', minHeight: '32px', padding: '0 0.55rem' }}
+                    title="Delete Permanently"
+                    onClick={() => onPermanentDelete(equipment.id)}
+                  >
+                    <i className="bi bi-trash me-1"></i> Delete
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-outline-success btn-sm w-100"
+                  style={{ fontSize: '0.75rem', height: '32px', minHeight: '32px', padding: '0 0.5rem' }}
+                  onClick={() => onRestore && onRestore(equipment.id)}
+                >
+                  <i className="bi bi-arrow-counterclockwise me-1"></i> Restore to Active Stock
+                </button>
+              )
             ) : canManage ? (
               avail > 0 && equipment.status === 'BORROWED' && onFastCheckout && onFastCheckin ? (
                 <div className="d-flex align-items-center gap-1" style={{ height: '32px' }}>

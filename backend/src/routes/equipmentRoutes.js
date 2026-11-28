@@ -11,18 +11,21 @@ router.get('/next-codes', authenticate, equipmentController.getNextEquipmentCode
 router.get('/categories', authenticate, equipmentController.getCategories);
 router.get('/stock-dashboard', authenticate, equipmentController.getStockDashboard);
 router.get('/stock-movements', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.getStockMovements);
+router.delete('/stock-movements/:id', authenticate, requireRole('ADMIN'), equipmentController.deleteStockMovement);
+router.delete('/stock-movements', authenticate, requireRole('ADMIN'), equipmentController.clearStockMovements);
 router.get('/lookup/:code', authenticate, equipmentController.lookupEquipment);
 router.get('/:id', authenticate, equipmentController.getEquipmentById);
 
 // Staff management routes (Admin & Stock Controller)
+router.post('/categories', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.createCategory);
+router.put('/categories/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.updateCategory);
+router.delete('/categories/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.deleteCategory);
+router.post('/upload', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), upload.single('image'), equipmentController.uploadImage);
+
 router.post('/', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.createEquipment);
 router.put('/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.updateEquipment);
 router.delete('/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.deleteEquipment);
 router.post('/:id/restore', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.restoreEquipment);
 router.post('/:id/adjust-stock', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.adjustStock);
-
-router.post('/categories', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.createCategory);
-router.delete('/categories/:id', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), equipmentController.deleteCategory);
-router.post('/upload', authenticate, requireRole('ADMIN', 'STOCK_CONTROLLER'), upload.single('image'), equipmentController.uploadImage);
 
 module.exports = router;

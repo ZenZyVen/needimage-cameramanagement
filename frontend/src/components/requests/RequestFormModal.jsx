@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getEquipment, getCategories } from '../../services/equipmentService';
 import { getProjects } from '../../services/projectService';
 import StatusBadge from '../common/StatusBadge';
+import CategoryIcon from '../common/CategoryIcon';
 
 const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) => {
   const [projects, setProjects] = useState([]);
@@ -366,7 +367,7 @@ const RequestFormModal = ({ show, onHide, onSubmit, initialEquipment = null }) =
                           style={{ fontSize: '0.74rem' }}
                           onClick={() => setSelectedCategory(cat.id)}
                         >
-                          <i className={`bi ${cat.icon || 'bi-box'}`}></i>
+                          <CategoryIcon icon={cat.icon} name={cat.name} size={14} fallback="bi-box" />
                           <span>{cat.name}</span>
                           <span className={`badge rounded-pill ms-1 ${isSelected ? 'bg-white text-primary' : 'bg-light text-dark border'}`}>
                             {count}

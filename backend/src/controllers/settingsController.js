@@ -201,6 +201,62 @@ exports.getAuditLogs = async (req, res, next) => {
   }
 };
 
+// 3b. Delete single audit log entry (Admin only)
+exports.deleteAuditLog = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.auditLog.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Audit log record not found.' });
+    }
+
+    await prisma.auditLog.delete({ where: { id } });
+
+    return res.json({
+      success: true,
+      message: 'History/audit record deleted.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 3c. Clear audit logs in bulk (Admin only)
+exports.clearAuditLogs = async (req, res, next) => {
+  try {
+    const { ids, orphanedOnly, all } = req.body || {};
+    let deletedCount = 0;
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      const result = await prisma.auditLog.deleteMany({
+        where: { id: { in: ids } }
+      });
+      deletedCount = result.count || 0;
+    } else if (orphanedOnly === true) {
+      const result = await prisma.auditLog.deleteMany({
+        where: { userId: null }
+      });
+      deletedCount = result.count || 0;
+    } else if (all === true) {
+      const result = await prisma.auditLog.deleteMany({});
+      deletedCount = result.count || 0;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Specify ids array, orphanedOnly: true, or all: true to clear audit logs.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Cleared ${deletedCount} audit log record(s).`,
+      deletedCount
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // 4. Export complete database backup (Admin only)
 exports.exportBackup = async (req, res, next) => {
   try {

@@ -283,7 +283,73 @@ exports.resolveMaintenance = async (req, res, next) => {
   }
 };
 
-// 5. Upload damage photo
+// 5. Delete maintenance ticket (Admin only)
+exports.deleteMaintenance = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const ticket = await prisma.maintenance.findUnique({
+      where: { id },
+      include: { equipment: true }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Ticket not found.' });
+    }
+
+    const terminalStatuses = new Set(['RESOLVED', 'WRITTEN_OFF', 'DECOMMISSIONED']);
+    const wasActive = !terminalStatuses.has(ticket.status);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.maintenance.delete({ where: { id } });
+
+      if (wasActive && ticket.equipment) {
+        const remainingActive = await tx.maintenance.count({
+          where: {
+            equipmentId: ticket.equipmentId,
+            status: { notIn: ['RESOLVED', 'WRITTEN_OFF', 'DECOMMISSIONED'] }
+          }
+        });
+
+        if (
+          remainingActive === 0 &&
+          ['UNDER_MAINTENANCE', 'DAMAGED'].includes(ticket.equipment.status)
+        ) {
+          const totalQty = ticket.equipment.quantity || 1;
+          const prevAvail = ticket.equipment.availableQuantity !== undefined ? ticket.equipment.availableQuantity : 0;
+          const nextAvail = Math.min(totalQty, prevAvail + 1);
+          await tx.equipment.update({
+            where: { id: ticket.equipmentId },
+            data: {
+              status: nextAvail > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK',
+              availableQuantity: nextAvail
+            }
+          });
+        }
+      }
+    }, {
+      maxWait: 10000,
+      timeout: 30000
+    });
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'DELETE_MAINTENANCE',
+      entity: 'Maintenance',
+      entityId: id,
+      details: { ticketNumber: ticket.ticketNumber, issueTitle: ticket.issueTitle },
+      req
+    });
+
+    return res.json({
+      success: true,
+      message: `Maintenance ticket ${ticket.ticketNumber} deleted.`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 6. Upload damage photo
 exports.uploadDamageImage = async (req, res, next) => {
   try {
     if (!req.file) {

@@ -436,3 +436,32 @@ exports.getHistory = async (req, res, next) => {
     next(error);
   }
 };
+
+// 4. Delete Check-In/Out log record (Admin only)
+exports.deleteCheckInOutRecord = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.checkInOut.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Handover/return log record not found.' });
+    }
+
+    await prisma.checkInOut.delete({ where: { id } });
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'DELETE_CHECKINOUT',
+      entity: 'CheckInOut',
+      entityId: id,
+      details: { type: existing.type, borrowerName: existing.borrowerName },
+      req
+    });
+
+    return res.json({
+      success: true,
+      message: 'Handover/return log record deleted.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

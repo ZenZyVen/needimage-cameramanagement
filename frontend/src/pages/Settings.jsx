@@ -1,29 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { getAuditLogs, exportBackup, uploadLogo } from '../services/settingsService';
-import { getCategories, createCategory, deleteCategory } from '../services/equipmentService';
+import { getAuditLogs, deleteAuditLog, clearAuditLogs, exportBackup, uploadLogo } from '../services/settingsService';
+import { getCategories, createCategory, updateCategory, deleteCategory } from '../services/equipmentService';
 import { getRequests } from '../services/requestService';
+import CategoryIconPicker from '../components/equipment/CategoryIconPicker';
+import CategoryIcon, { prepareCategoryIconForSave } from '../components/common/CategoryIcon';
 import { formatDate, formatDateTime, formatCurrency } from '../utils/formatters';
-
-const POPULAR_ICONS = [
-  { icon: 'bi-camera-reels', label: 'Cameras' },
-  { icon: 'bi-disc', label: 'Lenses' },
-  { icon: 'bi-lightbulb', label: 'Lighting' },
-  { icon: 'bi-soundwave', label: 'Audio' },
-  { icon: 'bi-mic', label: 'Microphones' },
-  { icon: 'bi-triangle', label: 'Tripods' },
-  { icon: 'bi-joystick', label: 'Gimbals' },
-  { icon: 'bi-send', label: 'Drones' },
-  { icon: 'bi-display', label: 'Monitors' },
-  { icon: 'bi-broadcast', label: 'Broadcasting' },
-  { icon: 'bi-camera-video', label: 'Streaming' },
-  { icon: 'bi-diagram-2', label: 'Cables' },
-  { icon: 'bi-battery-charging', label: 'Batteries' },
-  { icon: 'bi-sd-card', label: 'Memory Cards' },
-  { icon: 'bi-laptop', label: 'Computers' },
-  { icon: 'bi-device-ssd', label: 'Storage Devices' },
-  { icon: 'bi-gear-wide-connected', label: 'Accessories' }
-];
 
 const Settings = () => {
   const { settings, updateSettings, refreshSettings } = useSettings();
@@ -39,7 +21,8 @@ const Settings = () => {
   const [loadingCats, setLoadingCats] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatDesc, setNewCatDesc] = useState('');
-  const [newCatIcon, setNewCatIcon] = useState('bi-camera');
+  const [newCatIcon, setNewCatIcon] = useState('bi-camera-reels');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState([]);
@@ -77,6 +60,10 @@ const Settings = () => {
       setFormData({ ...settings });
     }
   }, [settings]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'categories') {
@@ -152,6 +139,28 @@ const Settings = () => {
     }
   };
 
+  const handleDeleteAuditLog = async (id) => {
+    if (!window.confirm('Delete this audit log entry?')) return;
+    try {
+      await deleteAuditLog(id);
+      setAlertMsg({ type: 'success', text: 'Audit log entry deleted.' });
+      loadAuditLogs();
+    } catch (err) {
+      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to delete audit log entry.' });
+    }
+  };
+
+  const handleClearAuditLogs = async () => {
+    if (!window.confirm('Clear all audit log records? This action cannot be undone.')) return;
+    try {
+      const res = await clearAuditLogs({ all: true });
+      setAlertMsg({ type: 'success', text: res.data?.message || 'Audit logs cleared.' });
+      loadAuditLogs();
+    } catch (err) {
+      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to clear audit logs.' });
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -198,22 +207,41 @@ const Settings = () => {
     }
   };
 
+  const resetCategoryForm = () => {
+    setEditingCategoryId(null);
+    setNewCatName('');
+    setNewCatDesc('');
+    setNewCatIcon('bi-camera-reels');
+  };
+
+  const handleStartEditCategory = (cat) => {
+    setEditingCategoryId(cat.id);
+    setNewCatName(cat.name || '');
+    setNewCatDesc(cat.description || '');
+    setNewCatIcon(cat.icon || 'bi-camera');
+  };
+
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
 
     try {
-      await createCategory({
+      const payload = {
         name: newCatName.trim(),
-        description: newCatDesc.trim(),
-        icon: newCatIcon
-      });
-      setNewCatName('');
-      setNewCatDesc('');
+        description: newCatDesc.trim() || null,
+        icon: prepareCategoryIconForSave(newCatIcon)
+      };
+      if (editingCategoryId) {
+        await updateCategory(editingCategoryId, payload);
+        setAlertMsg({ type: 'success', text: `Category "${payload.name}" updated successfully.` });
+      } else {
+        await createCategory(payload);
+        setAlertMsg({ type: 'success', text: 'New equipment category added.' });
+      }
+      resetCategoryForm();
       loadCategories();
-      setAlertMsg({ type: 'success', text: 'New equipment category added.' });
     } catch (err) {
-      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to add category.' });
+      setAlertMsg({ type: 'danger', text: err.response?.data?.message || 'Failed to save category.' });
     }
   };
 
@@ -221,6 +249,9 @@ const Settings = () => {
     if (window.confirm(`Delete category "${name}"? Only empty categories can be deleted.`)) {
       try {
         await deleteCategory(id);
+        if (editingCategoryId === id) {
+          resetCategoryForm();
+        }
         loadCategories();
         setAlertMsg({ type: 'success', text: `Category "${name}" removed.` });
       } catch (err) {
@@ -297,7 +328,7 @@ const Settings = () => {
                 className={`nav-link small py-2 px-3 fw-medium ${activeTab === 'categories' ? 'active' : 'text-dark'}`}
                 onClick={() => setActiveTab('categories')}
               >
-                <i className="bi bi-tags me-1"></i> Media Categories ({categories.length || 17})
+                <i className="bi bi-tags me-1"></i> Media Categories ({categories.length})
               </button>
             </li>
             <li className="nav-item">
@@ -819,11 +850,26 @@ const Settings = () => {
       {/* TAB 2: Equipment Categories */}
       {activeTab === 'categories' && (
         <div className="row g-4">
-          <div className="col-md-5">
+          <div className="col-lg-5">
             <div className="card border-0 shadow-sm">
               <div className="card-body p-4">
-                <h6 className="fw-bold text-dark mb-1">Add Media Category</h6>
-                <p className="text-muted small mb-3">Register new gear classifications with custom modern icons.</p>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <h6 className="fw-bold text-dark mb-0">
+                    {editingCategoryId ? 'Edit Media Category' : 'Add Media Category'}
+                  </h6>
+                  {editingCategoryId && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-outline-secondary"
+                      onClick={resetCategoryForm}
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+                <p className="text-muted small mb-3">
+                  Register or update gear classifications with searchable film & production icons.
+                </p>
 
                 <form onSubmit={handleAddCategory}>
                   <div className="mb-3">
@@ -831,7 +877,7 @@ const Settings = () => {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Category name"
+                      placeholder="e.g. C-Stands, Softboxes, Filters"
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       required
@@ -851,30 +897,30 @@ const Settings = () => {
 
                   <div className="mb-3">
                     <label className="form-label small fw-semibold text-secondary">Category Icon</label>
-                    <div className="d-flex flex-wrap gap-2 p-2 border rounded bg-light" style={{ maxHeight: '140px', overflowY: 'auto' }}>
-                      {POPULAR_ICONS.map((item) => (
-                        <button
-                          key={item.icon}
-                          type="button"
-                          className={`btn btn-sm ${newCatIcon === item.icon ? 'btn-primary' : 'btn-outline-secondary'}`}
-                          title={item.label}
-                          onClick={() => setNewCatIcon(item.icon)}
-                        >
-                          <i className={`bi ${item.icon}`}></i>
-                        </button>
-                      ))}
-                    </div>
+                    <CategoryIconPicker value={newCatIcon} onChange={setNewCatIcon} />
                   </div>
 
-                  <button type="submit" className="btn btn-primary w-100">
-                    <i className="bi bi-plus-lg me-1"></i> Add Category
-                  </button>
+                  <div className="d-flex gap-2">
+                    {editingCategoryId && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary flex-shrink-0"
+                        onClick={resetCategoryForm}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="btn btn-primary w-100">
+                      <i className={`bi ${editingCategoryId ? 'bi-check-lg' : 'bi-plus-lg'} me-1`}></i>
+                      {editingCategoryId ? 'Save Category Changes' : 'Add Category'}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
           </div>
 
-          <div className="col-md-7">
+          <div className="col-lg-7">
             <div className="card border-0 shadow-sm">
               <div className="card-body p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -900,10 +946,10 @@ const Settings = () => {
                       </thead>
                       <tbody>
                         {categories.map((cat) => (
-                          <tr key={cat.id}>
+                          <tr key={cat.id} className={editingCategoryId === cat.id ? 'table-primary' : ''}>
                             <td style={{ width: '40px' }}>
-                              <div className="p-2 rounded bg-light text-primary d-inline-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
-                                <i className={`bi ${cat.icon || 'bi-camera'}`}></i>
+                              <div className="p-1 rounded bg-light text-primary d-inline-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
+                                <CategoryIcon icon={cat.icon} name={cat.name} size={20} />
                               </div>
                             </td>
                             <td className="fw-bold text-dark">{cat.name}</td>
@@ -916,14 +962,24 @@ const Settings = () => {
                               </span>
                             </td>
                             <td className="text-end">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger py-0 px-2"
-                                title="Remove empty category"
-                                onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                              >
-                                <i className="bi bi-trash"></i>
-                              </button>
+                              <div className="btn-group btn-group-sm">
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary py-0 px-2"
+                                  title="Edit category & icon"
+                                  onClick={() => handleStartEditCategory(cat)}
+                                >
+                                  <i className="bi bi-pencil"></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-danger py-0 px-2"
+                                  title="Remove empty category"
+                                  onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1093,27 +1149,39 @@ const Settings = () => {
       {activeTab === 'audit' && (
         <div className="card border-0 shadow-sm">
           <div className="card-body p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
               <div>
                 <h6 className="fw-bold text-dark mb-0">System Security & Activity Audit Log</h6>
                 <small className="text-muted">Immutable record of logins, stock changes, checkouts, and admin actions.</small>
               </div>
 
-              <select
-                className="form-select form-select-sm"
-                style={{ width: '180px' }}
-                value={auditFilter}
-                onChange={(e) => setAuditFilter(e.target.value)}
-              >
-                <option value="ALL">All Actions</option>
-                <option value="LOGIN">Logins</option>
-                <option value="CREATE_EQUIPMENT">Equipment Created</option>
-                <option value="UPDATE_EQUIPMENT">Equipment Updated</option>
-                <option value="CHECK_OUT">Checkouts</option>
-                <option value="CHECK_IN">Check-ins</option>
-                <option value="CREATE_MAINTENANCE">Maintenance Created</option>
-                <option value="UPDATE_SETTINGS">Settings Changes</option>
-              </select>
+              <div className="d-flex align-items-center gap-2">
+                <select
+                  className="form-select form-select-sm"
+                  style={{ width: '180px' }}
+                  value={auditFilter}
+                  onChange={(e) => setAuditFilter(e.target.value)}
+                >
+                  <option value="ALL">All Actions</option>
+                  <option value="LOGIN">Logins</option>
+                  <option value="CREATE_EQUIPMENT">Equipment Created</option>
+                  <option value="UPDATE_EQUIPMENT">Equipment Updated</option>
+                  <option value="CHECK_OUT">Checkouts</option>
+                  <option value="CHECK_IN">Check-ins</option>
+                  <option value="CREATE_MAINTENANCE">Maintenance Created</option>
+                  <option value="UPDATE_SETTINGS">Settings Changes</option>
+                </select>
+                {auditLogs.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={handleClearAuditLogs}
+                    title="Clear all audit logs"
+                  >
+                    <i className="bi bi-trash me-1"></i>Clear All
+                  </button>
+                )}
+              </div>
             </div>
 
             {loadingLogs ? (
@@ -1133,6 +1201,7 @@ const Settings = () => {
                       <th>Entity</th>
                       <th>Details</th>
                       <th>IP Address</th>
+                      <th className="text-end">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1150,6 +1219,16 @@ const Settings = () => {
                           {JSON.stringify(log.details || {})}
                         </td>
                         <td className="text-muted font-monospace">{log.ipAddress || '127.0.0.1'}</td>
+                        <td className="text-end">
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-xs py-0 px-2"
+                            onClick={() => handleDeleteAuditLog(log.id)}
+                            title="Delete audit log"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

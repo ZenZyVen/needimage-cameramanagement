@@ -350,6 +350,25 @@ exports.createEquipment = async (req, res, next) => {
       req
     });
 
+    if (prisma.stockMovement?.create) {
+      await prisma.stockMovement.create({
+        data: {
+          equipmentId: newEquipment.id,
+          assetTag: newEquipment.assetTag,
+          equipmentName: newEquipment.name,
+          type: 'INITIAL_STOCK',
+          quantityChanged: parsedQty,
+          previousAvailable: 0,
+          newAvailable: parsedAvail,
+          previousTotal: 0,
+          newTotal: parsedQty,
+          reference: 'VAULT_REGISTRATION',
+          notes: 'Registered new equipment in vault.',
+          performedBy: req.user?.name || 'Admin'
+        }
+      });
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Equipment registered successfully.',
@@ -463,6 +482,28 @@ exports.updateEquipment = async (req, res, next) => {
       req
     });
 
+    if (
+      (newQty !== existing.quantity || newAvail !== existing.availableQuantity) &&
+      prisma.stockMovement?.create
+    ) {
+      await prisma.stockMovement.create({
+        data: {
+          equipmentId: id,
+          assetTag: updated.assetTag,
+          equipmentName: updated.name,
+          type: 'ADJUSTMENT',
+          quantityChanged: newAvail - existing.availableQuantity,
+          previousAvailable: existing.availableQuantity,
+          newAvailable: newAvail,
+          previousTotal: existing.quantity,
+          newTotal: newQty,
+          reference: 'MANUAL_UPDATE',
+          notes: 'Stock levels updated via equipment editor.',
+          performedBy: req.user?.name || 'Admin'
+        }
+      });
+    }
+
     // Notify staff of record update
     await notifyTeam({
       notifyStaff: true,
@@ -483,11 +524,11 @@ exports.updateEquipment = async (req, res, next) => {
   }
 };
 
-// 6. Delete equipment item (Soft-delete to archive with permanent option; releases code for auto-fill)
+// 6. Delete equipment item (Soft-delete to archive with permanent option; Admin can force-delete anytime)
 exports.deleteEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { permanent = false } = req.query;
+    const { permanent = false, force = false } = req.query;
 
     const equipment = await prisma.equipment.findUnique({
       where: { id },
@@ -509,10 +550,12 @@ exports.deleteEquipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Equipment not found.' });
     }
 
+    const isAdmin = req.user.role === 'ADMIN';
     const activeCheckouts = Array.isArray(equipment.borrowItems)
       ? equipment.borrowItems.filter(b => b.status === 'CHECKED_OUT')
       : [];
-    if (activeCheckouts.length > 0) {
+
+    if (!isAdmin && activeCheckouts.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Cannot delete equipment that is currently checked out on a loan.'
@@ -528,22 +571,50 @@ exports.deleteEquipment = async (req, res, next) => {
       (counts.maintenances || 0) > 0;
 
     let actionType = 'moved to archive';
-    const wantPermanent = permanent === 'true' || permanent === true;
+    const wantPermanent = permanent === 'true' || permanent === true || force === 'true' || force === true;
 
-    if (wantPermanent && !hasLinkedHistory) {
-      await prisma.equipment.delete({ where: { id } });
-      actionType = 'permanently removed';
+    if (wantPermanent && (isAdmin || !hasLinkedHistory)) {
+      await prisma.$transaction(async (tx) => {
+        if (tx.borrowRequestItem?.deleteMany) {
+          await tx.borrowRequestItem.deleteMany({ where: { equipmentId: id } });
+        }
+        if (tx.checkInOut?.deleteMany) {
+          await tx.checkInOut.deleteMany({ where: { equipmentId: id } });
+        }
+        if (tx.maintenance?.deleteMany) {
+          await tx.maintenance.deleteMany({ where: { equipmentId: id } });
+        }
+        if (tx.stockMovement?.deleteMany) {
+          await tx.stockMovement.deleteMany({ where: { equipmentId: id } });
+        }
+        await tx.equipment.delete({ where: { id } });
+      }, {
+        maxWait: 10000,
+        timeout: 30000
+      });
+      actionType = 'permanently deleted';
     } else {
       const archiveStamp = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      await prisma.equipment.update({
-        where: { id },
-        data: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          status: 'RETIRED',
-          assetTag: makeArchivedCode(originalTag, archiveStamp),
-          serialNumber: makeArchivedCode(originalSerial, archiveStamp)
+      await prisma.$transaction(async (tx) => {
+        if (isAdmin && activeCheckouts.length > 0 && tx.borrowRequestItem?.updateMany) {
+          await tx.borrowRequestItem.updateMany({
+            where: { equipmentId: id, status: 'CHECKED_OUT' },
+            data: { status: 'RETURNED' }
+          });
         }
+        await tx.equipment.update({
+          where: { id },
+          data: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            status: 'RETIRED',
+            assetTag: makeArchivedCode(originalTag, archiveStamp),
+            serialNumber: makeArchivedCode(originalSerial, archiveStamp)
+          }
+        });
+      }, {
+        maxWait: 10000,
+        timeout: 30000
       });
       actionType = wantPermanent
         ? 'archived (linked history preserved; code released)'
@@ -661,9 +732,10 @@ exports.adjustStock = async (req, res, next) => {
 
     const currentQty = equipment.quantity || 1;
     const currentAvail = equipment.availableQuantity !== undefined ? equipment.availableQuantity : currentQty;
+    const isAdmin = req.user.role === 'ADMIN';
 
-    // Prevent removing more stock than is physically available in the vault
-    if (delta < 0 && Math.abs(delta) > currentAvail) {
+    // Non-admins cannot remove more stock than is physically available in the vault
+    if (!isAdmin && delta < 0 && Math.abs(delta) > currentAvail) {
       return res.status(400).json({
         success: false,
         message: `Cannot remove ${Math.abs(delta)} unit(s). Only ${currentAvail} unit(s) are currently available in the vault (some may be checked out on active loans).`
@@ -671,7 +743,7 @@ exports.adjustStock = async (req, res, next) => {
     }
 
     const newQty = Math.max(0, currentQty + delta);
-    const newAvail = Math.max(0, currentAvail + delta);
+    const newAvail = Math.min(newQty, Math.max(0, currentAvail + delta));
 
     let newStatus = equipment.status;
     if (newAvail <= 0 && newStatus === 'AVAILABLE') {
@@ -766,6 +838,7 @@ exports.getStockMovements = async (req, res, next) => {
     if (prisma.stockMovement?.findMany) {
       movements = await prisma.stockMovement.findMany({
         where,
+        orderBy: { createdAt: 'desc' },
         take: safeLimit,
         skip: (safePage - 1) * safeLimit
       });
@@ -798,6 +871,57 @@ exports.getStockMovements = async (req, res, next) => {
       success: true,
       total: movements.length,
       data: movements
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8c. Delete single stock movement record (Admin only)
+exports.deleteStockMovement = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.stockMovement.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Stock movement record not found.' });
+    }
+
+    await prisma.stockMovement.delete({ where: { id } });
+
+    return res.json({
+      success: true,
+      message: 'Stock movement record deleted.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8d. Clear multiple or all stock movement records (Admin only)
+exports.clearStockMovements = async (req, res, next) => {
+  try {
+    const { ids, all } = req.body || {};
+    let deletedCount = 0;
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      const result = await prisma.stockMovement.deleteMany({
+        where: { id: { in: ids } }
+      });
+      deletedCount = result.count || 0;
+    } else if (all === true) {
+      const result = await prisma.stockMovement.deleteMany({});
+      deletedCount = result.count || 0;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Specify ids array or all: true to clear stock movements.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Cleared ${deletedCount} stock movement record(s).`,
+      deletedCount
     });
   } catch (error) {
     next(error);
@@ -963,11 +1087,13 @@ exports.createCategory = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Category already exists.' });
     }
 
+    const cleanIcon = typeof icon === 'string' && icon.trim() ? icon.trim() : 'bi-camera';
+
     const created = await prisma.category.create({
       data: {
         name: name.trim(),
         description: description ? description.trim() : null,
-        icon: icon || 'bi-camera'
+        icon: cleanIcon
       }
     });
 
@@ -975,6 +1101,50 @@ exports.createCategory = async (req, res, next) => {
       success: true,
       message: 'Category created.',
       data: created
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 11b. Update category
+exports.updateCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, description, icon } = req.body;
+
+    const existing = await prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Category not found.' });
+    }
+
+    const cleanName = name !== undefined ? name.trim() : existing.name;
+    if (!cleanName) {
+      return res.status(400).json({ success: false, message: 'Category name is required.' });
+    }
+
+    if (cleanName !== existing.name) {
+      const conflict = await prisma.category.findUnique({ where: { name: cleanName } });
+      if (conflict && conflict.id !== id) {
+        return res.status(409).json({ success: false, message: 'Another category with this name already exists.' });
+      }
+    }
+
+    const updated = await prisma.category.update({
+      where: { id },
+      data: {
+        name: cleanName,
+        description: description !== undefined ? (description ? description.trim() : null) : existing.description,
+        icon: icon !== undefined
+          ? (typeof icon === 'string' && icon.trim() ? icon.trim() : 'bi-camera')
+          : existing.icon
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Category "${updated.name}" updated.`,
+      data: updated
     });
   } catch (error) {
     next(error);
@@ -1004,8 +1174,33 @@ exports.deleteCategory = async (req, res, next) => {
       });
     }
 
-    await prisma.category.delete({
-      where: { id }
+    await prisma.$transaction(async (tx) => {
+      if (req.user.role === 'ADMIN') {
+        const archivedItems = await tx.equipment.findMany({
+          where: { categoryId: id, isDeleted: true },
+          select: { id: true }
+        });
+        const archivedIds = archivedItems.map(item => item.id);
+        if (archivedIds.length > 0) {
+          if (tx.borrowRequestItem?.deleteMany) {
+            await tx.borrowRequestItem.deleteMany({ where: { equipmentId: { in: archivedIds } } });
+          }
+          if (tx.checkInOut?.deleteMany) {
+            await tx.checkInOut.deleteMany({ where: { equipmentId: { in: archivedIds } } });
+          }
+          if (tx.maintenance?.deleteMany) {
+            await tx.maintenance.deleteMany({ where: { equipmentId: { in: archivedIds } } });
+          }
+          if (tx.stockMovement?.deleteMany) {
+            await tx.stockMovement.deleteMany({ where: { equipmentId: { in: archivedIds } } });
+          }
+          await tx.equipment.deleteMany({ where: { id: { in: archivedIds } } });
+        }
+      }
+      await tx.category.delete({ where: { id } });
+    }, {
+      maxWait: 10000,
+      timeout: 30000
     });
 
     return res.json({
